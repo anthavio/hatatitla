@@ -34,8 +34,8 @@ import com.anthavio.client.http.SenderResponse;
 import com.anthavio.client.http.async.ExecutorServiceBuilder;
 import com.anthavio.client.http.cache.CachingRequest.RefreshMode;
 import com.anthavio.client.http.inout.ResponseBodyExtractor;
-import com.anthavio.client.http.inout.ResponseBodyExtractors;
 import com.anthavio.client.http.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.client.http.inout.ResponseBodyExtractors;
 import com.thimbleware.jmemcached.CacheImpl;
 import com.thimbleware.jmemcached.Key;
 import com.thimbleware.jmemcached.LocalCacheElement;
@@ -215,10 +215,14 @@ public class CachingTest {
 		//keep original count of request executed on server
 		final int requestCount = server.getRequestCount();
 
+		//System.out.println("Doing initial request");
+
 		ExtractedBodyResponse<String> extract1 = csender.extract(request, ResponseBodyExtractors.STRING);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1);//count + 1
 		assertThat(extract1.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract1.getResponse()).isInstanceOf(CachedResponse.class); //is cached
+
+		//System.out.println("Going to the cache");
 
 		ExtractedBodyResponse<String> extract2 = csender.extract(request, ResponseBodyExtractors.STRING);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1); //count is same as before

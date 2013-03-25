@@ -181,7 +181,7 @@ public class JokerServer {
 				response.setDateHeader("Expire", calendar.getTimeInMillis());
 				//HTTP 1.1 - Cache-Control header
 				response.setHeader("Cache-Control", "private, max-age=" + seconds);
-				writeResponse(request, response, now, docache + " for " + seconds + " seconds");
+				writeResponse(request, response, now, "Docache for " + seconds + " seconds");
 				return;
 			}
 
@@ -195,7 +195,7 @@ public class JokerServer {
 				} else {
 					response.setHeader("ETag", etag);
 					//we need unique content - put date into it
-					String message = doetag + " for " + etag + " ETag";
+					String message = "Doetag  for " + etag + " ETag";
 					writeResponse(request, response, now, message);
 					return;
 				}
@@ -291,6 +291,7 @@ public class JokerServer {
 			ServletOutputStream output = response.getOutputStream();
 
 			String acceptMimeType = request.getHeader("Accept");
+			acceptMimeType = acceptMimeType == null ? "text/html" : acceptMimeType;
 
 			if (acceptMimeType.startsWith("application/json")) {
 

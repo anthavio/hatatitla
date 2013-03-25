@@ -166,10 +166,6 @@ public class HttpClient4Sender extends HttpSender {
 			throw new IllegalArgumentException("Unsupported method " + request.getMethod());
 		}
 
-		if (request.getReadTimeout() != null) {
-			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeout());
-		}
-
 		Multival headers = request.getHeaders();
 		if (headers != null && headers.size() != 0) {
 			for (String name : headers) {
@@ -178,6 +174,35 @@ public class HttpClient4Sender extends HttpSender {
 					httpRequest.addHeader(name, value);
 				}
 			}
+		}
+
+		if (request.getReadTimeout() != null) {
+			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeout());
+		}
+
+		if (config.getCompress()) {
+			httpRequest.addHeader("Accept-Encoding", "gzip, deflate");
+		}
+
+		if (request.hasBody()) {
+			String contentType = request.getFirstHeader("Content-Type");
+			if (contentType == null) {
+				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
+			}
+			//add charset into Content-Type header if missing
+			int idxCharset = contentType.indexOf("charset=");
+			if (idxCharset == -1) {
+				contentType = contentType + "; charset=" + config.getCharset();
+				httpRequest.addHeader("Content-Type", contentType);
+			}
+		}
+
+		if (request.getFirstHeader("Accept") == null && config.getDefaultAccept() != null) {
+			httpRequest.addHeader("Accept", config.getDefaultAccept());
+		}
+
+		if (request.getFirstHeader("Accept-Charset") == null) {
+			httpRequest.addHeader("Accept-Charset", config.getEncoding());
 		}
 
 		HttpResponse httpResponse = call(httpRequest);

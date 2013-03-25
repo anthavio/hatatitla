@@ -29,7 +29,7 @@ public class HttpSenderConfig {
 
 	private boolean compress = false;
 
-	private String acceptType; //default Accept header
+	private String defaultAccept; //default Accept header
 
 	private int connectTimeout = 5 * 1000; //in millis
 
@@ -133,12 +133,12 @@ public class HttpSenderConfig {
 		this.compress = compress;
 	}
 
-	public String getAcceptType() {
-		return acceptType;
+	public String getDefaultAccept() {
+		return defaultAccept;
 	}
 
-	public void setAcceptType(String acceptType) {
-		this.acceptType = acceptType;
+	public void setDefaultAccept(String acceptType) {
+		this.defaultAccept = acceptType;
 	}
 
 	public boolean getFollowRedirects() {

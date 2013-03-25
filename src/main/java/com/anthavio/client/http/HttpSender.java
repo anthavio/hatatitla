@@ -132,31 +132,6 @@ public abstract class HttpSender implements Closeable {
 			this.logger.debug(request.getMethod() + " " + path);
 		}
 
-		if (request.hasBody()) {
-			String contentType = request.getFirstHeader("Content-Type");
-			if (contentType == null) {
-				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
-			}
-			//add charset into Content-Type header if missing
-			int idxCharset = contentType.indexOf("charset=");
-			if (idxCharset == -1) {
-				contentType = contentType + "; charset=" + config.getCharset();
-				request.setHeader("Content-Type", contentType);
-			}
-		}
-
-		if (request.getFirstHeader("Accept") == null && config.getAcceptType() != null) {
-			request.addHeader("Accept", config.getAcceptType());
-		}
-
-		if (request.getFirstHeader("Accept-Charset") == null) {
-			request.addHeader("Accept-Charset", config.getEncoding());
-		}
-
-		if (config.getCompress()) {
-			request.addHeader("Accept-Encoding", "gzip, deflate");
-		}
-
 		return doExecute(request, path, query);
 	}
 

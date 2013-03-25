@@ -49,7 +49,7 @@ public class SenderRequestBuilders {
 		 * Sets Accept Header for Content negotiation
 		 */
 		public X accept(String type) {
-			headers.add("Accept", type);
+			headers.set("Accept", type);
 			return getX();
 		}
 
@@ -66,6 +66,14 @@ public class SenderRequestBuilders {
 		 */
 		public X param(String name, Object value) {
 			parameters.add(name, SenderRequest.toString(value));
+			return getX();
+		}
+
+		/**
+		 * Sets parameters (replacing any existing)
+		 */
+		public X parameters(Multival parameters) {
+			this.parameters = parameters;
 			return getX();
 		}
 
@@ -228,6 +236,7 @@ public class SenderRequestBuilders {
 		protected SenderPostRequestBuilder getX() {
 			return this;
 		}
+
 	}
 
 	/**

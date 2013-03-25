@@ -78,14 +78,6 @@ public class JavaHttpSender extends HttpSender {
 				path);
 
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-		connection.setConnectTimeout(config.getConnectTimeout());
-		if (request.getReadTimeout() != null) {
-			connection.setReadTimeout(request.getReadTimeout());
-		} else {
-			connection.setReadTimeout(config.getReadTimeout());
-		}
-
-		connection.setInstanceFollowRedirects(config.getFollowRedirects());
 
 		connection.setUseCaches(false);
 		connection.setDoOutput(true);
@@ -100,6 +92,40 @@ public class JavaHttpSender extends HttpSender {
 					connection.setRequestProperty(name, value);
 				}
 			}
+		}
+
+		connection.setConnectTimeout(config.getConnectTimeout());
+		if (request.getReadTimeout() != null) {
+			connection.setReadTimeout(request.getReadTimeout());
+		} else {
+			connection.setReadTimeout(config.getReadTimeout());
+		}
+
+		connection.setInstanceFollowRedirects(config.getFollowRedirects());
+
+		if (config.getCompress()) {
+			connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
+		}
+
+		if (request.hasBody()) {
+			String contentType = request.getFirstHeader("Content-Type");
+			if (contentType == null) {
+				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
+			}
+			//add charset into Content-Type header if missing
+			int idxCharset = contentType.indexOf("charset=");
+			if (idxCharset == -1) {
+				contentType = contentType + "; charset=" + config.getCharset();
+				connection.setRequestProperty("Content-Type", contentType);
+			}
+		}
+
+		if (request.getFirstHeader("Accept") == null && config.getDefaultAccept() != null) {
+			connection.setRequestProperty("Accept", config.getDefaultAccept());
+		}
+
+		if (request.getFirstHeader("Accept-Charset") == null) {
+			connection.setRequestProperty("Accept-Charset", config.getEncoding());
 		}
 
 		if (this.basicAuthHeader != null) {
