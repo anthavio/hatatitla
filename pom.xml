@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
-			<version>1.7.2</version>
+			<version>1.7.3</version>
 			<optional>true</optional>
 		</dependency>
 		
@@ -50,12 +50,16 @@
 			</exclusions>
 		</dependency>
 		
+		<!-- future netty sender implementations -->
+		
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty</artifactId>
 			<version>3.6.3.Final</version>
 			<optional>true</optional>
 		</dependency>
+		
+		<!-- future grizzly sender implementations -->
 		
 		<dependency>
 			<groupId>org.glassfish.grizzly</groupId>
@@ -64,7 +68,7 @@
 			<optional>true</optional>
 		</dependency>
 		
-		<!-- JSON support -->
+		<!-- JSON request/response body support -->
 		
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -122,7 +126,7 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.9</version>
+			<version>1.0.10</version>
 			<scope>test</scope>
 		</dependency>
 		
