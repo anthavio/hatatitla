@@ -24,6 +24,8 @@ public class SpyRequestCache<V extends Serializable> extends RequestCache<V> {
 	public static final int DAY = 24 * HOUR;//seconds
 	public static final int MONTH = 30 * DAY; //maximum value as interval. Greater value is considered as epoch time (seconds after 1.1.1970T00:00:00)
 
+	private static final int MaxKeyLength = 250;
+
 	private final MemcachedClient client;
 
 	private final long timeout; //memcached timeout in milliseconds
@@ -43,12 +45,18 @@ public class SpyRequestCache<V extends Serializable> extends RequestCache<V> {
 
 	@Override
 	public CacheEntry<V> doGet(String key) throws Exception {
+		if (key.length() > MaxKeyLength) {
+			throw new IllegalArgumentException("Key length exceded maximum");
+		}
 		GetFuture<Object> future = client.asyncGet(key);
 		return (CacheEntry<V>) future.get(timeout, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Boolean doSet(String key, CacheEntry<V> entry) throws Exception {
+		if (key.length() > MaxKeyLength) {
+			throw new IllegalArgumentException("Key length exceded maximum");
+		}
 		int ttlMillis = (int) entry.getHardTtl();
 		OperationFuture<Boolean> future = client.set(key, ttlMillis, entry);
 		return future.get(timeout, TimeUnit.MILLISECONDS);
@@ -56,6 +64,9 @@ public class SpyRequestCache<V extends Serializable> extends RequestCache<V> {
 
 	@Override
 	public Boolean doRemove(String key) throws Exception {
+		if (key.length() > MaxKeyLength) {
+			throw new IllegalArgumentException("Key length exceded maximum");
+		}
 		OperationFuture<Boolean> future = client.delete(key);
 		return future.get(timeout, TimeUnit.MILLISECONDS);
 	}
