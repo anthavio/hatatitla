@@ -30,9 +30,9 @@ import com.anthavio.hatatitla.cache.CachedResponse;
 import com.anthavio.hatatitla.inout.RequestBodyMarshaller;
 import com.anthavio.hatatitla.inout.RequestBodyMarshallers;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
+import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
 import com.anthavio.hatatitla.inout.ResponseExtractorFactory;
-import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
  * 
@@ -92,25 +92,13 @@ public abstract class HttpSender implements Closeable {
 		marshallers.setMarshaller(mimeType, marshaller);
 	}
 
-	public ResponseExtractorFactory getResponseExtractor(String mimeType) {
+	public ResponseExtractorFactory getResponseExtractorFactory(String mimeType) {
 		return extractors.getExtractorFactory(mimeType);
 	}
 
-	public void setResponseExtractor(ResponseExtractorFactory factory, String mimeType) {
+	public void setResponseExtractorFactory(ResponseExtractorFactory factory, String mimeType) {
 		extractors.setExtractorFactory(factory, mimeType);
 	}
-
-	/**
-	 * Way to set extractor for error responses
-	 */
-	public void setResponseExtractor(ResponseExtractorFactory factory, String mimeType, int... httpStatus) {
-		extractors.setExtractorFactory(factory, mimeType, httpStatus);
-	}
-
-	/**
-	 * To be implemented by concrete HttpSender
-	 */
-	protected abstract SenderResponse doExecute(SenderRequest request, String path, String query) throws IOException;
 
 	/**
 	 * Extremely important for caching -  generates proper key based on information from request and sender
@@ -118,6 +106,11 @@ public abstract class HttpSender implements Closeable {
 	public String getCacheKey(SenderRequest request) {
 		return String.valueOf(config.getHostUrl().toString().hashCode() * 31 + request.hashCode());
 	}
+
+	/**
+	 * To be implemented by concrete HttpSender
+	 */
+	protected abstract SenderResponse doExecute(SenderRequest request, String path, String query) throws IOException;
 
 	/**
 	 * Response returning version. Caller must close Response

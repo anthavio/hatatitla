@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.anthavio.hatatitla.SenderResponse;
+
 /**
  * Jackson1 (org.codehaus.jackson) factory
  * 
@@ -38,7 +40,7 @@ public class Jackson1ExtractorFactory implements ResponseExtractorFactory {
 	}
 
 	@Override
-	public <T extends Serializable> Jackson1ResponseExtractor<T> getExtractor(Class<T> resultType) {
+	public <T extends Serializable> Jackson1ResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
 		Jackson1ResponseExtractor<T> extractor = (Jackson1ResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			extractor = new Jackson1ResponseExtractor<T>(resultType, objectMapper);

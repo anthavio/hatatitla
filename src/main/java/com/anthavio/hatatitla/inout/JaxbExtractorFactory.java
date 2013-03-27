@@ -6,6 +6,8 @@ import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 
+import com.anthavio.hatatitla.SenderResponse;
+
 /**
  * 
  * @author martin.vanek
@@ -37,7 +39,7 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 	}
 
 	@Override
-	public <T extends Serializable> JaxbResponseExctractor<T> getExtractor(Class<T> resultType) {
+	public <T extends Serializable> JaxbResponseExctractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
 		JaxbResponseExctractor<T> extractor = (JaxbResponseExctractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			if (this.jaxbContext != null) {

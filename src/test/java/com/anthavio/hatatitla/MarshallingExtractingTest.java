@@ -7,9 +7,6 @@ import java.util.concurrent.TimeUnit;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-import com.anthavio.hatatitla.HttpClient4Config;
-import com.anthavio.hatatitla.HttpSender;
-import com.anthavio.hatatitla.PostRequest;
 import com.anthavio.hatatitla.cache.CachingExtractor;
 import com.anthavio.hatatitla.cache.CachingExtractorRequest;
 import com.anthavio.hatatitla.cache.RequestCache;
@@ -39,7 +36,8 @@ public class MarshallingExtractingTest {
 		TestBodyRequest body = new TestBodyRequest("Hello píčo");
 
 		HttpSender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).buildSender();
-		//sender.setResponseExtractor("application/json", null);
+
+		//sender.setResponseExtractor(factory, "application/json");
 		//sender.setRequestMarshaller("application/json", null);
 
 		PostRequest request = sender.POST("/").param("xxx", "Hello píčo").param("dostatus", 200)

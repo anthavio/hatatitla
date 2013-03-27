@@ -16,10 +16,51 @@ import com.anthavio.hatatitla.SenderResponse;
  *
  */
 public class ResponseBodyExtractors {
+	/*
+		private class ExtractorEntry<T> {
 
+			private final String mimeType; // null means any response mime type
+
+			private final int[] httpStatusCodes; //null means any http status code
+
+			private final ResponseBodyExtractor<T> extractor;
+
+			public ExtractorEntry(ResponseBodyExtractor<T> extractor) {
+				this(extractor, null, null);
+			}
+
+			public ExtractorEntry(ResponseBodyExtractor<T> extractor, String mimeType) {
+				this(extractor, mimeType, null);
+			}
+
+			public ExtractorEntry(ResponseBodyExtractor<T> extractor, String mimeType, int... httpStatusCodes) {
+				if (extractor == null) {
+					throw new IllegalArgumentException("Null extractor");
+				}
+				this.extractor = extractor;
+
+				if ("*".equals(mimeType)) {
+					this.mimeType = null;
+				} else {
+					this.mimeType = mimeType;
+				}
+
+				if (httpStatusCodes == null || httpStatusCodes.length == 0 || httpStatusCodes[0] == 0) {
+					this.httpStatusCodes = null;
+				} else {
+					this.httpStatusCodes = httpStatusCodes;
+				}
+			}
+
+		}
+
+		private List<ExtractorEntry<?>> extractors = new ArrayList<ExtractorEntry<?>>();
+	*/
 	private Map<String, ResponseExtractorFactory> factories = new HashMap<String, ResponseExtractorFactory>();
 
 	public ResponseBodyExtractors() {
+		//extractors.add(new ExtractorEntry<String>(STRING));
+		//extractors.add(new ExtractorEntry<byte[]>(BYTES));
 
 		JaxbExtractorFactory jaxbFactory = new JaxbExtractorFactory();
 		this.factories.put("application/xml", jaxbFactory);
@@ -42,11 +83,10 @@ public class ResponseBodyExtractors {
 		return factories.get(mimeType);
 	}
 
-	public void setExtractorFactory(ResponseExtractorFactory extractorFactory, String mimeType, int... httpStatus) {
+	public void setExtractorFactory(ResponseExtractorFactory extractorFactory, String mimeType) {
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("extractor factory is null");
 		}
-		//XXX error response extractor
 		factories.put(mimeType, extractorFactory);
 	}
 
@@ -66,17 +106,22 @@ public class ResponseBodyExtractors {
 		}
 	};
 
-	public <T extends Serializable> T extract(SenderResponse response, Class<T> clazz) throws IOException {
+	/**
+	 * Extracts Response into desired resultType or fails miserably.
+	 * This method does NOT close Response
+	 */
+	public <T extends Serializable> T extract(SenderResponse response, Class<T> resultType) throws IOException {
 		String contentType = response.getFirstHeader("Content-Type");
-		ResponseBodyExtractor<?> extractor = getExtractor(contentType, clazz);
+		ResponseBodyExtractor<?> extractor = getExtractor(contentType, response, resultType);
 		if (extractor == null) {
-			throw new IllegalArgumentException("No extractor found for class " + clazz.getName() + " and Content-Type "
+			throw new IllegalArgumentException("No extractor found for class " + resultType.getName() + " and Content-Type "
 					+ contentType);
 		}
 		return (T) extractor.extract(response);
 	}
 
-	public <T extends Serializable> ResponseBodyExtractor<T> getExtractor(String contentType, Class<T> clazz) {
+	public <T extends Serializable> ResponseBodyExtractor<T> getExtractor(String contentType, SenderResponse response,
+			Class<T> clazz) {
 		// Ignore Content-Type for String or Byte Array result
 		if (clazz.equals(String.class)) {
 			return (ResponseBodyExtractor<T>) ResponseBodyExtractors.STRING;
@@ -93,7 +138,7 @@ public class ResponseBodyExtractors {
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("No extractor factory found for mime type " + mimeType);
 		}
-		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(clazz);
+		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, clazz);
 		return extractor;
 	}
 

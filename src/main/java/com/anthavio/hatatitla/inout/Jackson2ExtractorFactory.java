@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.anthavio.hatatitla.SenderResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -37,7 +38,7 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 	}
 
 	@Override
-	public <T extends Serializable> Jackson2ResponseExtractor<T> getExtractor(Class<T> resultType) {
+	public <T extends Serializable> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
 		Jackson2ResponseExtractor<T> extractor = (Jackson2ResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			extractor = new Jackson2ResponseExtractor<T>(resultType, objectMapper);

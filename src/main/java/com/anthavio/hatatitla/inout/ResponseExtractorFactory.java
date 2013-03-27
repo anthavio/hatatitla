@@ -2,6 +2,8 @@ package com.anthavio.hatatitla.inout;
 
 import java.io.Serializable;
 
+import com.anthavio.hatatitla.SenderResponse;
+
 /**
  * 
  * @author martin.vanek
@@ -9,5 +11,5 @@ import java.io.Serializable;
  */
 public interface ResponseExtractorFactory {
 
-	public <T extends Serializable> ResponseBodyExtractor<T> getExtractor(Class<T> resultType);
+	public <T extends Serializable> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Class<T> resultType);
 }
