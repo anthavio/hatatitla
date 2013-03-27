@@ -13,14 +13,6 @@ import java.util.Map;
 import org.fest.assertions.api.Fail;
 import org.testng.annotations.Test;
 
-import com.anthavio.hatatitla.Authentication;
-import com.anthavio.hatatitla.GetRequest;
-import com.anthavio.hatatitla.HttpClient4Config;
-import com.anthavio.hatatitla.HttpClient4Sender;
-import com.anthavio.hatatitla.HttpSenderConfig;
-import com.anthavio.hatatitla.JavaHttpSender;
-import com.anthavio.hatatitla.PostRequest;
-import com.anthavio.hatatitla.SenderRequest;
 import com.anthavio.hatatitla.Authentication.Scheme;
 import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.SenderRequest.Method;
@@ -171,7 +163,7 @@ public class SimpleTest {
 		String url = "http://www.hostname.com:8080/path/to/somewhere";
 		JavaHttpSender sender = new JavaHttpSender(url);
 		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.hostname.com:8080");// file(path) URL part is thrown away
-		assertThat(sender.getConfig().getEncoding()).isEqualTo("UTF-8");
+		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
 		assertThat(sender.getConfig().getAuthentication()).isNull();
 
 		//default authentication is BASIC and preepmtive
@@ -189,7 +181,7 @@ public class SimpleTest {
 		HttpClient4Sender sender = new HttpClient4Sender(config);
 
 		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.hostname.com:8080"); // file(path) URL part is thrown away
-		assertThat(sender.getConfig().getEncoding()).isEqualTo("UTF-8");
+		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
 		assertThat(sender.getConfig().getAuthentication().getPreemptive()).isFalse();
 	}
 
