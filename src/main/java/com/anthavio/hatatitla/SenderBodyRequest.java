@@ -60,6 +60,12 @@ public abstract class SenderBodyRequest extends SenderRequest {
 		if (Cutils.isBlank(contentType)) {
 			throw new IllegalArgumentException("Content-Type is blank");
 		}
+		if (sender != null) {
+			int idxCharset = contentType.indexOf("charset=");
+			if (idxCharset == -1) {
+				contentType += "; charset=" + sender.getConfig().getEncoding();
+			}
+		}
 		setHeader("Content-Type", contentType);
 
 		return this;

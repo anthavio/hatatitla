@@ -9,6 +9,7 @@ import com.anthavio.hatatitla.SenderBodyRequest.FakeStream;
 import com.anthavio.hatatitla.SenderBodyRequest.FakeStream.FakeType;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.hatatitla.inout.ResponseHandler;
 
 /**
  * Equivalent of Jersey/JAX-RS-2.0 RequestBuilder
@@ -83,6 +84,7 @@ public class SenderRequestBuilders {
 
 		/**
 		 * Execute request and return response
+		 * Response is open
 		 */
 		public SenderResponse execute() throws IOException {
 			SenderRequest request = build();
@@ -90,7 +92,17 @@ public class SenderRequestBuilders {
 		}
 
 		/**
+		 * Execute request and use ResponseHandler parameter to process response
+		 * Response is closed automaticaly
+		 */
+		public void execute(ResponseHandler handler) throws IOException {
+			SenderRequest request = build();
+			httpSender.execute(request, handler);
+		}
+
+		/**
 		 * Execute request and extract response
+		 * Response is closed automaticaly
 		 */
 		public <T extends Serializable> ExtractedBodyResponse<T> extract(Class<T> clazz) throws IOException {
 			SenderRequest request = build();
@@ -99,6 +111,7 @@ public class SenderRequestBuilders {
 
 		/**
 		 * Execute request and extract response
+		 * Response is closed automaticaly
 		 */
 		public <T extends Serializable> ExtractedBodyResponse<T> extract(ResponseBodyExtractor<T> extractor)
 				throws IOException {

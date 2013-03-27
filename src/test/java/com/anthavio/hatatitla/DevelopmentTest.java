@@ -3,9 +3,6 @@ package com.anthavio.hatatitla;
 import java.io.Serializable;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import com.anthavio.hatatitla.HttpClient4Sender;
-import com.anthavio.hatatitla.HttpSender;
-import com.anthavio.hatatitla.JavaHttpSender;
 import com.anthavio.hatatitla.async.ExecutorServiceBuilder;
 import com.anthavio.hatatitla.cache.CachedResponse;
 import com.anthavio.hatatitla.cache.CachingExtractor;
@@ -23,7 +20,7 @@ public class DevelopmentTest {
 		MarshallingExtractingTest test = new MarshallingExtractingTest();
 		try {
 			test.setup();
-			test.test();
+			test.marshallingExtraction();
 		} catch (Exception x) {
 			x.printStackTrace();
 		} finally {

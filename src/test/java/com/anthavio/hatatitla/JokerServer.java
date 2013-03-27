@@ -155,6 +155,7 @@ public class JokerServer {
 			requestCount.incrementAndGet();
 			Date now = new Date();
 
+			//request.setCharacterEncoding("utf-8");
 			String hsleep = request.getHeader("sleep");
 			if (hsleep != null) {
 				sleep(hsleep, request);
@@ -218,7 +219,8 @@ public class JokerServer {
 
 		private void writeResponse(HttpServletRequest request, HttpServletResponse response, Date now, String text)
 				throws IOException {
-
+			//System.out.println(request.getCharacterEncoding());
+			//System.out.println(request.getParameter("pmsg"));
 			String contentType = request.getContentType();
 
 			TestBodyRequest trequest = null;

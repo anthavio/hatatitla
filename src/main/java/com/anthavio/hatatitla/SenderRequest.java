@@ -39,7 +39,7 @@ public abstract class SenderRequest {
 
 	protected static final String DEFAULT_URI = "/";
 
-	private transient HttpSender sender;
+	protected transient HttpSender sender;
 
 	private final Method method;
 

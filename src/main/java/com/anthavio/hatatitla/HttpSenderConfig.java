@@ -21,7 +21,7 @@ public class HttpSenderConfig {
 
 	private Authentication authentication;
 
-	private String encoding = "UTF-8";
+	private String encoding = "utf-8";
 
 	private Charset charset = Charset.forName(this.encoding);
 
@@ -87,6 +87,7 @@ public class HttpSenderConfig {
 
 	public void setCharset(Charset charset) {
 		this.charset = charset;
+		this.encoding = charset.name();
 	}
 
 	public int getConnectTimeout() {

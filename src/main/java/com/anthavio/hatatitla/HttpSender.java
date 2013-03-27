@@ -25,14 +25,15 @@ import com.anthavio.hatatitla.SenderRequestBuilders.SenderDeleteRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderGetRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderPostRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderPutRequestBuilder;
-import com.anthavio.hatatitla.async.ResponseHandler;
 import com.anthavio.hatatitla.cache.CachedResponse;
 import com.anthavio.hatatitla.inout.RequestBodyMarshaller;
 import com.anthavio.hatatitla.inout.RequestBodyMarshallers;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
+import com.anthavio.hatatitla.inout.ResponseErrorHandler;
 import com.anthavio.hatatitla.inout.ResponseExtractorFactory;
+import com.anthavio.hatatitla.inout.ResponseHandler;
 
 /**
  * 
@@ -55,7 +56,9 @@ public abstract class HttpSender implements Closeable {
 
 	private ResponseBodyExtractors extractors = new ResponseBodyExtractors();
 
-	private NullValueHandling nullHandling = NullValueHandling.EMPTY_STRING;
+	private ResponseErrorHandler errorResponseHandler;
+
+	//private NullValueHandling nullHandling = NullValueHandling.EMPTY_STRING;
 
 	public HttpSender(HttpSenderConfig config) {
 		if (config == null) {
@@ -88,16 +91,38 @@ public abstract class HttpSender implements Closeable {
 		return marshallers.getMarshaller(mimeType);
 	}
 
-	public void setRequestMarshaller(String mimeType, RequestBodyMarshaller marshaller) {
-		marshallers.setMarshaller(mimeType, marshaller);
+	/**
+	 * Sets RequestBodyMarshaller for specified request mimeType (from Content-Type header)
+	 */
+	public void setRequestMarshaller(RequestBodyMarshaller marshaller, String mimeType) {
+		marshallers.setMarshaller(marshaller, mimeType);
 	}
 
 	public ResponseExtractorFactory getResponseExtractorFactory(String mimeType) {
 		return extractors.getExtractorFactory(mimeType);
 	}
 
+	/**
+	 * Sets ResponseExtractorFactory for specified response mimeType (from Content-Type header)
+	 */
 	public void setResponseExtractorFactory(ResponseExtractorFactory factory, String mimeType) {
 		extractors.setExtractorFactory(factory, mimeType);
+	}
+
+	/**
+	 * @return global ResponseErrorHandler
+	 */
+	public ResponseErrorHandler getErrorResponseHandler() {
+		return errorResponseHandler;
+	}
+
+	/**
+	 * Sets global ResponseErrorHandler
+	 * It is used when extract is called but http status >= 300 is returned from server
+	 * null parameter value unsets 
+	 */
+	public void setErrorResponseHandler(ResponseErrorHandler errorResponseHandler) {
+		this.errorResponseHandler = errorResponseHandler;
 	}
 
 	/**
@@ -135,11 +160,20 @@ public abstract class HttpSender implements Closeable {
 		if (handler == null) {
 			throw new IllegalArgumentException("null handler");
 		}
-		SenderResponse response = execute(request);
+		SenderResponse response = null;
 		try {
+
+			try {
+				response = execute(request);
+			} catch (Exception x) {
+				if (response == null) {
+					handler.onRequestError(request, x);
+				} else {
+					handler.onResponseError(response, x);
+				}
+			}
+
 			handler.onResponse(response);
-		} catch (Exception x) {
-			handler.onError(x);
 		} finally {
 			Cutils.close(response);
 		}
@@ -147,7 +181,7 @@ public abstract class HttpSender implements Closeable {
 
 	/**
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
-	 * ResponseExtractor is created for the paricular returnType
+	 * ResponseExtractor is created and used to extract the specified resultType
 	 */
 	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType)
 			throws IOException {
@@ -168,8 +202,12 @@ public abstract class HttpSender implements Closeable {
 	 */
 	public <T extends Serializable> T extract(SenderResponse response, Class<T> resultType) throws IOException {
 		if (response.getHttpStatusCode() >= 300) {
-			//XXX error response extractor
-			throw new SenderHttpStatusException(response);
+			if (errorResponseHandler != null) {
+				errorResponseHandler.onErrorResponse(response);
+				return null;
+			} else {
+				throw new SenderHttpStatusException(response);
+			}
 		}
 		try {
 			return extractors.extract(response, resultType);
@@ -186,12 +224,17 @@ public abstract class HttpSender implements Closeable {
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor is null");
 		}
-		SenderResponse response = execute(request);
-		if (response.getHttpStatusCode() >= 300) {
-			//XXX error response extractor
-			throw new SenderHttpStatusException(response);
-		}
+		SenderResponse response = null;
 		try {
+			response = execute(request);
+			if (response.getHttpStatusCode() >= 300) {
+				if (errorResponseHandler != null) {
+					errorResponseHandler.onErrorResponse(response);
+					return new ExtractedBodyResponse<T>(response, null);
+				} else {
+					throw new SenderHttpStatusException(response);
+				}
+			}
 			T extracted = extractor.extract(response);
 			return new ExtractedBodyResponse<T>(response, extracted);
 		} finally {
@@ -246,7 +289,6 @@ public abstract class HttpSender implements Closeable {
 				try {
 					execute(request, handler);
 				} catch (Exception x) {
-					handler.onError(x);
 					logger.warn("Failed asynchronous request", x);
 				}
 			}
@@ -296,8 +338,6 @@ public abstract class HttpSender implements Closeable {
 	 * Shared helper to build url path and query
 	 */
 	protected String[] getPathAndQuery(SenderRequest request) {
-		//String path = joinPath(request.getUrlPath());
-		String encoding = config.getEncoding();
 		Multival parameters = request.getParameters();
 		StringBuilder sbMxParams = null;
 		StringBuilder sbQuParams = null;
@@ -311,17 +351,17 @@ public abstract class HttpSender implements Closeable {
 					List<String> values = parameters.get(name);
 					for (String value : values) {
 						sbMxParams.append(';');//keep unescaped
-						sbMxParams.append(urlencode(name.substring(1), encoding));
+						sbMxParams.append(urlencode(name.substring(1)));
 						sbMxParams.append('=');
 						//XXX matrix parameters may contain / and that / must be unescaped
-						sbMxParams.append(urlencode(value, encoding));
+						sbMxParams.append(urlencode(value));
 					}
 				} else { //query parameter
 					List<String> values = parameters.get(name);
 					for (String value : values) {
-						sbQuParams.append(urlencode(name, encoding));
+						sbQuParams.append(urlencode(name));
 						sbQuParams.append('=');
-						sbQuParams.append(urlencode(value, encoding));
+						sbQuParams.append(urlencode(value));
 						sbQuParams.append('&');
 						bQp = true;
 					}
@@ -352,11 +392,11 @@ public abstract class HttpSender implements Closeable {
 		return new String[] { path, query };
 	}
 
-	private final String urlencode(String string, String encoding) {
+	private final String urlencode(String string) {
 		try {
-			return URLEncoder.encode(string, encoding);
+			return URLEncoder.encode(string, "utf-8"); //W3C recommends utf-8 
 		} catch (UnsupportedEncodingException uex) {
-			throw new IllegalStateException("Misconfigured encoding " + encoding, uex);
+			throw new IllegalStateException("Misconfigured encoding utf-8", uex);
 		}
 	}
 

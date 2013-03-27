@@ -179,7 +179,7 @@ public class HttpClient3Sender extends HttpSender {
 			int idxCharset = contentType.indexOf("charset=");
 			if (idxCharset == -1) {
 				contentType = contentType + "; charset=" + config.getCharset();
-				httpMethod.addRequestHeader("Content-Type", contentType);
+				httpMethod.setRequestHeader("Content-Type", contentType);
 			}
 		}
 

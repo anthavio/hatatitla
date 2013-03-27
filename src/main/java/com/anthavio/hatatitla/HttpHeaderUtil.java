@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -97,9 +96,16 @@ public class HttpHeaderUtil {
 
 	/**
 	 * Shared helper to parse mimeType and charset from Content-Type header
-	 * For request...
 	 */
 	public static Object[] splitContentType(String contentType, Charset defaultCharset) {
+		String[] splited = splitContentType(contentType, defaultCharset.name());
+		return new Object[] { splited[0], Charset.forName(splited[1]) };
+	}
+
+	public static String[] splitContentType(String contentType, String defaultCharset) {
+		if (Cutils.isBlank(contentType)) {
+			return new String[] { "text/plain", defaultCharset };
+		}
 		int idxMimeEnd = contentType.indexOf(";");
 		String mimeType;
 		if (idxMimeEnd != -1) {
@@ -107,15 +113,40 @@ public class HttpHeaderUtil {
 		} else {
 			mimeType = contentType;
 		}
-		Charset charset;
+		String charset;
 		int idxCharset = contentType.indexOf("charset=");
 		if (idxCharset != -1) {
-			charset = Charset.forName(contentType.substring(idxCharset + 8));
+			charset = contentType.substring(idxCharset + 8);
 		} else {
 			charset = defaultCharset;
-			contentType = contentType + "; charset=" + charset.name();
+			//contentType = contentType + "; charset=" + charset;
 		}
-		return new Object[] { mimeType, charset };
+		return new String[] { mimeType, charset };
+	}
+
+	public static String getMimeType(String contentType, String defaultMimeType) {
+		int idxMimeEnd = contentType.indexOf(";");
+		if (idxMimeEnd != -1) {
+			return contentType.substring(0, idxMimeEnd);
+		} else {
+			return defaultMimeType;
+		}
+	}
+
+	/**
+	 * ISO-8859-1 is returned when contentType doesn't have charset part
+	 */
+	public static Charset getCharset(String contentType) {
+		return getCharset(contentType, DEFAULT_CONTENT_CHARSET);
+	}
+
+	public static Charset getCharset(String contentType, Charset defaultCharset) {
+		int idxCharset = contentType.indexOf("charset=");
+		if (idxCharset != -1) {
+			return Charset.forName(contentType.substring(idxCharset + 8));
+		} else {
+			return defaultCharset;
+		}
 	}
 
 	/**
@@ -138,7 +169,7 @@ public class HttpHeaderUtil {
 	 * Returns the charset specified in the Content-Type of this header,
 	 * or the HTTP default (ISO-8859-1) if none can be found.
 	 * For response...
-	 */
+	 
 	public static Charset getCharset(String contentType) {
 		//String contentType = headers.get("Content-Type");
 		if (contentType != null) {
@@ -160,7 +191,7 @@ public class HttpHeaderUtil {
 
 		return DEFAULT_CONTENT_CHARSET;
 	}
-
+	*/
 	/**
 	 * Try to detect if content type is textual or binary
 	 */

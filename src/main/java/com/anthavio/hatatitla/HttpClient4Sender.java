@@ -193,7 +193,7 @@ public class HttpClient4Sender extends HttpSender {
 			int idxCharset = contentType.indexOf("charset=");
 			if (idxCharset == -1) {
 				contentType = contentType + "; charset=" + config.getCharset();
-				httpRequest.addHeader("Content-Type", contentType);
+				httpRequest.setHeader("Content-Type", contentType);
 			}
 		}
 

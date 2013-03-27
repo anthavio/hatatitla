@@ -1,17 +1,28 @@
 package com.anthavio.hatatitla;
 
+import static org.fest.assertions.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
+import com.anthavio.hatatitla.TestResponse.NameValue;
 import com.anthavio.hatatitla.cache.CachingExtractor;
 import com.anthavio.hatatitla.cache.CachingExtractorRequest;
 import com.anthavio.hatatitla.cache.RequestCache;
 import com.anthavio.hatatitla.cache.SimpleRequestCache;
+import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
+import com.anthavio.hatatitla.inout.ResponseErrorHandler;
+import com.anthavio.hatatitla.inout.ResponseHandler;
 
 /**
  * 
@@ -32,20 +43,130 @@ public class MarshallingExtractingTest {
 		this.server.stop();
 	}
 
-	public void test() throws IOException {
-		TestBodyRequest body = new TestBodyRequest("Hello píčo");
+	@Test
+	public void responseHandler() throws IOException {
+		HttpClient4Sender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).buildSender();
+		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) sender.getHttpClient()
+				.getConnectionManager();
 
-		HttpSender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).buildSender();
+		TestResponseHandler handler = new TestResponseHandler();
+		sender.GET("/").execute(handler);
+		assertThat(handler.getResponse().getHttpStatusCode()).isEqualTo(200);
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		sender.GET("/").param("dostatus", 500).execute(handler);
+		assertThat(handler.getResponse().getHttpStatusCode()).isEqualTo(500);
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		try {
+			sender.GET("/").param("dostatus", 500).extract(String.class);
+			Assert.fail("Preceding statement must throw SenderHttpStatusException");
+		} catch (SenderHttpStatusException shsx) {
+			//
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		TestResponseBodyExtractor badExtractor = new TestResponseBodyExtractor();
+		ClassCastException extractException = new ClassCastException("I'm evil! I'm evil!");
+		badExtractor.setExtractException(extractException);
+
+		try {
+			sender.GET("/").extract(badExtractor);
+			Assert.fail("Preceding statement must throw " + extractException.getClass().getName());
+		} catch (ClassCastException aiox) {
+			assertThat(aiox).isEqualTo(extractException);
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		ArrayIndexOutOfBoundsException handleException = new ArrayIndexOutOfBoundsException("I'm baaad! I'm baaad!");
+		//set global error handler
+		sender.setErrorResponseHandler(handler);
+
+		//now the same without response exception
+		ExtractedBodyResponse<String> extract = sender.GET("/").param("dostatus", 500).extract(String.class);
+		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
+		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
+		assertThat(extract.getBody()).isNull(); //extracted body is null
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		//same with ResponseBodyExtractor instead of resultType Class
+		extract = sender.GET("/").param("dostatus", 500).extract(ResponseBodyExtractors.STRING);
+		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
+		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
+		assertThat(extract.getBody()).isNull(); //extracted body is null
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		//now make that handler to throw exception from it's handle methods
+		handler.setHandleException(handleException);
+
+		try {
+			extract = sender.GET("/").param("dostatus", 500).extract(String.class);
+			Assert.fail("Preceding statement must throw " + handleException.getClass().getName());
+		} catch (ArrayIndexOutOfBoundsException aiox) {
+			assertThat(aiox).isEqualTo(handleException);
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		try {
+			extract = sender.GET("/").param("dostatus", 500).extract(ResponseBodyExtractors.STRING);
+			Assert.fail("Preceding statement must throw " + handleException.getClass().getName());
+		} catch (ArrayIndexOutOfBoundsException aiox) {
+			assertThat(aiox).isEqualTo(handleException);
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		try {
+			sender.GET("/").param("dostatus", 500).extract(badExtractor);
+			Assert.fail("Preceding statement must throw " + extractException.getClass().getName());
+		} catch (ArrayIndexOutOfBoundsException aiox) {
+			assertThat(aiox).isEqualTo(handleException);
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		//unset global error response handler (but it still throws exception while handling responses)
+		sender.setErrorResponseHandler(null);
+
+		try {
+			sender.GET("/").param("dostatus", 500).execute(handler);
+		} catch (ArrayIndexOutOfBoundsException aiox) {
+			assertThat(aiox).isEqualTo(handleException);
+		}
+		assertThat(handler.getResponse().getHttpStatusCode()).isEqualTo(500);
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		sender.close();
+	}
+
+	@Test
+	public void marshallingExtraction() throws IOException {
+		String message = "Hello čobole";
+		TestBodyRequest body = new TestBodyRequest(message);
+
+		HttpClient4Config config = new HttpClient4Config("localhost:" + server.getHttpPort());
+		config.setEncoding("ISO-8859-2");
+		HttpSender sender = config.buildSender();
 
 		//sender.setResponseExtractor(factory, "application/json");
 		//sender.setRequestMarshaller("application/json", null);
 
-		PostRequest request = sender.POST("/").param("xxx", "Hello píčo").param("dostatus", 200)
-				.body(body, "application/json; charset=iso-8859-2").accept("application/xml")
-				.header("Accept-Charset", "Cp1250").build();
+		//different encoding for request and response
+		PostRequest request = sender.POST("/").param("pmsg", message).param("dostatus", 201).body(body, "application/json")
+				.accept("application/xml").header("Accept-Charset", "Cp1250").build();
 
+		//charset is added from configuration
+		assertThat(request.getFirstHeader("Content-Type").indexOf("charset=ISO-8859-2")).isNotEqualTo(-1);
+		//System.out.println(request.getParameters().getFirst("pmsg"));
 		ExtractedBodyResponse<TestResponse> extract = request.extract(TestResponse.class);
-		System.out.println(extract.getBody().getRequest().getMessage());
+		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(201);
+		assertThat(extract.getBody().getRequest().getMessage()).isEqualTo(message); //č character must be preserved!
+		List<NameValue> parameters = extract.getBody().getRequest().getParameters();
+
+		for (NameValue nameValue : parameters) {
+			if (nameValue.getName().equals("pmsg")) {
+				assertThat(nameValue.getValue()).isEqualTo(message); //č character must be preserved!
+			}
+			//System.out.println(nameValue.getName() + " " + nameValue.getValue());
+		}
 
 		RequestCache<Serializable> cache = new SimpleRequestCache<Serializable>();
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
@@ -60,6 +181,109 @@ public class MarshallingExtractingTest {
 		cextractor.extract(crequest);
 		*/
 		//extract.getResponse()
-
+		sender.close();
 	}
+}
+
+class TestResponseBodyExtractor implements ResponseBodyExtractor<String> {
+
+	private RuntimeException extractException; //simulate very bad extractor
+
+	private SenderResponse response;
+
+	@Override
+	public String extract(SenderResponse response) throws IOException {
+		this.response = response;
+		if (extractException != null) {
+			extractException.fillInStackTrace();
+			throw extractException;
+		}
+		return HttpHeaderUtil.readAsString(response);
+	}
+
+	public RuntimeException getExtractException() {
+		return extractException;
+	}
+
+	public void setExtractException(RuntimeException extractException) {
+		this.extractException = extractException;
+	}
+
+	public SenderResponse getResponse() {
+		return response;
+	}
+}
+
+class TestResponseHandler implements ResponseHandler, ResponseErrorHandler {
+	private SenderRequest request;
+	private SenderResponse response;
+	private Exception exception;
+	private RuntimeException handleException; //simulate very bad handler
+
+	@Override
+	public void onResponse(SenderResponse response) throws IOException {
+		this.response = response;
+		if (handleException != null) {
+			handleException.fillInStackTrace();
+			throw handleException;
+		}
+	}
+
+	@Override
+	public void onRequestError(SenderRequest request, Exception exception) {
+		this.request = request;
+		this.exception = exception;
+		if (handleException != null) {
+			handleException.fillInStackTrace();
+			throw handleException;
+		}
+	}
+
+	@Override
+	public void onResponseError(SenderResponse response, Exception exception) {
+		this.response = response;
+		this.exception = exception;
+		if (handleException != null) {
+			handleException.fillInStackTrace();
+			throw handleException;
+		}
+	}
+
+	@Override
+	public void onErrorResponse(SenderResponse response) {
+		this.response = response;
+		if (handleException != null) {
+			handleException.fillInStackTrace();
+			throw handleException;
+		}
+	}
+
+	public SenderRequest getRequest() {
+		return request;
+	}
+
+	public void setRequest(SenderRequest request) {
+		this.request = request;
+	}
+
+	public SenderResponse getResponse() {
+		return response;
+	}
+
+	public void setResponse(SenderResponse response) {
+		this.response = response;
+	}
+
+	public Exception getException() {
+		return exception;
+	}
+
+	public void setException(Exception exception) {
+		this.exception = exception;
+	}
+
+	public void setHandleException(RuntimeException handleException) {
+		this.handleException = handleException;
+	}
+
 }

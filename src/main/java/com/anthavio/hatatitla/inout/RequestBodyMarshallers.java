@@ -55,7 +55,7 @@ public class RequestBodyMarshallers {
 		return marshallers.get(mimeType);
 	}
 
-	public void setMarshaller(String mimeType, RequestBodyMarshaller marshaller) {
+	public void setMarshaller(RequestBodyMarshaller marshaller, String mimeType) {
 		if (Cutils.isBlank(mimeType)) {
 			throw new IllegalArgumentException("mime type is blank");
 		}
