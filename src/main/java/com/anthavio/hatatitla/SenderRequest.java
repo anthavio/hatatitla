@@ -24,7 +24,7 @@ import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 public abstract class SenderRequest {
 
 	public static enum Method {
-		GET(false), DELETE(false), POST(true), PUT(true);
+		GET(false), DELETE(false), HEAD(false), OPTIONS(false), POST(true), PUT(true);
 
 		private boolean canHaveBody;
 
