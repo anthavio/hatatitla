@@ -133,7 +133,7 @@ public class ResponseBodyExtractors {
 			throw new IllegalArgumentException("Content-Type header not found");
 		}
 
-		String mimeType = HttpHeaderUtil.getMimeType(contentType, "missing/mimetype");
+		String mimeType = HttpHeaderUtil.getMimeType(contentType);
 		ResponseExtractorFactory extractorFactory = factories.get(mimeType);
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("No extractor factory found for mime type " + mimeType);

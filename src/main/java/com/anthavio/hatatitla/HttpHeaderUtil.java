@@ -124,12 +124,12 @@ public class HttpHeaderUtil {
 		return new String[] { mimeType, charset };
 	}
 
-	public static String getMimeType(String contentType, String defaultMimeType) {
+	public static String getMimeType(String contentType) {
 		int idxMimeEnd = contentType.indexOf(";");
 		if (idxMimeEnd != -1) {
 			return contentType.substring(0, idxMimeEnd);
 		} else {
-			return defaultMimeType;
+			return contentType;
 		}
 	}
 
