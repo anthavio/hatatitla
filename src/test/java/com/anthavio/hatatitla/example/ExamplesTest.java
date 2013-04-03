@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
+import com.anthavio.hatatitla.Authentication;
 import com.anthavio.hatatitla.HttpClient4Config;
 import com.anthavio.hatatitla.HttpClient4Sender;
+import com.anthavio.hatatitla.URLHttpSender;
+import com.anthavio.hatatitla.URLSenderConfig;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
@@ -34,15 +37,30 @@ public class ExamplesTest {
 	}
 
 	public static void httpbin() {
-		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
-		HttpClient4Sender sender = config.buildSender();
+		URLSenderConfig config = new URLSenderConfig("http://httpbin.org");
+		URLHttpSender sender = config.buildSender();
 		try {
-			ExtractedBodyResponse<HttpbinResponse> extract = sender.PUT("/put").param("p1", "v1")
-					.body("{ x : 'y' }", "application/json").extract(HttpbinResponse.class);
+			ExtractedBodyResponse<String> extract2 = sender.GET("/deflate").extract(String.class);
+			System.out.println(extract2.getBody());
+
+			ExtractedBodyResponse<HttpbinResponse> extract = sender.PUT("/put").param("queryp1", "qv1")
+					.param("matrixp1", "mv1").body("{ x : 'y' }", "application/json").extract(HttpbinResponse.class);
 			System.out.println(extract.getBody().getOrigin());
 		} catch (IOException iox) {
 			iox.printStackTrace();
 		}
+		sender.close();
+
+		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
+		sender = config.buildSender();
+		try {
+			ExtractedBodyResponse<String> extract = sender.GET("/digest-auth/auth/myusername/mypassword").extract(
+					String.class);
+			System.out.println(extract.getBody());
+		} catch (IOException iox) {
+			iox.printStackTrace();
+		}
+		sender.close();
 	}
 
 	static class HttpbinResponse implements Serializable {

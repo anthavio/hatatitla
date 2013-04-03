@@ -141,6 +141,9 @@ public class HttpHeaderUtil {
 	}
 
 	public static Charset getCharset(String contentType, Charset defaultCharset) {
+		if (Cutils.isEmpty(contentType)) {
+			return defaultCharset;
+		}
 		int idxCharset = contentType.indexOf("charset=");
 		if (idxCharset != -1) {
 			return Charset.forName(contentType.substring(idxCharset + 8));
@@ -222,6 +225,9 @@ public class HttpHeaderUtil {
 	public static String readAsString(SenderResponse response) throws IOException {
 		if (response instanceof CachedResponse) {
 			return ((CachedResponse) response).getAsString();
+		}
+		if (response.getStream() == null) {
+			return null; //304 NOT MODIFIED
 		}
 
 		int blength = getBufferLength(response);

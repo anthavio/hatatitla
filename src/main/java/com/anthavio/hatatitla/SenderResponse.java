@@ -1,11 +1,14 @@
 package com.anthavio.hatatitla;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
 import com.anthavio.hatatitla.HttpSender.Multival;
 
@@ -26,10 +29,18 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	private transient InputStream stream;
 
-	public SenderResponse(int code, String message, Multival headers, InputStream stream) {
+	public SenderResponse(int code, String message, Multival headers, InputStream stream) throws IOException {
 		this.httpStatusCode = code;
 		this.httpStatusMessage = message;
 		this.headers = headers;
+		String responseEncoding = headers.getFirst("Content-Encoding");
+		if (stream != null && responseEncoding != null) {
+			if (responseEncoding.indexOf("gzip") != -1) {
+				stream = new GZIPInputStream(stream);
+			} else if (responseEncoding.indexOf("deflate") != -1) {
+				stream = new InflaterInputStream(stream);
+			}
+		}
 		this.stream = stream; //null for 304 Not Modified
 	}
 

@@ -14,16 +14,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.anthavio.hatatitla.GetRequest;
-import com.anthavio.hatatitla.HttpClient3Config;
-import com.anthavio.hatatitla.HttpClient3Sender;
-import com.anthavio.hatatitla.HttpClient4Config;
-import com.anthavio.hatatitla.HttpClient4Sender;
-import com.anthavio.hatatitla.HttpSender;
-import com.anthavio.hatatitla.HttpSenderConfig;
-import com.anthavio.hatatitla.JavaHttpSender;
-import com.anthavio.hatatitla.SenderRequest;
-import com.anthavio.hatatitla.SenderResponse;
 import com.anthavio.hatatitla.async.ExecutorServiceBuilder;
 
 /**
@@ -152,13 +142,13 @@ public class TimeoutsTest {
 		}
 	}
 
-	private JavaHttpSender newSimple(String url) {
-		HttpSenderConfig config = new HttpSenderConfig(url);
+	private URLHttpSender newSimple(String url) {
+		URLSenderConfig config = new URLSenderConfig(url);
 		config.setConnectTimeout(1100);
 		config.setReadTimeout(1300);
 		System.setProperty("http.keepAlive", "true");
 		System.setProperty("http.maxConnections", "1");
-		JavaHttpSender sender = new JavaHttpSender(config);
+		URLHttpSender sender = new URLHttpSender(config);
 		sender.setExecutor(executor);
 		return sender;
 	}

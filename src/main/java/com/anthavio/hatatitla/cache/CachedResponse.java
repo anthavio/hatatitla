@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import com.anthavio.hatatitla.Cutils;
 import com.anthavio.hatatitla.HttpHeaderUtil;
+import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.SenderRequest;
 import com.anthavio.hatatitla.SenderResponse;
-import com.anthavio.hatatitla.HttpSender.Multival;
 
 /**
  * 
@@ -55,7 +55,7 @@ public class CachedResponse extends SenderResponse implements Serializable {
 	}
 
 	//for testing purposes only - remove later
-	public CachedResponse(int code, String message, Multival headers, String data) {
+	public CachedResponse(int code, String message, Multival headers, String data) throws IOException {
 		super(code, message, headers, DUMMY_STREAM);
 		this.contentString = data;
 	}

@@ -3,7 +3,6 @@ package com.anthavio.hatatitla;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class HttpSenderConfig {
+public abstract class HttpSenderConfig {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -35,7 +34,7 @@ public class HttpSenderConfig {
 
 	private int readTimeout = 20 * 1000; //in millis
 
-	private ExecutorService executorService;
+	//private ExecutorService executorService;
 
 	public HttpSenderConfig(String urlString) {
 		if (Cutils.isBlank(urlString)) {
@@ -68,9 +67,7 @@ public class HttpSenderConfig {
 		this.hostUrl = url;
 	}
 
-	public HttpSender buildSender() {
-		return new JavaHttpSender(this);
-	}
+	public abstract HttpSender buildSender();
 
 	public String getEncoding() {
 		return this.encoding;
@@ -118,14 +115,15 @@ public class HttpSenderConfig {
 		this.authentication = authentication;
 	}
 
-	public ExecutorService getExecutorService() {
-		return this.executorService;
-	}
+	/*
+		public ExecutorService getExecutorService() {
+			return this.executorService;
+		}
 
-	public void setExecutorService(ExecutorService executorService) {
-		this.executorService = executorService;
-	}
-
+		public void setExecutorService(ExecutorService executorService) {
+			this.executorService = executorService;
+		}
+	*/
 	public boolean getCompress() {
 		return compress;
 	}

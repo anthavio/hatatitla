@@ -21,7 +21,7 @@ import com.anthavio.hatatitla.HttpClient3Response;
 import com.anthavio.hatatitla.HttpClient3Sender;
 import com.anthavio.hatatitla.HttpClient4Response;
 import com.anthavio.hatatitla.HttpClient4Sender;
-import com.anthavio.hatatitla.JavaHttpSender;
+import com.anthavio.hatatitla.URLHttpSender;
 import com.anthavio.hatatitla.PostRequest;
 import com.anthavio.hatatitla.SenderRequest;
 import com.anthavio.hatatitla.SenderResponse;
@@ -48,7 +48,7 @@ public class ConnectionPoolingTest {
 	@Test
 	public void simple() throws IOException, Exception {
 		String url = "http://localhost:" + this.server.getHttpPort();
-		JavaHttpSender sender = new JavaHttpSender(url);
+		URLHttpSender sender = new URLHttpSender(url);
 		SenderRequest request = new GetRequest("/");
 		//connection persistence is controlled with system properties
 		System.setProperty("http.keepAlive", "true");

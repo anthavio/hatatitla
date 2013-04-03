@@ -9,17 +9,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.anthavio.hatatitla.Authentication;
-import com.anthavio.hatatitla.GetRequest;
-import com.anthavio.hatatitla.HttpClient3Config;
-import com.anthavio.hatatitla.HttpClient3Sender;
-import com.anthavio.hatatitla.HttpClient4Config;
-import com.anthavio.hatatitla.HttpClient4Sender;
-import com.anthavio.hatatitla.HttpSenderConfig;
-import com.anthavio.hatatitla.JavaHttpSender;
-import com.anthavio.hatatitla.SenderRequest;
-import com.anthavio.hatatitla.SenderResponse;
-
 /**
  * 
  * @author martin.vanek
@@ -45,7 +34,7 @@ public class AuthenticationTest {
 		System.setProperty("http.keepAlive", "false");
 
 		String url = "http://localhost:" + this.server.getHttpPort();
-		JavaHttpSender sender = new JavaHttpSender(url);
+		URLHttpSender sender = new URLHttpSender(url);
 
 		SenderResponse response = sender.GET("/").param("x", "y").execute();
 		response.close();
@@ -63,18 +52,18 @@ public class AuthenticationTest {
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
 		//NOW setup BASIC authentication
-		HttpSenderConfig config = new HttpSenderConfig(url);
+		URLSenderConfig config = new URLSenderConfig(url);
 		//authentication.setPreemptive(false);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		config.setAuthentication(basic);
 
-		sender = new JavaHttpSender(config);
+		sender = new URLHttpSender(config);
 		response = sender.GET("/basic").execute();
 		response.close();
 		//can access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 
-		sender = new JavaHttpSender(config);
+		sender = new URLHttpSender(config);
 		response = sender.GET("/digest").execute();
 		response.close();
 		//can't access DIGEST protected
@@ -84,13 +73,13 @@ public class AuthenticationTest {
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
 
-		sender = new JavaHttpSender(config);
+		sender = new URLHttpSender(config);
 		response = sender.GET("/basic").execute();
 		response.close();
 		//can't access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		sender = new JavaHttpSender(config);
+		sender = new URLHttpSender(config);
 		response = sender.GET("/digest").execute();
 		response.close();
 		//can access DIGEST protected

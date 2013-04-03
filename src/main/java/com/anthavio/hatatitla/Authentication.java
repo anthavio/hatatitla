@@ -27,6 +27,14 @@ public class Authentication {
 
 	}
 
+	public static Authentication BASIC(String username, String password) {
+		return new Authentication(Scheme.BASIC, username, password);
+	}
+
+	public static Authentication DIGEST(String username, String password) {
+		return new Authentication(Scheme.DIGEST, username, password);
+	}
+
 	public Authentication(Scheme scheme, String username, String password) {
 		this(scheme, username, password, null, scheme == Scheme.BASIC); //only BASIC can be preemptive
 	}

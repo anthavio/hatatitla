@@ -79,52 +79,6 @@ public class HttpClient3Sender extends HttpSender {
 
 	@Override
 	public HttpClient3Response doExecute(SenderRequest request, String path, String query) throws IOException {
-		/*
-		String path = buildPath(config.getUrl().getPath(), request.getUrlPath());
-
-		Multival parameters = request.getParameters();
-		List<NameValuePair> nvQuParams = null;
-		StringBuilder sbMxParams = null;
-		if (parameters != null && parameters.size() != 0) {
-			nvQuParams = new LinkedList<NameValuePair>();
-			sbMxParams = new StringBuilder();
-			for (String name : parameters) {
-				if (name.charAt(0) == ';') {
-					//matrix parameter
-					List<String> values = parameters.get(name);
-					for (String value : values) {
-						sbMxParams.append(name);
-						sbMxParams.append('=');
-						sbMxParams.append(URLEncoder.encode(value, config.getEncoding()));
-					}
-				} else {
-					//query parameter
-					List<String> values = parameters.get(name);
-					for (String value : values) {
-						nvQuParams.add(new NameValuePair(name, value));
-					}
-				}
-			}
-		}
-
-		//append matrix parameters if any
-		if (sbMxParams != null && sbMxParams.length() != 0) {
-			path = path + sbMxParams;
-		}
-
-		//append query parameters if there are any and if apropriate
-		if (nvQuParams != null && nvQuParams.size() != 0) {
-			if (!request.getMethod().canHaveBody()) {
-				// GET, DELETE
-				NameValuePair[] nvArray = nvQuParams.toArray(new NameValuePair[nvQuParams.size()]);
-				path = path + "?" + EncodingUtil.formUrlEncode(nvArray, config.getEncoding());
-			} else if (request.hasBody()) {
-				// POST, PUT with body
-				NameValuePair[] nvArray = nvQuParams.toArray(new NameValuePair[nvQuParams.size()]);
-				path = path + "?" + EncodingUtil.formUrlEncode(nvArray, config.getEncoding());
-			}
-		}
-		*/
 
 		HttpMethodBase httpMethod;
 		switch (request.getMethod()) {
@@ -200,8 +154,11 @@ public class HttpClient3Sender extends HttpSender {
 			outHeaders.add(header.getName(), header.getValue());
 		}
 		StatusLine statusLine = httpMethod.getStatusLine();
+
+		InputStream responseStream = httpMethod.getResponseBodyAsStream();
+
 		HttpClient3Response response = new HttpClient3Response(statusCode, statusLine.getReasonPhrase(), outHeaders,
-				httpMethod.getResponseBodyAsStream(), httpMethod);
+				responseStream, httpMethod);
 		return response;
 	}
 

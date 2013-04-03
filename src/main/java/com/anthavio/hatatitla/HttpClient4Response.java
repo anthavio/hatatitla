@@ -1,5 +1,6 @@
 package com.anthavio.hatatitla;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.http.HttpResponse;
@@ -14,12 +15,15 @@ import com.anthavio.hatatitla.HttpSender.Multival;
  */
 public class HttpClient4Response extends SenderResponse {
 
+	private static final long serialVersionUID = 1L;
+
 	private HttpResponse httpResponse;
 
-	public HttpClient4Response(int code, String message, Multival headers, InputStream stream, HttpResponse httpResponse) {
+	public HttpClient4Response(int code, String message, Multival headers, InputStream stream, HttpResponse httpResponse)
+			throws IOException {
 		super(code, message, headers, stream);
 		if (httpResponse == null) {
-			throw new IllegalArgumentException("Null method");
+			throw new IllegalArgumentException("Null HttpResponse");
 		}
 		this.httpResponse = httpResponse;
 	}

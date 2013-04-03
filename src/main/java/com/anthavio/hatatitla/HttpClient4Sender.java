@@ -99,48 +99,7 @@ public class HttpClient4Sender extends HttpSender {
 	}
 
 	@Override
-	public HttpClient4Response doExecute(SenderRequest request, String path, String query) throws IOException {
-		/*
-		String path = buildPath(config.getUrl().getPath(), request.getUrlPath());
-
-		Multival parameters = request.getParameters();
-		List<NameValuePair> nvQuParams = null;
-		StringBuilder sbMxParams = null;
-		if (parameters != null && parameters.size() != 0) {
-			nvQuParams = new LinkedList<NameValuePair>();
-			sbMxParams = new StringBuilder();
-			for (String name : parameters) {
-				if (name.charAt(0) == ';') { //matrix parameter
-					List<String> values = parameters.get(name);
-					for (String value : values) {
-						sbMxParams.append(URLEncoder.encode(name, config.getEncoding()));
-						sbMxParams.append('=');
-						sbMxParams.append(URLEncoder.encode(value, config.getEncoding()));
-					}
-				} else { //query parameter
-					List<String> values = parameters.get(name);
-					for (String value : values) {
-						nvQuParams.add(new BasicNameValuePair(name, value));
-					}
-				}
-			}
-		}
-
-		//append matrix parameters if any
-		if (sbMxParams != null && sbMxParams.length() != 0) {
-			path = path + sbMxParams;
-		}
-
-		//append query parameters if there are any and if apropriate
-		if (nvQuParams != null && nvQuParams.size() != 0) {
-			if (!request.getMethod().canHaveBody()) {
-				path = path + "?" + URLEncodedUtils.format(nvQuParams, config.getCharset());
-			} else if (request.hasBody()) {
-				// POST, PUT with body
-				path = path + "?" + URLEncodedUtils.format(nvQuParams, config.getCharset());
-			}
-		}
-		*/
+	protected HttpClient4Response doExecute(SenderRequest request, String path, String query) throws IOException {
 
 		HttpRequestBase httpRequest;
 		switch (request.getMethod()) {
@@ -212,12 +171,14 @@ public class HttpClient4Sender extends HttpSender {
 		for (Header header : responseHeaders) {
 			outHeaders.add(header.getName(), header.getValue());
 		}
-		HttpEntity entity = httpResponse.getEntity();
+
 		StatusLine statusLine = httpResponse.getStatusLine();
-		//Entity is null - 304 Not Modified
-		InputStream stream = entity != null ? entity.getContent() : null;
+
+		HttpEntity entity = httpResponse.getEntity();
+		//Entity is null for http 300 redirects
+		InputStream responseStream = entity != null ? entity.getContent() : null;
 		HttpClient4Response response = new HttpClient4Response(statusLine.getStatusCode(), statusLine.getReasonPhrase(),
-				outHeaders, stream, httpResponse);
+				outHeaders, responseStream, httpResponse);
 		return response;
 	}
 

@@ -29,7 +29,7 @@ import com.anthavio.hatatitla.inout.RequestBodyMarshaller;
  * @author martin.vanek
  *
  */
-public class JavaHttpSender extends HttpSender {
+public class URLHttpSender extends HttpSender {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -37,11 +37,11 @@ public class JavaHttpSender extends HttpSender {
 
 	private String basicAuthHeader;
 
-	public JavaHttpSender(String baseUrl) {
-		this(new HttpSenderConfig(baseUrl));
+	public URLHttpSender(String baseUrl) {
+		this(new URLSenderConfig(baseUrl));
 	}
 
-	public JavaHttpSender(HttpSenderConfig config) {
+	public URLHttpSender(URLSenderConfig config) {
 		super(config);
 		this.config = config;
 
@@ -212,15 +212,14 @@ public class JavaHttpSender extends HttpSender {
 		}
 		Multival responseHeaders = new Multival(headerFields);
 
-		InputStream inputStream = null;
+		InputStream responseStream = null;
 		try {
-			inputStream = connection.getInputStream();
+			responseStream = connection.getInputStream();
 		} catch (IOException iox) {
-			return new JavaHttpResponse(responseCode, responseMessage, responseHeaders, connection.getErrorStream(),
+			return new URLHttpResponse(responseCode, responseMessage, responseHeaders, connection.getErrorStream(),
 					connection);
 		}
-
-		return new JavaHttpResponse(responseCode, responseMessage, responseHeaders, inputStream, connection);
+		return new URLHttpResponse(responseCode, responseMessage, responseHeaders, responseStream, connection);
 	}
 
 	private void writeStream(HttpURLConnection connection, InputStream input) throws IOException {
