@@ -48,7 +48,7 @@ Simplest example ever - JSON string from github API
 		System.out.println(extracted1.getBody());
         
 		//Traditional (dependency injection friendly)
-		GetRequest get = new GetRequest("/users/anthavio");
+		GetRequest get = new GetRequest("/users");
 		get.setParam("since", 666);
 		//Sender must be used to execute/extract
 		ExtractedBodyResponse<String> extracted2 = sender.extract(get, String.class);
