@@ -138,9 +138,10 @@ public abstract class HttpSender implements Closeable {
 	protected abstract SenderResponse doExecute(SenderRequest request, String path, String query) throws IOException;
 
 	/**
-	 * Response returning version. Caller must close Response
+	 * Execute Request and return raw unprocessed Response.
+	 * Response is lefty open and caller is responsibe for closing.
 	 */
-	public SenderResponse execute(SenderRequest request) throws IOException {
+	public SenderResponse execute(SenderRequest request) throws SenderException {
 		request.setSender(this);
 		String[] pathquery = getPathAndQuery(request);
 		String path = pathquery[0];
@@ -149,14 +150,19 @@ public abstract class HttpSender implements Closeable {
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(request.getMethod() + " " + path);
 		}
-
-		return doExecute(request, path, query);
+		try {
+			return doExecute(request, path, query);
+		} catch (IOException iox) {
+			throw new SenderException(iox);
+		}
 	}
 
 	/**
-	 * Response handler version. Response will be close automaticaly
+	 * Execute Request and use ResponseHandler parameter to process Response.
+	 * Response is closed automaticaly.
+	 * 
 	 */
-	public void execute(SenderRequest request, ResponseHandler handler) throws IOException {
+	public void execute(SenderRequest request, ResponseHandler handler) throws SenderException {
 		if (handler == null) {
 			throw new IllegalArgumentException("null handler");
 		}
@@ -174,6 +180,9 @@ public abstract class HttpSender implements Closeable {
 			}
 
 			handler.onResponse(response);
+
+		} catch (IOException iox) {
+			throw new SenderException(iox);
 		} finally {
 			Cutils.close(response);
 		}
@@ -184,7 +193,7 @@ public abstract class HttpSender implements Closeable {
 	 * ResponseExtractor is created and used to extract the specified resultType
 	 */
 	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType)
-			throws IOException {
+			throws SenderException {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
@@ -200,17 +209,19 @@ public abstract class HttpSender implements Closeable {
 	/**
 	 * Mainly for CachingSender and CachingExtractor
 	 */
-	public <T extends Serializable> T extract(SenderResponse response, Class<T> resultType) throws IOException {
-		if (response.getHttpStatusCode() >= 300) {
-			if (errorResponseHandler != null) {
-				errorResponseHandler.onErrorResponse(response);
-				return null;
-			} else {
-				throw new SenderHttpStatusException(response);
-			}
-		}
+	public <T extends Serializable> T extract(SenderResponse response, Class<T> resultType) throws SenderException {
 		try {
+			if (response.getHttpStatusCode() >= 300) {
+				if (errorResponseHandler != null) {
+					errorResponseHandler.onErrorResponse(response);
+					return null;
+				} else {
+					throw new SenderHttpStatusException(response);
+				}
+			}
 			return extractors.extract(response, resultType);
+		} catch (IOException iox) {
+			throw new SenderException(iox);
 		} finally {
 			Cutils.close(response);
 		}
@@ -220,7 +231,7 @@ public abstract class HttpSender implements Closeable {
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 */
 	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request,
-			ResponseBodyExtractor<T> extractor) throws IOException {
+			ResponseBodyExtractor<T> extractor) throws SenderException {
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor is null");
 		}
@@ -237,6 +248,8 @@ public abstract class HttpSender implements Closeable {
 			}
 			T extracted = extractor.extract(response);
 			return new ExtractedBodyResponse<T>(response, extracted);
+		} catch (IOException iox) {
+			throw new SenderException(iox);
 		} finally {
 			Cutils.close(response);
 		}

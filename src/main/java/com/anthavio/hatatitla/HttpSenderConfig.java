@@ -26,15 +26,13 @@ public abstract class HttpSenderConfig {
 
 	private boolean followRedirects = false;
 
-	private boolean compress = false;
+	private boolean gzipRequest = false;
 
 	private String defaultAccept; //default Accept header
 
 	private int connectTimeout = 5 * 1000; //in millis
 
 	private int readTimeout = 20 * 1000; //in millis
-
-	//private ExecutorService executorService;
 
 	public HttpSenderConfig(String urlString) {
 		if (Cutils.isBlank(urlString)) {
@@ -115,21 +113,12 @@ public abstract class HttpSenderConfig {
 		this.authentication = authentication;
 	}
 
-	/*
-		public ExecutorService getExecutorService() {
-			return this.executorService;
-		}
-
-		public void setExecutorService(ExecutorService executorService) {
-			this.executorService = executorService;
-		}
-	*/
-	public boolean getCompress() {
-		return compress;
+	public boolean getGzipRequest() {
+		return gzipRequest;
 	}
 
-	public void setCompress(boolean compress) {
-		this.compress = compress;
+	public void setGzipRequest(boolean gzipRequest) {
+		this.gzipRequest = gzipRequest;
 	}
 
 	public String getDefaultAccept() {

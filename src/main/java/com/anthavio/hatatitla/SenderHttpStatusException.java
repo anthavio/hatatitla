@@ -8,7 +8,7 @@ import java.io.IOException;
  * @author martin.vanek
  *
  */
-public class SenderHttpStatusException extends IOException {
+public class SenderHttpStatusException extends SenderException {
 
 	private static final long serialVersionUID = 1L;
 

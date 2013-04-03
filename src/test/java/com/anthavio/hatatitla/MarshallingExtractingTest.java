@@ -43,6 +43,15 @@ public class MarshallingExtractingTest {
 		this.server.stop();
 	}
 
+	public void devel() {
+		HttpClient3Sender sender = new HttpClient3Config("localhost:" + 3333).buildSender();
+		try {
+			sender.GET("/").extract(String.class);
+		} catch (SenderException sex) {
+			sex.printStackTrace();
+		}
+	}
+
 	@Test
 	public void responseHandler() throws IOException {
 		HttpClient4Sender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).buildSender();
@@ -156,7 +165,7 @@ public class MarshallingExtractingTest {
 		//charset is added from configuration
 		assertThat(request.getFirstHeader("Content-Type").indexOf("charset=ISO-8859-2")).isNotEqualTo(-1);
 		//System.out.println(request.getParameters().getFirst("pmsg"));
-		ExtractedBodyResponse<TestResponse> extract = request.extract(TestResponse.class);
+		ExtractedBodyResponse<TestResponse> extract = sender.extract(request, TestResponse.class);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(201);
 		assertThat(extract.getBody().getRequest().getMessage()).isEqualTo(message); //č character must be preserved!
 		List<NameValue> parameters = extract.getBody().getRequest().getParameters();

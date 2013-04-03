@@ -6,7 +6,6 @@ import java.io.Serializable;
 
 import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.SenderBodyRequest.FakeStream;
-import com.anthavio.hatatitla.SenderBodyRequest.FakeStream.FakeType;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.hatatitla.inout.ResponseHandler;
@@ -80,41 +79,43 @@ public class SenderRequestBuilders {
 
 		protected abstract X getX(); //Generic trick
 
+		/**
+		 * End of the fluent builder chain.
+		 */
 		public abstract SenderRequest build();
 
 		/**
-		 * Execute request and return response
-		 * Response is open
+		 * Execute Request and return raw unprocessed Response.
+		 * Response is lefty open and caller is responsibe for closing.
 		 */
-		public SenderResponse execute() throws IOException {
+		public SenderResponse execute() {
 			SenderRequest request = build();
 			return httpSender.execute(request);
 		}
 
 		/**
-		 * Execute request and use ResponseHandler parameter to process response
-		 * Response is closed automaticaly
+		 * Execute Request and use ResponseHandler parameter to process Response.
+		 * Response is closed automaticaly.
 		 */
-		public void execute(ResponseHandler handler) throws IOException {
+		public void execute(ResponseHandler handler) {
 			SenderRequest request = build();
 			httpSender.execute(request, handler);
 		}
 
 		/**
-		 * Execute request and extract response
-		 * Response is closed automaticaly
+		 * Execute Request and extract Response.
+		 * Response is closed automaticaly.
 		 */
-		public <T extends Serializable> ExtractedBodyResponse<T> extract(Class<T> clazz) throws IOException {
+		public <T extends Serializable> ExtractedBodyResponse<T> extract(Class<T> clazz) {
 			SenderRequest request = build();
 			return httpSender.extract(request, clazz);
 		}
 
 		/**
-		 * Execute request and extract response
-		 * Response is closed automaticaly
+		 * Execute request and extract response.
+		 * Response is closed automaticaly.
 		 */
-		public <T extends Serializable> ExtractedBodyResponse<T> extract(ResponseBodyExtractor<T> extractor)
-				throws IOException {
+		public <T extends Serializable> ExtractedBodyResponse<T> extract(ResponseBodyExtractor<T> extractor) {
 			SenderRequest request = build();
 			return httpSender.extract(request, extractor);
 		}
@@ -137,13 +138,11 @@ public class SenderRequestBuilders {
 
 		protected InputStream bodyStream;
 
-		protected boolean streaming;
-
 		/**
 		 * Set String as request body (entity)
 		 */
 		public SenderRequestBuilder<X> body(String body, String contentType) {
-			this.bodyStream = new FakeStream(FakeType.STRING, body);
+			this.bodyStream = new FakeStream(body);
 			this.contentType = contentType;
 			return this;
 		}
@@ -153,18 +152,19 @@ public class SenderRequestBuilders {
 		 * Object will be marshalled/serialized to String
 		 */
 		public X body(Object body, String contentType) throws IOException {
-			body(body, contentType, false);
+			body(body, contentType, true);
 			return getX();
 		}
 
 		/**
 		 * Set Object as request body (entity)
 		 * Object will be marshalled/serialized to String
+		 * 
+		 * @param streaming write directly into output stream or create interim String / byte[]
 		 */
 		public X body(Object body, String contentType, boolean streaming) throws IOException {
-			this.bodyStream = new FakeStream(FakeType.OBJECT, body, streaming);
+			this.bodyStream = new FakeStream(body, streaming);
 			this.contentType = contentType;
-			this.streaming = streaming;
 			return getX();
 		}
 

@@ -1,6 +1,5 @@
 package com.anthavio.hatatitla;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,8 +12,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.anthavio.hatatitla.HttpSender.Multival;
-import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
-import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
  * 
@@ -104,29 +101,6 @@ public abstract class SenderRequest {
 
 	public SenderRequest(Method method, String urlPath, Multival parameters) {
 		this(null, method, urlPath, parameters, null);
-	}
-
-	//we need Serializable for caching
-	public <T extends Serializable> ExtractedBodyResponse<T> extract(ResponseBodyExtractor<T> extractor)
-			throws IOException {
-		if (sender == null) {
-			throw new IllegalStateException("Request is not attached to HttpSender. Use HttpSender instance to execute it");
-		}
-		return sender.extract(this, extractor);
-	}
-
-	public <T extends Serializable> ExtractedBodyResponse<T> extract(Class<T> resultType) throws IOException {
-		if (sender == null) {
-			throw new IllegalStateException("Request is not attached to HttpSender. Use HttpSender instance to execute it");
-		}
-		return sender.extract(this, resultType);
-	}
-
-	public SenderResponse execute() throws IOException {
-		if (sender == null) {
-			throw new IllegalStateException("Request is not attached to HttpSender. Use HttpSender instance to execute it");
-		}
-		return sender.execute(this);
 	}
 
 	/**

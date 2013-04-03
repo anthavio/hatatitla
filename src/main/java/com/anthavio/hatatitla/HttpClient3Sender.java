@@ -120,7 +120,7 @@ public class HttpClient3Sender extends HttpSender {
 		//cannot be set globally in configuration
 		httpMethod.setFollowRedirects(config.getFollowRedirects());
 
-		if (config.getCompress()) {
+		if (config.getGzipRequest()) {
 			httpMethod.addRequestHeader("Accept-Encoding", "gzip, deflate");
 		}
 
@@ -163,37 +163,33 @@ public class HttpClient3Sender extends HttpSender {
 	}
 
 	private RequestEntity buildEntity(SenderRequest request, String query) throws IOException {
+		String contentType = request.getFirstHeader("Content-Type");
+		Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
+		String mimeType = (String) type[0];
+		Charset charset = (Charset) type[1];
+
 		RequestEntity entity;
 		if (request.hasBody()) {
 			InputStream stream = ((SenderBodyRequest) request).getBodyStream();
 			if (stream instanceof FakeStream) {
 				FakeStream fake = (FakeStream) stream;
-				switch (fake.getType()) {
-				case OBJECT:
-					String contentType = request.getFirstHeader("Content-Type");
-					Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
-					String mimeType = (String) type[0];
-					Charset charset = (Charset) type[1];
+				if (fake.getValue() instanceof String) {
+					entity = new StringRequestEntity((String) fake.getValue(), null, charset.name());
+				} else {
 					RequestBodyMarshaller marshaller = getRequestMarshaller(mimeType);
 					if (marshaller == null) {
-						throw new IllegalArgumentException("Request body marshaller not found for ");
+						throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
 					}
 					entity = new ObjectEntity(fake.getValue(), charset, marshaller, fake.isStreaming());
-					break;
-				case STRING:
-					entity = new StringRequestEntity((String) fake.getValue(), null, config.getEncoding());
-					break;
-				default:
-					throw new IllegalArgumentException("Unsupported FakeType " + fake.getType());
 				}
-			} else {
+			} else {//plain InputStream
 				entity = new InputStreamRequestEntity(stream);
 			}
 		} else if (query != null && query.length() != 0) {
 			entity = new ByteArrayRequestEntity(EncodingUtil.getBytes(query, config.getEncoding()),
 					PostMethod.FORM_URL_ENCODED_CONTENT_TYPE);
 		} else {
-			logger.debug("POST request does not have any parameters or body");
+			logger.debug("Body request does not have any parameters or body");
 			entity = new StringRequestEntity("", null, config.getEncoding());
 			//throw new IllegalArgumentException("POST request does not have any parameters or body");
 		}
@@ -220,6 +216,11 @@ public class HttpClient3Sender extends HttpSender {
 				SocketTimeoutException stx = new SocketTimeoutException("Read timeout " + timeout + " ms");
 				stx.setStackTrace(x.getStackTrace());
 				throw stx;
+			} else if (x instanceof ConnectException) {
+				//enhance message with url
+				ConnectException ctx = new ConnectException("Connection refused " + config.getHostUrl());
+				ctx.setStackTrace(x.getStackTrace());
+				throw ctx;
 			} else if (x instanceof IOException) {
 				throw (IOException) x;//just rethrow IO
 			} else {

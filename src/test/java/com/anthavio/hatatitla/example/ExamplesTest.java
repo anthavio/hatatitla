@@ -1,11 +1,10 @@
 package com.anthavio.hatatitla.example;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
 import com.anthavio.hatatitla.Authentication;
-import com.anthavio.hatatitla.HttpClient4Config;
+import com.anthavio.hatatitla.GetRequest;
 import com.anthavio.hatatitla.HttpClient4Sender;
 import com.anthavio.hatatitla.URLHttpSender;
 import com.anthavio.hatatitla.URLSenderConfig;
@@ -20,46 +19,46 @@ import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 public class ExamplesTest {
 
 	public static void main(String[] args) {
-		httpbin();
+		github();
 	}
 
 	private static void github() {
-		HttpClient4Config config = new HttpClient4Config("https://api.github.com");
 
-		HttpClient4Sender sender = config.buildSender();
-		try {
-			ExtractedBodyResponse<String> extracted = sender.GET("/users/anthavio").extract(String.class);
-			extracted.getResponse().getHttpStatusCode();
-			System.out.println(extracted.getBody());
-		} catch (IOException iox) {
-			iox.printStackTrace();
-		}
+		//Create sender with utf-8 encoding, default timeouts and connection pool
+		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
+		//Fluent builder way of request construction
+		ExtractedBodyResponse<String> extracted = sender.GET("/users/anthavio").extract(String.class);
+		System.out.println(extracted.getBody());
+		//Traditional way (dependency injection friendly)
+
+		//ExtractedBodyResponse<String> extracted = sender.GET("/users").param("since", 666).extract(String.class);
+		System.out.println(extracted.getBody());
+
+		//Request can be created independently on sender
+		GetRequest get = new GetRequest("/users/anthavio");
+		get.setParam("since", 666);
+		//But then, Sender must be used to execute/extract it
+		//ExtractedBodyResponse<String> extracted2 = sender.extract(get, String.class);
+		//System.out.println(extracted2.getBody());
+
 	}
 
 	public static void httpbin() {
 		URLSenderConfig config = new URLSenderConfig("http://httpbin.org");
 		URLHttpSender sender = config.buildSender();
-		try {
-			ExtractedBodyResponse<String> extract2 = sender.GET("/deflate").extract(String.class);
-			System.out.println(extract2.getBody());
+		ExtractedBodyResponse<String> extract2 = sender.GET("/gzip").extract(String.class);
+		System.out.println(extract2.getBody());
 
-			ExtractedBodyResponse<HttpbinResponse> extract = sender.PUT("/put").param("queryp1", "qv1")
-					.param("matrixp1", "mv1").body("{ x : 'y' }", "application/json").extract(HttpbinResponse.class);
-			System.out.println(extract.getBody().getOrigin());
-		} catch (IOException iox) {
-			iox.printStackTrace();
-		}
+		ExtractedBodyResponse<HttpbinResponse> extract = sender.PUT("/put").param("queryp1", "qv1")
+				.param("matrixp1", "mv1").body("{ x : 'y' }", "application/json").extract(HttpbinResponse.class);
+		System.out.println(extract.getBody().getOrigin());
 		sender.close();
 
 		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
 		sender = config.buildSender();
-		try {
-			ExtractedBodyResponse<String> extract = sender.GET("/digest-auth/auth/myusername/mypassword").extract(
-					String.class);
-			System.out.println(extract.getBody());
-		} catch (IOException iox) {
-			iox.printStackTrace();
-		}
+		ExtractedBodyResponse<String> extract3 = sender.GET("/digest-auth/auth/myusername/mypassword")
+				.extract(String.class);
+		System.out.println(extract3.getBody());
 		sender.close();
 	}
 

@@ -23,6 +23,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
+import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -139,8 +140,9 @@ public class HttpClient4Sender extends HttpSender {
 			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeout());
 		}
 
-		if (config.getCompress()) {
+		if (config.getGzipRequest()) {
 			httpRequest.addHeader("Accept-Encoding", "gzip, deflate");
+			//httpRequest.addHeader("Content-Encoding", "gzip");
 		}
 
 		if (request.hasBody()) {
@@ -183,37 +185,33 @@ public class HttpClient4Sender extends HttpSender {
 	}
 
 	private HttpEntity buildEntity(SenderRequest request, String query) throws IOException {
+		String contentType = request.getFirstHeader("Content-Type");
+		Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
+		String mimeType = (String) type[0];
+		Charset charset = (Charset) type[1];
+
 		HttpEntity entity;
 		if (request.hasBody()) {
 			InputStream stream = ((SenderBodyRequest) request).getBodyStream();
 			if (stream instanceof FakeStream) {
 				FakeStream fake = (FakeStream) stream;
-				switch (fake.getType()) {
-				case OBJECT:
-					String contentType = request.getFirstHeader("Content-Type");
-					Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
-					String mimeType = (String) type[0];
-					Charset charset = (Charset) type[1];
+				if (fake.getValue() instanceof String) {
+					entity = new StringEntity((String) fake.getValue(), charset);
+				} else {
 					RequestBodyMarshaller marshaller = getRequestMarshaller(mimeType);
 					if (marshaller == null) {
-						throw new IllegalArgumentException("Request body marshaller not found for ");
+						throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
 					}
 					entity = new ObjectHttpEntity(fake.getValue(), charset, marshaller, fake.isStreaming());
-					break;
-				case STRING:
-					entity = new StringEntity((String) fake.getValue(), config.getCharset());
-					break;
-				default:
-					throw new IllegalArgumentException("Unsupported FakeType " + fake.getType());
 				}
-			} else {
+			} else { //plain InputStream
 				entity = new InputStreamEntity(stream, -1);
 			}
 		} else if (query != null && query.length() != 0) {
-			entity = new StringEntity(query, ContentType.create(URLEncodedUtils.CONTENT_TYPE, config.getCharset()));
+			entity = new StringEntity(query, ContentType.create(URLEncodedUtils.CONTENT_TYPE, charset));
 		} else {
-			logger.debug("POST request does not have any parameters or body");
-			entity = new StringEntity("", ContentType.create(URLEncodedUtils.CONTENT_TYPE, config.getCharset()));
+			logger.debug("Body request does not have any parameters or body");
+			entity = new StringEntity("", ContentType.create(URLEncodedUtils.CONTENT_TYPE, charset));
 			//throw new IllegalArgumentException("POST request does not have any parameters or body");
 		}
 		return entity;
@@ -258,10 +256,11 @@ public class HttpClient4Sender extends HttpSender {
 				ConnectException ctx = new ConnectException("Connect timeout " + config.getConnectTimeout() + " ms");
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
-				//} else if (x instanceof HttpHostConnectException) { //connection refused
-				//	ConnectException ctx = new ConnectException(x.getMessage());
-				//	ctx.setStackTrace(x.getStackTrace());
-				//	throw ctx;
+			} else if (x instanceof HttpHostConnectException) {
+				//connection refused
+				ConnectException ctx = new ConnectException("Connection refused " + config.getHostUrl());
+				ctx.setStackTrace(x.getStackTrace());
+				throw ctx;
 			} else if (x instanceof SocketTimeoutException) {
 				int timeout = httpRequest.getParams().getIntParameter(CoreConnectionPNames.SO_TIMEOUT, config.getReadTimeout());
 				SocketTimeoutException stx = new SocketTimeoutException("Read timeout " + timeout + " ms");

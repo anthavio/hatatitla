@@ -103,7 +103,7 @@ public class URLHttpSender extends HttpSender {
 
 		connection.setInstanceFollowRedirects(config.getFollowRedirects());
 
-		if (config.getCompress()) {
+		if (config.getGzipRequest()) {
 			connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
 		}
 
@@ -153,33 +153,29 @@ public class URLHttpSender extends HttpSender {
 				logHeaders("Request", connection.getRequestProperties());
 			}
 
+			String contentType = request.getFirstHeader("Content-Type");
+			Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
+			String mimeType = (String) type[0];
+			Charset charset = (Charset) type[1];
 			if (request.hasBody()) {
 				InputStream stream = ((SenderBodyRequest) request).getBodyStream();
 				if (stream instanceof FakeStream) {
 					FakeStream fake = (FakeStream) stream;
-					switch (fake.getType()) {
-					case OBJECT:
-						String contentType = request.getFirstHeader("Content-Type");
-						Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
-						String mimeType = (String) type[0];
-						Charset charset = (Charset) type[1];
+
+					if (fake.getValue() instanceof String) {
+						String string = (String) fake.getValue();
+						byte[] dataBytes = string.getBytes(charset);
+						writeBytes(connection, dataBytes);
+					} else {
 						RequestBodyMarshaller marshaller = getRequestMarshaller(mimeType);
 						if (marshaller == null) {
-							throw new IllegalArgumentException("Request body marshaller not found for ");
+							throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
 						}
 						if (fake.isStreaming()) {
 							marshaller.write(fake.getValue(), connection.getOutputStream(), charset);
 						} else {
 							marshaller.write(fake.getValue(), connection.getOutputStream(), charset);
 						}
-						break;
-					case STRING:
-						String string = (String) fake.getValue();
-						byte[] dataBytes2 = string.getBytes(config.getCharset());
-						writeBytes(connection, dataBytes2);
-						break;
-					default:
-						throw new IllegalArgumentException("Unsupported FakeType " + fake.getType());
 					}
 				} else {
 					writeStream(connection, stream);
@@ -187,7 +183,7 @@ public class URLHttpSender extends HttpSender {
 
 			} else if (query != null && query.length() != 0) {
 				//POST/PUT without body but with parameters
-				byte[] dataBytes = query.getBytes(config.getCharset());
+				byte[] dataBytes = query.getBytes(charset);
 				writeBytes(connection, dataBytes);
 			}
 			break;
@@ -198,8 +194,8 @@ public class URLHttpSender extends HttpSender {
 		int responseCode;
 		try {
 			responseCode = connection.getResponseCode();
-		} catch (SocketTimeoutException stx) {
-			throw translateException(connection, stx);
+		} catch (Exception x) {
+			throw translateException(connection, x);
 		}
 
 		String responseMessage = connection.getResponseMessage();
@@ -266,8 +262,9 @@ public class URLHttpSender extends HttpSender {
 
 	private IOException translateException(HttpURLConnection connection, Exception exception) throws IOException {
 		if (exception instanceof SocketTimeoutException) {
+			//enhance message with timeout values
 			if (exception.getMessage().equals("connect timed out")) {
-				ConnectException cx = new ConnectException("Connect timeout " + config.getConnectTimeout() + " ms");
+				ConnectException cx = new ConnectException("Connect timeout " + connection.getConnectTimeout() + " ms");
 				cx.setStackTrace(exception.getStackTrace());
 				throw cx;
 			} else if (exception.getMessage().equals("Read timed out")) {
@@ -277,8 +274,11 @@ public class URLHttpSender extends HttpSender {
 			} else {
 				throw (SocketTimeoutException) exception;
 			}
-			//} else if(exception instanceof ConnectException) {
-			//java.net.ConnectException: Connection refused
+		} else if (exception instanceof ConnectException) {
+			//enhance message with url
+			ConnectException ctx = new ConnectException("Connection refused " + config.getHostUrl());
+			ctx.setStackTrace(exception.getStackTrace());
+			throw ctx;
 		} else if (exception instanceof IOException) {
 			throw (IOException) exception;
 		} else {

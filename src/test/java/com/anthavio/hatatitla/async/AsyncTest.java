@@ -2,7 +2,6 @@ package com.anthavio.hatatitla.async;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -17,12 +16,12 @@ import org.testng.annotations.Test;
 import com.anthavio.hatatitla.GetRequest;
 import com.anthavio.hatatitla.HttpClient4Sender;
 import com.anthavio.hatatitla.JokerServer;
+import com.anthavio.hatatitla.SenderException;
 import com.anthavio.hatatitla.SenderHttpStatusException;
 import com.anthavio.hatatitla.SenderRequest;
 import com.anthavio.hatatitla.SenderResponse;
-import com.anthavio.hatatitla.async.ExecutorServiceBuilder;
-import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
 
 /**
  * 
@@ -53,8 +52,9 @@ public class AsyncTest {
 				future.get();
 				Assert.fail("Previous statement must throw ExecutionException");
 			} catch (ExecutionException ex) {
-				assertThat(ex.getCause()).isInstanceOf(ConnectException.class);
-				//ex.printStackTrace();
+				assertThat(ex.getCause()).isInstanceOf(SenderException.class);
+				assertThat(ex.getCause().getMessage()).contains("Connection refused");
+				ex.printStackTrace();
 			}
 			assertThat(conman.getTotalStats().getLeased()).isEqualTo(0);
 

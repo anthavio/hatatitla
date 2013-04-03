@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.anthavio.hatatitla.HttpSender.Multival;
-import com.anthavio.hatatitla.SenderBodyRequest.FakeStream.FakeType;
 
 /**
  * Base class for POST and PUT Requests
@@ -37,7 +36,7 @@ public abstract class SenderBodyRequest extends SenderRequest {
 		if (bodyObject == null) {
 			throw new IllegalArgumentException("Body object is null");
 		}
-		FakeStream stream = new FakeStream(FakeType.OBJECT, bodyObject);
+		FakeStream stream = new FakeStream(bodyObject);
 		setBody(stream, contentType);
 		return this;
 	}
@@ -46,7 +45,7 @@ public abstract class SenderBodyRequest extends SenderRequest {
 		if (Cutils.isBlank(bodyString)) {
 			throw new IllegalArgumentException("Body string is blank");
 		}
-		FakeStream stream = new FakeStream(FakeType.STRING, bodyString);
+		FakeStream stream = new FakeStream(bodyString);
 		setBody(stream, contentType);
 		return this;
 	}
@@ -83,28 +82,17 @@ public abstract class SenderBodyRequest extends SenderRequest {
 	 */
 	public static class FakeStream extends InputStream {
 
-		public static enum FakeType {
-			STRING, OBJECT;
-		}
-
-		private final FakeType type;
-
 		private final Object value;
 
 		private final boolean streaming;
 
-		public FakeStream(FakeType type, Object value) {
-			this(type, value, false);
+		public FakeStream(Object value) {
+			this(value, true);
 		}
 
-		public FakeStream(FakeType type, Object value, boolean streaming) {
-			this.type = type;
+		public FakeStream(Object value, boolean streaming) {
 			this.value = value;
 			this.streaming = streaming;
-		}
-
-		public FakeType getType() {
-			return type;
 		}
 
 		public Object getValue() {

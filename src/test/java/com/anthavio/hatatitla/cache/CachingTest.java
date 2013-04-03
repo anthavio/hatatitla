@@ -27,23 +27,16 @@ import org.testng.annotations.Test;
 import com.anthavio.hatatitla.GetRequest;
 import com.anthavio.hatatitla.HttpClient4Sender;
 import com.anthavio.hatatitla.HttpSender;
+import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.JokerServer;
 import com.anthavio.hatatitla.PostRequest;
 import com.anthavio.hatatitla.SenderRequest;
 import com.anthavio.hatatitla.SenderResponse;
 import com.anthavio.hatatitla.async.ExecutorServiceBuilder;
-import com.anthavio.hatatitla.cache.CacheEntry;
-import com.anthavio.hatatitla.cache.CachedResponse;
-import com.anthavio.hatatitla.cache.CachingRequest;
-import com.anthavio.hatatitla.cache.CachingSender;
-import com.anthavio.hatatitla.cache.EHRequestCache;
-import com.anthavio.hatatitla.cache.RequestCache;
-import com.anthavio.hatatitla.cache.SimpleRequestCache;
-import com.anthavio.hatatitla.cache.SpyRequestCache;
 import com.anthavio.hatatitla.cache.CachingRequest.RefreshMode;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
-import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
 import com.thimbleware.jmemcached.CacheImpl;
 import com.thimbleware.jmemcached.Key;
 import com.thimbleware.jmemcached.LocalCacheElement;
@@ -299,7 +292,7 @@ public class CachingTest {
 	 */
 	private void doCacheTest(RequestCache<CachedResponse> cache) throws InterruptedException, IOException {
 
-		CachedResponse cresponse = new CachedResponse(200, "Choroso", null, new Date().toString());
+		CachedResponse cresponse = new CachedResponse(200, "Choroso", new Multival(), new Date().toString());
 		String cacheKey = String.valueOf(System.currentTimeMillis());
 		//hard ttl is 2 seconds
 		Boolean added = cache.set(cacheKey, new CacheEntry<CachedResponse>(cresponse, 2, 1));
@@ -367,6 +360,7 @@ public class CachingTest {
 		request.addParam("sensor", false);
 		ExtractedBodyResponse<String> extract = sender.extract(request, String.class);
 		System.out.println(extract.getBody());
+		sender.close();
 
 		if (true)
 			return;
@@ -395,10 +389,11 @@ public class CachingTest {
 		String digsig = Base64.encodeBase64String(sign);
 		String assertion = content + "." + digsig;
 		System.out.println(assertion);
-		PostRequest request2 = new HttpClient4Sender("https://accounts.google.com/o/oauth2/token").POST("").build();
+		sender = new HttpClient4Sender("https://accounts.google.com/o/oauth2/token");
+		PostRequest request2 = sender.POST("").build();
 		request2.addParam("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
 		request2.addParam("assertion", assertion);
-		ExtractedBodyResponse<String> x = request2.extract(String.class);
+		ExtractedBodyResponse<String> x = sender.extract(request2, String.class);
 		System.out.println(x.getBody());
 	}
 

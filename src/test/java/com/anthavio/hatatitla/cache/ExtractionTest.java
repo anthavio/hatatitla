@@ -3,7 +3,6 @@ package com.anthavio.hatatitla.cache;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.Serializable;
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -17,12 +16,10 @@ import com.anthavio.hatatitla.GetRequest;
 import com.anthavio.hatatitla.HttpClient4Sender;
 import com.anthavio.hatatitla.HttpSender;
 import com.anthavio.hatatitla.JokerServer;
+import com.anthavio.hatatitla.SenderException;
 import com.anthavio.hatatitla.SenderHttpStatusException;
 import com.anthavio.hatatitla.SenderRequest;
 import com.anthavio.hatatitla.async.ExecutorServiceBuilder;
-import com.anthavio.hatatitla.cache.CachingExtractor;
-import com.anthavio.hatatitla.cache.CachingExtractorRequest;
-import com.anthavio.hatatitla.cache.SimpleRequestCache;
 import com.anthavio.hatatitla.cache.CachingRequest.RefreshMode;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
@@ -116,8 +113,9 @@ public class ExtractionTest {
 		try {
 			cextractor.extract(cerequest);
 			Assert.fail("Preceding line must throw ConnectException");
-		} catch (ConnectException cx) {
+		} catch (SenderException sex) {
 			//this is what we expect
+			assertThat(sex.getMessage()).contains("Connection refused"); //same
 		}
 		cextractor.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
@@ -236,8 +234,9 @@ public class ExtractionTest {
 		try {
 			cextractor.extract(cerequest);
 			Assert.fail("Preceding line must throw ConnectException");
-		} catch (ConnectException cx) {
+		} catch (SenderException sex) {
 			//this is what we expect
+			assertThat(sex.getMessage()).contains("Connection refused"); //same
 		}
 
 		cextractor.close();

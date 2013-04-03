@@ -20,7 +20,7 @@ public class DevelopmentTest {
 		MarshallingExtractingTest test = new MarshallingExtractingTest();
 		try {
 			test.setup();
-			test.marshallingExtraction();
+			test.devel();
 		} catch (Exception x) {
 			x.printStackTrace();
 		} finally {

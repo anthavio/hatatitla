@@ -3,9 +3,7 @@ package com.anthavio.hatatitla;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -84,9 +82,9 @@ public class TimeoutsTest {
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw ConnectException");
-		} catch (ConnectException cx) {
+		} catch (SenderException sex) {
 			//cx.printStackTrace();
-			assertThat(cx.getMessage()).isEqualTo("Pool timeout 300 ms");
+			assertThat(sex.getMessage()).isEqualTo("Pool timeout 300 ms");
 		}
 		//sleep 
 		sender.close();
@@ -97,9 +95,9 @@ public class TimeoutsTest {
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw ConnectException");
-		} catch (ConnectException cx) {
+		} catch (SenderException sex) {
 			//cx.printStackTrace();
-			assertThat(cx.getMessage()).isEqualTo("Connect timeout 1100 ms");
+			assertThat(sex.getMessage()).isEqualTo("Connect timeout 1100 ms");
 		}
 		sender.close();
 	}
@@ -116,9 +114,9 @@ public class TimeoutsTest {
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw SocketTimeoutException");
-		} catch (SocketTimeoutException stx) {
+		} catch (SenderException sex) {
 			//stx.printStackTrace();
-			assertThat(stx.getMessage()).isEqualTo("Read timeout 1300 ms");
+			assertThat(sex.getMessage()).isEqualTo("Read timeout 1300 ms");
 		}
 
 		//override configuration value
@@ -126,9 +124,9 @@ public class TimeoutsTest {
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw SocketTimeoutException");
-		} catch (SocketTimeoutException stx) {
+		} catch (SenderException sex) {
 			//stx.printStackTrace();
-			assertThat(stx.getMessage()).isEqualTo("Read timeout 900 ms");
+			assertThat(sex.getMessage()).isEqualTo("Read timeout 900 ms");
 		}
 
 		sender.close();
