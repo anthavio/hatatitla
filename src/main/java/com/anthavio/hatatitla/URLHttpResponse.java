@@ -28,8 +28,12 @@ public class URLHttpResponse extends SenderResponse {
 
 	@Override
 	public void close() {
-		if (connection != null) {
-			connection.disconnect();
+		if (stream != null) {
+			try {
+				stream.close();
+			} catch (IOException iox) {
+				//ignore
+			}
 		}
 	}
 

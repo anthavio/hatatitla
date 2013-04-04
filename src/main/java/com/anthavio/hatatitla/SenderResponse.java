@@ -21,13 +21,13 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private int httpStatusCode;
+	protected int httpStatusCode;
 
-	private String httpStatusMessage;
+	protected String httpStatusMessage;
 
-	private Multival headers;
+	protected Multival headers;
 
-	private transient InputStream stream;
+	protected transient InputStream stream;
 
 	public SenderResponse(int code, String message, Multival headers, InputStream stream) throws IOException {
 		this.httpStatusCode = code;

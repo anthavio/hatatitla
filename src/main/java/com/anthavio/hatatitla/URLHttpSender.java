@@ -80,7 +80,6 @@ public class URLHttpSender extends HttpSender {
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
 		connection.setUseCaches(false);
-		connection.setDoOutput(true);
 		connection.setDoInput(true);
 
 		Multival headers = request.getHeaders();
@@ -152,6 +151,8 @@ public class URLHttpSender extends HttpSender {
 			if (this.logger.isDebugEnabled()) {
 				logHeaders("Request", connection.getRequestProperties());
 			}
+
+			connection.setDoOutput(true);
 
 			String contentType = request.getFirstHeader("Content-Type");
 			Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
@@ -301,6 +302,6 @@ public class URLHttpSender extends HttpSender {
 
 	@Override
 	public String toString() {
-		return "JavaHttpSender [" + config.getHostUrl() + "]";
+		return "URLHttpSender [" + config.getHostUrl() + "]";
 	}
 }
