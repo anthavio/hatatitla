@@ -4,7 +4,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
@@ -54,7 +53,7 @@ public class CachingTest {
 	private ThreadPoolExecutor executor;
 	private CacheManager ehCacheManager;
 
-	MemCacheDaemon<LocalCacheElement> memcached;
+	private MemCacheDaemon<LocalCacheElement> memcached;
 
 	@BeforeClass
 	public void setup() throws Exception {
@@ -150,7 +149,7 @@ public class CachingTest {
 	public void testAutomaticRefresh() throws Exception {
 		JokerServer server = new JokerServer().start();
 		CachingSender csender = newCachedSender(server.getHttpPort());
-		SenderRequest request = new GetRequest("/cs").addParam("sleep", 1);
+		SenderRequest request = new GetRequest("/cs").addParameter("sleep", 1);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingRequest crequest = new CachingRequest(request, 4, 2, TimeUnit.SECONDS, RefreshMode.ASYNC_SCHEDULE); //automatic updates!
 
@@ -208,11 +207,11 @@ public class CachingTest {
 	}
 
 	@Test
-	public void testByHttpHeaderCaching() throws Exception {
+	public void testHttpCacheControlCaching() throws Exception {
 		JokerServer server = new JokerServer().start();
 		CachingSender csender = newCachedSender(server.getHttpPort());
 		//http headers will allow to cache reponse for 1 second
-		SenderRequest request = new GetRequest("/").addParam("docache", 1);
+		SenderRequest request = new GetRequest("/").addParameter("docache", 1);
 		//keep original count of request executed on server
 		final int requestCount = server.getRequestCount();
 
@@ -254,7 +253,7 @@ public class CachingTest {
 	}
 
 	@Test
-	public void testBtHttpETagCaching() throws Exception {
+	public void testHttpETagCaching() throws Exception {
 		JokerServer server = new JokerServer().start();
 		CachingSender csender = newCachedSender(server.getHttpPort());
 
@@ -262,7 +261,7 @@ public class CachingTest {
 		final int requestCount = server.getRequestCount();
 
 		//http headers will use ETag
-		SenderRequest request1 = new GetRequest("/").addParam("doetag", (Serializable) null);
+		SenderRequest request1 = new GetRequest("/").addParameter("doetag");
 		ExtractedBodyResponse<String> extract1 = csender.extract(request1, ResponseBodyExtractors.STRING);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1);//count + 1
 		assertThat(extract1.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
@@ -272,7 +271,7 @@ public class CachingTest {
 
 		Thread.sleep(100); //
 
-		SenderRequest request2 = new GetRequest("/").addParam("doetag", (Serializable) null);
+		SenderRequest request2 = new GetRequest("/").addParameter("doetag");
 		ExtractedBodyResponse<String> extract2 = csender.extract(request2, ResponseBodyExtractors.STRING);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2 (304 NOT_MODIFIED)
 		assertThat(extract2.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
@@ -328,7 +327,7 @@ public class CachingTest {
 
 		GetRequest request = new GetRequest("/me/friends");
 		request
-				.addParam(
+				.addParameter(
 						"access_token",
 						"AAAAAAITEghMBAOK0zAh6obLGcPm5FuXt3OlqMWPmgudEF9KxrVBiNt6AjccUFCSoZAxRr8ZBvGZBi9sOdZBxebQZBJzVMwRKzIWCLZCjzxGV0cvAMkDjXu");
 		//request.addParameter("fields", "id,name");
@@ -354,10 +353,10 @@ public class CachingTest {
 		SimpleRequestCache<CachedResponse> cache = new SimpleRequestCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		GetRequest request = new GetRequest("/");
-		request.addParam("key", "AIzaSyCgNUVqbYTyIP_f4Ew2wJXSZ9XjIQ8F5w8");
-		request.addParam("center", "51.477222,0");
-		request.addParam("size", "10x10");
-		request.addParam("sensor", false);
+		request.addParameter("key", "AIzaSyCgNUVqbYTyIP_f4Ew2wJXSZ9XjIQ8F5w8");
+		request.addParameter("center", "51.477222,0");
+		request.addParameter("size", "10x10");
+		request.addParameter("sensor", false);
 		ExtractedBodyResponse<String> extract = sender.extract(request, String.class);
 		System.out.println(extract.getBody());
 		sender.close();
@@ -391,8 +390,8 @@ public class CachingTest {
 		System.out.println(assertion);
 		sender = new HttpClient4Sender("https://accounts.google.com/o/oauth2/token");
 		PostRequest request2 = sender.POST("").build();
-		request2.addParam("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
-		request2.addParam("assertion", assertion);
+		request2.addParameter("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
+		request2.addParameter("assertion", assertion);
 		ExtractedBodyResponse<String> x = sender.extract(request2, String.class);
 		System.out.println(x.getBody());
 	}

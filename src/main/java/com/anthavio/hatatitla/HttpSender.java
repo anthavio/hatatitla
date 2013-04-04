@@ -4,14 +4,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.URLEncoder;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -21,6 +22,7 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.hatatitla.SenderRequest.ValueStrategy;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderDeleteRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderGetRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderPostRequestBuilder;
@@ -349,32 +351,84 @@ public abstract class HttpSender implements Closeable {
 
 	/**
 	 * Shared helper to build url path and query
+	 * 
+	 * Returns full path with query on first index and query string on second
 	 */
 	protected String[] getPathAndQuery(SenderRequest request) {
-		Multival parameters = request.getParameters();
+		ValueStrategy nullStrategy = request.getNullValueStrategy();
+		ValueStrategy emptyStrategy = request.getEmptyValueStrategy();
 		StringBuilder sbMxParams = null;
 		StringBuilder sbQuParams = null;
 		boolean bQp = false; //is any query parameter
 		//XXX multivalue parameter encode paramA=val1,val2
+		Multival parameters = request.getParameters();
 		if (parameters != null && parameters.size() != 0) {
 			sbMxParams = new StringBuilder();
 			sbQuParams = new StringBuilder();
 			for (String name : parameters) {
 				if (name.charAt(0) == ';') { //matrix parameter
 					List<String> values = parameters.get(name);
+					if (values == null) {
+						if (nullStrategy == ValueStrategy.SKIP) {
+							logger.debug("skipping null parameter " + name);
+							continue;
+						}
+					} else if (isEmpty(values, nullStrategy, emptyStrategy)) {
+						if (emptyStrategy == ValueStrategy.SKIP) {
+							logger.debug("skipping empty parameter " + name);
+							continue;
+						}
+					}
 					for (String value : values) {
-						sbMxParams.append(';');//keep unescaped
+						if (value == null) {
+							if (nullStrategy == ValueStrategy.SKIP) {
+								logger.debug("skipping null parameter " + name);
+								continue;
+							}
+						} else if (Cutils.isEmpty(value)) {
+							if (emptyStrategy == ValueStrategy.SKIP) {
+								logger.debug("skipping empty parameter " + name);
+								continue;
+							}
+						}
+						sbMxParams.append(';');//keep ; unescaped
 						sbMxParams.append(urlencode(name.substring(1)));
-						sbMxParams.append('=');
-						//XXX matrix parameters may contain / and that / must be unescaped
-						sbMxParams.append(urlencode(value));
+						if (value != null) {
+							sbMxParams.append('=');
+							//XXX matrix parameters may contain '/' and it must stay unescaped
+							sbMxParams.append(urlencode(value));
+						}
 					}
 				} else { //query parameter
 					List<String> values = parameters.get(name);
+					if (values == null) {
+						if (nullStrategy == ValueStrategy.SKIP) {
+							logger.debug("skipping null parameter " + name);
+							continue;
+						}
+					} else if (isEmpty(values, nullStrategy, emptyStrategy)) {
+						if (emptyStrategy == ValueStrategy.SKIP) {
+							logger.debug("skipping empty parameter " + name);
+							continue;
+						}
+					}
 					for (String value : values) {
+						if (value == null) {
+							if (nullStrategy == ValueStrategy.SKIP) {
+								logger.debug("skipping null parameter " + name);
+								continue;
+							}
+						} else if (Cutils.isEmpty(value)) {
+							if (emptyStrategy == ValueStrategy.SKIP) {
+								logger.debug("skipping empty parameter " + name);
+								continue;
+							}
+						}
 						sbQuParams.append(urlencode(name));
-						sbQuParams.append('=');
-						sbQuParams.append(urlencode(value));
+						if (value != null) {
+							sbQuParams.append('=');
+							sbQuParams.append(urlencode(value));
+						}
 						sbQuParams.append('&');
 						bQp = true;
 					}
@@ -396,13 +450,33 @@ public abstract class HttpSender implements Closeable {
 		//append query parameters if are any and if apropriate
 		if (bQp) {
 			if (!request.getMethod().canHaveBody()) {
-				path = path + "?" + sbQuParams.toString();// GET, DELETE
+				path = path + "?" + sbQuParams.toString();// GET, DELETE, ... (body not allowed)
 			} else if (request.hasBody()) {
-				path = path + "?" + sbQuParams.toString(); // POST, PUT with body
+				path = path + "?" + sbQuParams.toString(); // POST, PUT with body - query must be part of path
 			}
 		}
 		String query = sbQuParams != null ? sbQuParams.toString() : null;
 		return new String[] { path, query };
+	}
+
+	private boolean isEmpty(List<String> values, ValueStrategy nullStrategy, ValueStrategy emptyStrategy) {
+		if (values.size() != 0) {
+			for (String value : values) {
+				if (value == null) {
+					if (nullStrategy == ValueStrategy.KEEP) {
+						return true;
+					}
+				} else if (Cutils.isEmpty(value)) {
+					if (emptyStrategy == ValueStrategy.KEEP) {
+						return true;
+					}
+				} else {
+					return true;
+				}
+
+			}
+		}
+		return false;
 	}
 
 	private final String urlencode(String string) {
@@ -433,69 +507,72 @@ public abstract class HttpSender implements Closeable {
 
 		}
 
-		public Multival(Map<String, List<String>> entries) {
-			this.entries = new TreeMap<String, List<String>>(COMPARATOR);// response header from HttpUrlConnection has null header name for status line
-			this.entries.putAll(entries);
-			Set<Entry<String, List<String>>> entrySet = this.entries.entrySet();
-			for (Entry<String, List<String>> entry : entrySet) {
-				List<String> values = entry.getValue();
-				LinkedList<String> valuesCopy = new LinkedList<String>(values);
-				if (values == null || values.size() == 0) {
-					valuesCopy.add("");
-				}
-				entry.setValue(valuesCopy);
-			}
-		}
-
-		public Multival(List<String[]> values) {
-			if (values != null) {
-				for (String[] value : values) {
-					if (value.length == 0) {
-						//continue;
-					} else if (value.length == 1) {
-						add(value[0], ""); //NullValueHandling.EMPTY_STRING
-					} else if (value.length == 2) {
-						add(value[0], value[1]);
-					} else {
-						String[] others = new String[value.length - 1];
-						System.arraycopy(value, 1, others, 0, value.length - 1);
-						add(value[0], others);
-					}
+		public Multival(Map<String, ?> values) {
+			if (values != null && values.size() != 0) {
+				this.entries = new TreeMap<String, List<String>>(COMPARATOR);// response header from HttpUrlConnection has null header name for status line
+				Set<String> keySet = values.keySet();
+				for (String key : keySet) {
+					List<String> list = new LinkedList<String>();
+					addValue(values.get(key), list);
+					this.entries.put(key, list);
 				}
 			}
 		}
 
 		/**
-		 * Set Header value(s) replacing existing
+		 * Set value(s) replacing existing
+		 * 
+		 * Null or Empty @param value removes parameter
 		 */
-		public void set(String name, String... value) {
-			if (this.entries != null) {
-				List<String> list = this.entries.get(name);
-				if (list != null) {
-					list.clear();
-				}
-			}
-			add(name, value);
+		public void set(String name, Collection<Object> value) {
+			put(name, value, true);
 		}
 
 		/**
-		 * Set Header value(s) replacing existing
+		 * Set value(s) replacing existing
+		 * 
+		 * Null or Empty @param value removes this parameter
 		 */
-		public void set(String name, List<String> values) {
-			set(name, values.toArray(new String[values.size()]));
+		public void set(String name, Object... value) {
+			put(name, value, true);
 		}
 
 		/**
-		 * Add Header value(s) keeping existing
+		 * Set value(s) replacing existing
+		 * 
+		 * Null or Empty @param value removes this parameter
 		 */
-		public void add(String name, List<String> values) {
-			add(name, values.toArray(new String[values.size()]));
+		public void set(String name, Object value) {
+			put(name, value, true);
 		}
 
 		/**
 		 * Add value(s) keeping existing
 		 */
-		public void add(String name, String... values) {
+		public void add(String name, Collection<Object> value) {
+			if (value != null && value.size() != 0) {
+				put(name, value, false);
+			}
+		}
+
+		/**
+		 * Add value(s) keeping existing
+		 */
+		public void add(String name, Object... values) {
+			put(name, values, false);
+		}
+
+		/**
+		 * Add value(s) keeping existing
+		 */
+		public void add(String name, Object values) {
+			put(name, values, false);
+		}
+
+		/**
+		 * Ultimate name/value method
+		 */
+		public void put(String name, Object value, boolean replace) {
 			if (Cutils.isBlank(name)) {
 				throw new IllegalArgumentException("Name is blank");
 			}
@@ -505,18 +582,46 @@ public abstract class HttpSender implements Closeable {
 			} else {
 				list = this.entries.get(name);
 			}
-
 			if (list == null) {
 				list = new LinkedList<String>();
 				this.entries.put(name, list);
+			} else if (replace) {
+				list.clear();
 			}
 
-			for (String value : values) {
-				if (value != null) {
-					list.add(value);
-				} else {//if(nullHandling==NullValueHandling.EMPTY_STRING) {
-					list.add("");
+			addValue(value, list);
+			if (list.size() == 0) {
+				this.entries.remove(name);
+			}
+		}
+
+		/**
+		 * Ultimate value method
+		 */
+		private void addValue(Object value, List<String> list) {
+			if (value == null) {
+				list.add(null);
+			} else if (value instanceof Collection) {
+				Collection<?> collection = (Collection<?>) value;
+				for (Object item : collection) {
+					addValue(item, list);
 				}
+			} else if (value.getClass().isArray()) {
+				int length = Array.getLength(value);
+				for (int i = 0; i < length; ++i) {
+					Object item = Array.get(value, i);
+					addValue(item, list);
+				}
+			} else if (value instanceof Iterator) {
+				Iterator<?> iterator = (Iterator<?>) value;
+				while (iterator.hasNext()) {
+					addValue(iterator.next(), list);
+				}
+			} else if (value instanceof Serializable) {
+				String string = String.valueOf(value);
+				list.add(string);
+			} else {
+				throw new IllegalArgumentException("Unsupported " + value.getClass() + " of value " + value);
 			}
 		}
 
@@ -542,7 +647,7 @@ public abstract class HttpSender implements Closeable {
 
 		public String getFirst(String name) {
 			List<String> values = get(name);
-			if (values != null) {
+			if (values != null && values.size() != 0) {
 				return values.get(0);
 			} else {
 				return null;
@@ -551,7 +656,7 @@ public abstract class HttpSender implements Closeable {
 
 		public String getLast(String name) {
 			List<String> values = get(name);
-			if (values != null) {
+			if (values != null && values.size() != 0) {
 				return values.get(values.size() - 1);
 			} else {
 				return null;

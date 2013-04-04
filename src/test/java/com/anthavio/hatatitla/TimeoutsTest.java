@@ -73,7 +73,7 @@ public class TimeoutsTest {
 
 	private void poolTimeout(HttpSender sender) throws IOException {
 		GetRequest request = new GetRequest("/");
-		request.addParam("sleep", "1");
+		request.addParameter("sleep", "1");
 		//get only existing connection from pool
 		sender.start(request);
 		//sleep to be sure that conenction will be leased
@@ -110,7 +110,7 @@ public class TimeoutsTest {
 		response.close(); //return to pool
 
 		//timeout with sleep
-		request.addParam("sleep", "2");
+		request.addParameter("sleep", "2");
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw SocketTimeoutException");
@@ -142,8 +142,8 @@ public class TimeoutsTest {
 
 	private URLHttpSender newSimple(String url) {
 		URLSenderConfig config = new URLSenderConfig(url);
-		config.setConnectTimeout(1100);
-		config.setReadTimeout(1300);
+		config.setConnectTimeoutMillis(1100);
+		config.setReadTimeoutMillis(1300);
 		System.setProperty("http.keepAlive", "true");
 		System.setProperty("http.maxConnections", "1");
 		URLHttpSender sender = new URLHttpSender(config);
@@ -153,10 +153,10 @@ public class TimeoutsTest {
 
 	private HttpClient3Sender newHttp3(String url) {
 		HttpClient3Config config = new HttpClient3Config(url);
-		config.setConnectTimeout(1100);
-		config.setReadTimeout(1300);
-		config.setPoolMaximum(1);
-		config.setPoolAcquireTimeout(300);
+		config.setConnectTimeoutMillis(1100);
+		config.setReadTimeoutMillis(1300);
+		config.setPoolMaximumSize(1);
+		config.setPoolAcquireTimeoutMillis(300);
 		HttpClient3Sender sender = new HttpClient3Sender(config);
 		sender.setExecutor(executor);
 		return sender;
@@ -164,10 +164,10 @@ public class TimeoutsTest {
 
 	private HttpClient4Sender newHttp4(String url) {
 		HttpClient4Config config = new HttpClient4Config(url);
-		config.setConnectTimeout(1100);
-		config.setReadTimeout(1300);
-		config.setPoolMaximum(1);
-		config.setPoolAcquireTimeout(300);
+		config.setConnectTimeoutMillis(1100);
+		config.setReadTimeoutMillis(1300);
+		config.setPoolMaximumSize(1);
+		config.setPoolAcquireTimeoutMillis(300);
 		HttpClient4Sender sender = new HttpClient4Sender(config);
 		sender.setExecutor(executor);
 		return sender;

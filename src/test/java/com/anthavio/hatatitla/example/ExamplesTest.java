@@ -23,23 +23,19 @@ public class ExamplesTest {
 	}
 
 	private static void github() {
-
 		//Create sender with utf-8 encoding, default timeouts and connection pool
 		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
-		//Fluent builder way of request construction
-		ExtractedBodyResponse<String> extracted = sender.GET("/users/anthavio").extract(String.class);
-		System.out.println(extracted.getBody());
-		//Traditional way (dependency injection friendly)
 
-		//ExtractedBodyResponse<String> extracted = sender.GET("/users").param("since", 666).extract(String.class);
-		System.out.println(extracted.getBody());
+		//Fluent builder (sleek eye candy)
+		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 666).extract(String.class);
+		System.out.println(extracted1.getBody());
 
-		//Request can be created independently on sender
-		GetRequest get = new GetRequest("/users/anthavio");
-		get.setParam("since", 666);
-		//But then, Sender must be used to execute/extract it
-		//ExtractedBodyResponse<String> extracted2 = sender.extract(get, String.class);
-		//System.out.println(extracted2.getBody());
+		//Traditional (dependency injection friendly)
+		GetRequest request = new GetRequest("/users");
+		request.setParameter("since", 666);
+		//Sender must be used to execute/extract
+		ExtractedBodyResponse<String> extracted2 = sender.extract(request, String.class);
+		System.out.println(extracted2.getBody());
 
 	}
 

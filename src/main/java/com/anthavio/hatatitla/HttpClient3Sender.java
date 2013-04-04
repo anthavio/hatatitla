@@ -114,8 +114,8 @@ public class HttpClient3Sender extends HttpSender {
 			}
 		}
 
-		if (request.getReadTimeout() != null) {
-			httpMethod.getParams().setParameter(HttpMethodParams.SO_TIMEOUT, request.getReadTimeout());
+		if (request.getReadTimeoutMillis() != null) {
+			httpMethod.getParams().setParameter(HttpMethodParams.SO_TIMEOUT, request.getReadTimeoutMillis());
 		}
 		//cannot be set globally in configuration
 		httpMethod.setFollowRedirects(config.getFollowRedirects());
@@ -204,15 +204,15 @@ public class HttpClient3Sender extends HttpSender {
 			httpRequest.releaseConnection();
 			//now try to 
 			if (x instanceof ConnectionPoolTimeoutException) {
-				ConnectException cx = new ConnectException("Pool timeout " + config.getPoolAcquireTimeout() + " ms");
+				ConnectException cx = new ConnectException("Pool timeout " + config.getPoolAcquireTimeoutMillis() + " ms");
 				cx.setStackTrace(x.getStackTrace());
 				throw cx;
 			} else if (x instanceof ConnectTimeoutException) {
-				ConnectException cx = new ConnectException("Connect timeout " + config.getConnectTimeout() + " ms");
+				ConnectException cx = new ConnectException("Connect timeout " + config.getConnectTimeoutMillis() + " ms");
 				cx.setStackTrace(x.getStackTrace());
 				throw cx;
 			} else if (x instanceof SocketTimeoutException) {
-				int timeout = httpRequest.getParams().getIntParameter(HttpMethodParams.SO_TIMEOUT, config.getReadTimeout());
+				int timeout = httpRequest.getParams().getIntParameter(HttpMethodParams.SO_TIMEOUT, config.getReadTimeoutMillis());
 				SocketTimeoutException stx = new SocketTimeoutException("Read timeout " + timeout + " ms");
 				stx.setStackTrace(x.getStackTrace());
 				throw stx;

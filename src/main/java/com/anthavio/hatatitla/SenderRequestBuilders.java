@@ -3,6 +3,7 @@ package com.anthavio.hatatitla;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.Map;
 
 import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.SenderBodyRequest.FakeStream;
@@ -46,7 +47,7 @@ public class SenderRequestBuilders {
 		}
 
 		/**
-		 * Sets Accept Header for Content negotiation
+		 * Sets Accept Header for Content-Type negotiation
 		 */
 		public X accept(String type) {
 			headers.set("Accept", type);
@@ -57,7 +58,7 @@ public class SenderRequestBuilders {
 		 * Add Request Header
 		 */
 		public X header(String name, Object value) {
-			headers.add(name, SenderRequest.toString(value));
+			headers.add(name, value);
 			return getX();
 		}
 
@@ -65,15 +66,26 @@ public class SenderRequestBuilders {
 		 * Add Request Parameter
 		 */
 		public X param(String name, Object value) {
-			parameters.add(name, SenderRequest.toString(value));
+			parameters.add(name, value);
+			return getX();
+		}
+
+		/**
+		 * Add Matrix Parameter
+		 */
+		public X matrix(String name, Object value) {
+			if (name.charAt(0) != ';') {
+				name = ";" + name;
+			}
+			parameters.add(name, value);
 			return getX();
 		}
 
 		/**
 		 * Sets parameters (replacing any existing)
 		 */
-		public X parameters(Multival parameters) {
-			this.parameters = parameters;
+		public X parameters(Map<String, ?> parameters) {
+			this.parameters = new Multival(parameters);
 			return getX();
 		}
 

@@ -89,7 +89,7 @@ public class AuthenticationTest {
 	//@Test
 	public void http3() throws IOException {
 		SenderRequest request = new GetRequest("/");
-		request.addParam("x", "y");
+		request.addParameter("x", "y");
 
 		String url = "http://localhost:" + this.server.getHttpPort();
 		SenderResponse response = new HttpClient3Sender(url).execute(request);

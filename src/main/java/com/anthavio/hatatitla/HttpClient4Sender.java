@@ -136,8 +136,8 @@ public class HttpClient4Sender extends HttpSender {
 			}
 		}
 
-		if (request.getReadTimeout() != null) {
-			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeout());
+		if (request.getReadTimeoutMillis() != null) {
+			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeoutMillis());
 		}
 
 		if (config.getGzipRequest()) {
@@ -249,11 +249,11 @@ public class HttpClient4Sender extends HttpSender {
 			//connection might be already open so release it
 			httpRequest.releaseConnection();
 			if (x instanceof ConnectionPoolTimeoutException) {
-				ConnectException ctx = new ConnectException("Pool timeout " + config.getPoolAcquireTimeout() + " ms");
+				ConnectException ctx = new ConnectException("Pool timeout " + config.getPoolAcquireTimeoutMillis() + " ms");
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
 			} else if (x instanceof ConnectTimeoutException) {
-				ConnectException ctx = new ConnectException("Connect timeout " + config.getConnectTimeout() + " ms");
+				ConnectException ctx = new ConnectException("Connect timeout " + config.getConnectTimeoutMillis() + " ms");
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
 			} else if (x instanceof HttpHostConnectException) {
@@ -262,7 +262,7 @@ public class HttpClient4Sender extends HttpSender {
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
 			} else if (x instanceof SocketTimeoutException) {
-				int timeout = httpRequest.getParams().getIntParameter(CoreConnectionPNames.SO_TIMEOUT, config.getReadTimeout());
+				int timeout = httpRequest.getParams().getIntParameter(CoreConnectionPNames.SO_TIMEOUT, config.getReadTimeoutMillis());
 				SocketTimeoutException stx = new SocketTimeoutException("Read timeout " + timeout + " ms");
 				stx.setStackTrace(x.getStackTrace());
 				throw stx;

@@ -19,11 +19,11 @@ import com.anthavio.hatatitla.Authentication.Scheme;
  */
 public class HttpClient3Config extends HttpSenderConfig {
 
-	private int poolReleaseTimeout = 65 * 1000;
+	private int poolReleaseTimeoutMillis = 65 * 1000;
 
-	private int poolAcquireTimeout = 3 * 1000;
+	private int poolAcquireTimeoutMillis = 3 * 1000;
 
-	private int poolMaximum = 10;
+	private int poolMaximumSize = 10;
 
 	public HttpClient3Config(String url) {
 		super(url);
@@ -39,18 +39,18 @@ public class HttpClient3Config extends HttpSenderConfig {
 	public HttpClient buildHttpClient() {
 		HttpClientParams clientParams = new HttpClientParams();
 		clientParams.setVersion(HttpVersion.HTTP_1_1);
-		clientParams.setSoTimeout(getReadTimeout());//http.socket.timeout
+		clientParams.setSoTimeout(getReadTimeoutMillis());//http.socket.timeout
 		clientParams.setContentCharset(getEncoding());//http.protocol.content-charset
 		clientParams.setHttpElementCharset(getEncoding());
-		clientParams.setConnectionManagerTimeout(poolAcquireTimeout); //http.connection-manager.timeout
+		clientParams.setConnectionManagerTimeout(poolAcquireTimeoutMillis); //http.connection-manager.timeout
 
 		MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
 		HttpConnectionManagerParams managerParams = new HttpConnectionManagerParams();
 		HostConfiguration hostConfig = new HostConfiguration();
 		hostConfig.setHost(getHostUrl().getHost(), getHostUrl().getPort(), getHostUrl().getProtocol());
-		managerParams.setMaxConnectionsPerHost(hostConfig, poolMaximum);
-		managerParams.setMaxTotalConnections(poolMaximum);
-		managerParams.setConnectionTimeout(getConnectTimeout());//http.connection.timeout
+		managerParams.setMaxConnectionsPerHost(hostConfig, poolMaximumSize);
+		managerParams.setMaxTotalConnections(poolMaximumSize);
+		managerParams.setConnectionTimeout(getConnectTimeoutMillis());//http.connection.timeout
 		connectionManager.setParams(managerParams);
 
 		HttpClient httpClient = new HttpClient(clientParams, connectionManager);
@@ -75,28 +75,28 @@ public class HttpClient3Config extends HttpSenderConfig {
 		return httpClient;
 	}
 
-	public int getPoolReleaseTimeout() {
-		return poolReleaseTimeout;
+	public int getPoolReleaseTimeoutMillis() {
+		return poolReleaseTimeoutMillis;
 	}
 
-	public void setPoolReleaseTimeout(int poolReleaseTimeout) {
-		this.poolReleaseTimeout = poolReleaseTimeout;
+	public void setPoolReleaseTimeoutMillis(int poolReleaseTimeout) {
+		this.poolReleaseTimeoutMillis = poolReleaseTimeout;
 	}
 
-	public int getPoolAcquireTimeout() {
-		return poolAcquireTimeout;
+	public int getPoolAcquireTimeoutMillis() {
+		return poolAcquireTimeoutMillis;
 	}
 
-	public void setPoolAcquireTimeout(int poolAcquireTimeout) {
-		this.poolAcquireTimeout = poolAcquireTimeout;
+	public void setPoolAcquireTimeoutMillis(int poolAcquireTimeout) {
+		this.poolAcquireTimeoutMillis = poolAcquireTimeout;
 	}
 
-	public int getPoolMaximum() {
-		return poolMaximum;
+	public int getPoolMaximumSize() {
+		return poolMaximumSize;
 	}
 
-	public void setPoolMaximum(int poolMaximum) {
-		this.poolMaximum = poolMaximum;
+	public void setPoolMaximumSize(int poolMaximum) {
+		this.poolMaximumSize = poolMaximum;
 	}
 
 }

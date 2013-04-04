@@ -30,9 +30,9 @@ public abstract class HttpSenderConfig {
 
 	private String defaultAccept; //default Accept header
 
-	private int connectTimeout = 5 * 1000; //in millis
+	private int connectTimeoutMillis = 5 * 1000; //in millis
 
-	private int readTimeout = 20 * 1000; //in millis
+	private int readTimeoutMillis = 20 * 1000; //in millis
 
 	public HttpSenderConfig(String urlString) {
 		if (Cutils.isBlank(urlString)) {
@@ -85,20 +85,20 @@ public abstract class HttpSenderConfig {
 		this.encoding = charset.name();
 	}
 
-	public int getConnectTimeout() {
-		return this.connectTimeout;
+	public int getConnectTimeoutMillis() {
+		return this.connectTimeoutMillis;
 	}
 
-	public void setConnectTimeout(int millis) {
-		this.connectTimeout = millis;
+	public void setConnectTimeoutMillis(int millis) {
+		this.connectTimeoutMillis = millis;
 	}
 
-	public int getReadTimeout() {
-		return this.readTimeout;
+	public int getReadTimeoutMillis() {
+		return this.readTimeoutMillis;
 	}
 
-	public void setReadTimeout(int millis) {
-		this.readTimeout = millis;
+	public void setReadTimeoutMillis(int millis) {
+		this.readTimeoutMillis = millis;
 	}
 
 	public URL getHostUrl() {

@@ -41,17 +41,11 @@ import org.apache.http.protocol.HttpContext;
  */
 public class HttpClient4Config extends HttpSenderConfig {
 
-	/**
-	 * Timeout in seconds
-	 */
-	private int poolReleaseTimeout = 65 * 1000;
+	private int poolReleaseTimeoutMillis = 65 * 1000;
 
-	/**
-	 * Timeout in seconds
-	 */
-	private int poolAcquireTimeout = 3 * 1000;
+	private int poolAcquireTimeoutMillis = 3 * 1000;
 
-	private int poolMaximum = 10;
+	private int poolMaximumSize = 10;
 
 	private HttpContext authContext;
 
@@ -114,7 +108,7 @@ public class HttpClient4Config extends HttpSenderConfig {
 
 	protected ClientParamBean buildClientParams(HttpParams httpParams, URL url) {
 		ClientParamBean clientBean = new ClientParamBean(httpParams);
-		clientBean.setConnectionManagerTimeout(this.poolAcquireTimeout);//httpParams.setParameter(ClientPNames.CONN_MANAGER_TIMEOUT, 5000L);
+		clientBean.setConnectionManagerTimeout(this.poolAcquireTimeoutMillis);//httpParams.setParameter(ClientPNames.CONN_MANAGER_TIMEOUT, 5000L);
 		HttpHost httpHost = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
 		clientBean.setDefaultHost(httpHost); //ClientPNames.DEFAULT_HOST
 		clientBean.setHandleRedirects(getFollowRedirects());//ClientPNames.HANDLE_REDIRECTS
@@ -123,8 +117,8 @@ public class HttpClient4Config extends HttpSenderConfig {
 
 	protected HttpConnectionParamBean buildConnectionParams(HttpParams httpParams) {
 		HttpConnectionParamBean connectionBean = new HttpConnectionParamBean(httpParams);
-		connectionBean.setConnectionTimeout(getConnectTimeout());//httpParams.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 1000L);
-		connectionBean.setSoTimeout(getReadTimeout());//httpParams.setParameter(CoreConnectionPNames.SO_TIMEOUT, 5000L);
+		connectionBean.setConnectionTimeout(getConnectTimeoutMillis());//httpParams.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 1000L);
+		connectionBean.setSoTimeout(getReadTimeoutMillis());//httpParams.setParameter(CoreConnectionPNames.SO_TIMEOUT, 5000L);
 		return connectionBean;
 	}
 
@@ -157,34 +151,34 @@ public class HttpClient4Config extends HttpSenderConfig {
 
 		//we access only one host
 		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager(schemeRegistry,
-				this.poolReleaseTimeout, TimeUnit.MILLISECONDS);
-		connectionManager.setMaxTotal(this.poolMaximum);
-		connectionManager.setDefaultMaxPerRoute(this.poolMaximum);
+				this.poolReleaseTimeoutMillis, TimeUnit.MILLISECONDS);
+		connectionManager.setMaxTotal(this.poolMaximumSize);
+		connectionManager.setDefaultMaxPerRoute(this.poolMaximumSize);
 		return connectionManager;
 	}
 
-	public int getPoolReleaseTimeout() {
-		return this.poolReleaseTimeout;
+	public int getPoolReleaseTimeoutMillis() {
+		return this.poolReleaseTimeoutMillis;
 	}
 
-	public void setPoolReleaseTimeout(int millis) {
-		this.poolReleaseTimeout = millis;
+	public void setPoolReleaseTimeoutMillis(int millis) {
+		this.poolReleaseTimeoutMillis = millis;
 	}
 
-	public int getPoolAcquireTimeout() {
-		return this.poolAcquireTimeout;
+	public int getPoolAcquireTimeoutMillis() {
+		return this.poolAcquireTimeoutMillis;
 	}
 
-	public void setPoolAcquireTimeout(int millis) {
-		this.poolAcquireTimeout = millis;
+	public void setPoolAcquireTimeoutMillis(int millis) {
+		this.poolAcquireTimeoutMillis = millis;
 	}
 
-	public int getPoolMaximum() {
-		return this.poolMaximum;
+	public int getPoolMaximumSize() {
+		return this.poolMaximumSize;
 	}
 
-	public void setPoolMaximum(int poolMaximum) {
-		this.poolMaximum = poolMaximum;
+	public void setPoolMaximumSize(int poolMaximum) {
+		this.poolMaximumSize = poolMaximum;
 	}
 
 }

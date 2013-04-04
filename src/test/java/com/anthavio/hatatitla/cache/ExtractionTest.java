@@ -127,7 +127,7 @@ public class ExtractionTest {
 		JokerServer server = new JokerServer().start();
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
-		SenderRequest request = new GetRequest("/").addParam("sleep", 1);
+		SenderRequest request = new GetRequest("/").addParameter("sleep", 1);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
 				TimeUnit.SECONDS, RefreshMode.ASYNC_SCHEDULE); //automatic updates!
@@ -255,7 +255,7 @@ public class ExtractionTest {
 				TimeUnit.SECONDS, RefreshMode.ASYNC_REQUEST); //asynchronous updates!
 
 		//request must spent some time in server
-		cerequest.getSenderRequest().addParam("sleep", 1);
+		cerequest.getSenderRequest().addParameter("sleep", 1);
 
 		final int initialCount = server.getRequestCount();
 

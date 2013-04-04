@@ -94,11 +94,11 @@ public class URLHttpSender extends HttpSender {
 			}
 		}
 
-		connection.setConnectTimeout(config.getConnectTimeout());
-		if (request.getReadTimeout() != null) {
-			connection.setReadTimeout(request.getReadTimeout());
+		connection.setConnectTimeout(config.getConnectTimeoutMillis());
+		if (request.getReadTimeoutMillis() != null) {
+			connection.setReadTimeout(request.getReadTimeoutMillis());
 		} else {
-			connection.setReadTimeout(config.getReadTimeout());
+			connection.setReadTimeout(config.getReadTimeoutMillis());
 		}
 
 		connection.setInstanceFollowRedirects(config.getFollowRedirects());

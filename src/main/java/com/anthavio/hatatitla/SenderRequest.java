@@ -4,10 +4,8 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +17,10 @@ import com.anthavio.hatatitla.HttpSender.Multival;
  *
  */
 public abstract class SenderRequest {
+
+	public static enum ValueStrategy {
+		SKIP, KEEP
+	}
 
 	public static enum Method {
 		GET(false), DELETE(false), HEAD(false), OPTIONS(false), POST(true), PUT(true);
@@ -47,6 +49,10 @@ public abstract class SenderRequest {
 	private Multival parameters;
 
 	private Integer readTimeoutMillis; //millis - override config value
+
+	private ValueStrategy nullValueStrategy = ValueStrategy.KEEP;
+
+	private ValueStrategy emptyValueStrategy = ValueStrategy.KEEP;
 
 	// Constructors of managed request instance knowing it's Sender
 
@@ -132,7 +138,7 @@ public abstract class SenderRequest {
 		return this.urlPath;
 	}
 
-	public Integer getReadTimeout() {
+	public Integer getReadTimeoutMillis() {
 		return readTimeoutMillis;
 	}
 
@@ -144,22 +150,41 @@ public abstract class SenderRequest {
 		this.readTimeoutMillis = (int) unit.toMillis(readTimeout);
 	}
 
+	public ValueStrategy getNullValueStrategy() {
+		return nullValueStrategy;
+	}
+
+	public void setNullValueStrategy(ValueStrategy nullValueStrategy) {
+		this.nullValueStrategy = nullValueStrategy;
+	}
+
+	public ValueStrategy getEmptyValueStrategy() {
+		return emptyValueStrategy;
+	}
+
+	public void setEmptyValueStrategy(ValueStrategy emptyValueStrategy) {
+		this.emptyValueStrategy = emptyValueStrategy;
+	}
+
 	public Multival getHeaders() {
 		return this.headers;
 	}
 
-	public SenderRequest setHeaders(Multival headers) {
-		this.headers = headers;
+	/**
+	 * Set Headers replacing all existing
+	 */
+	public SenderRequest setHeaders(Map<String, ?> headers) {
+		this.headers = new Multival(headers);
 		return this;
 	}
 
 	/**
-	 * Add Headers from java.util.Map
+	 * Add Headers
 	 */
-	public SenderRequest addHeaders(Map<String, String> headers) {
-		Set<Entry<String, String>> entrySet = headers.entrySet();
-		for (Entry<String, String> entry : entrySet) {
-			this.headers.add(entry.getKey(), entry.getValue());
+	public SenderRequest addHeaders(Map<String, ?> headers) {
+		Set<String> keySet = headers.keySet();
+		for (String key : keySet) {
+			this.headers.add(key, headers.get(key));
 		}
 		return this;
 	}
@@ -169,7 +194,7 @@ public abstract class SenderRequest {
 	 * If Header already exists, old value(s) will be replaced
 	 */
 	public SenderRequest setHeader(String name, Serializable value) {
-		this.headers.set(name, toString(value));
+		this.headers.put(name, value, true);
 		return this;
 	}
 
@@ -177,8 +202,8 @@ public abstract class SenderRequest {
 	 * Set Header with multiple values
 	 * If Header already exists, old value(s) will be replaced
 	 */
-	public <T extends Serializable> SenderRequest setHeader(String name, Serializable... values) {
-		this.headers.set(name, toString(values));
+	public <T> SenderRequest setHeader(String name, T... values) {
+		this.headers.put(name, values, true);
 		return this;
 	}
 
@@ -186,8 +211,8 @@ public abstract class SenderRequest {
 	 * Add Header with single value
 	 * If header already exists, new value will be added to it
 	 */
-	public SenderRequest addHeader(String name, Serializable value) {
-		this.headers.add(name, toString(value));
+	public SenderRequest addHeader(String name, Object value) {
+		this.headers.put(name, value, false);
 		return this;
 	}
 
@@ -195,11 +220,14 @@ public abstract class SenderRequest {
 	 * Add Header with multiple values
 	 * If header already exists, new values will be added to it
 	 */
-	public <T extends Serializable> SenderRequest addHeader(String name, T... values) {
-		this.headers.add(name, toString(values));
+	public <T> SenderRequest addHeader(String name, T... values) {
+		this.headers.put(name, values, false);
 		return this;
 	}
 
+	/**
+	 * @return first value of Header
+	 */
 	public String getFirstHeader(String name) {
 		return headers.getFirst(name);
 	}
@@ -214,92 +242,91 @@ public abstract class SenderRequest {
 		return this.parameters;
 	}
 
-	public SenderRequest setParameters(Multival parameters) {
-		this.parameters = parameters;
+	/**
+	 * Set Parameters replacing all existing
+	 */
+	public SenderRequest setParameters(Map<String, ?> parameters) {
+		this.parameters = new Multival(parameters);
 		return this;
 	}
 
 	/**
-	 * Add parameter with single value
-	 * If parameter already exists, new value will be added to it
+	 * Add Parameters
 	 */
-	public SenderRequest addParam(String name, Serializable value) {
-		this.parameters.add(name, toString(value));
+	public SenderRequest addParameters(Map<String, ?> headers) {
+		Set<String> keySet = headers.keySet();
+		for (String key : keySet) {
+			this.parameters.add(key, headers.get(key));
+		}
 		return this;
 	}
 
 	/**
-	 * Add parameter with multiple values
-	 * If parameter already exists, new values will be added to it
+	 * Add parameter with single value.
+	 * If parameter already exists, new value will be added to it.
 	 */
-	public <T extends Serializable> SenderRequest addParam(String name, T... values) {
-		this.parameters.add(name, toString(values));
+	public SenderRequest addParameter(String name, Object value) {
+		this.parameters.put(name, value, false);
 		return this;
 	}
 
 	/**
-	 * Set parameter with single value
-	 * If Header already exists, old value(s) will be replaced
+	 * Add parameter with multiple values.
+	 * If parameter already exists, new values will be added to it.
 	 */
-	public SenderRequest setParam(String name, Serializable value) {
-		this.parameters.set(name, toString(value));
+	public <T> SenderRequest addParameter(String name, T... values) {
+		this.parameters.put(name, values, false);
 		return this;
 	}
 
 	/**
-	 * Set parameter with multiple values
-	 * If Header already exists, old value(s) will be replaced
+	 * Add parameter without value.
+	 * 
+	 * BewaRe nullValueStrategy setting!
 	 */
-	public <T extends Serializable> SenderRequest setParam(String name, T... values) {
-		this.parameters.set(name, toString(values));
+	public <T> SenderRequest addParameter(String name) {
+		this.parameters.put(name, null, false);
 		return this;
 	}
 
 	/**
-	 * Matrix parameter is allways part of URL
+	 * Set parameter with single value.
+	 * If Header already exists, old value(s) will be replaced.
 	 */
-	public SenderRequest addMartixParam(String name, String value) {
+	public SenderRequest setParameter(String name, Object value) {
+		this.parameters.put(name, value, true);
+		return this;
+	}
+
+	/**
+	 * Set parameter with multiple values.
+	 * If Header already exists, old value(s) will be replaced.
+	 */
+	public <T> SenderRequest setParameter(String name, T... values) {
+		this.parameters.put(name, values, true);
+		return this;
+	}
+
+	/**
+	 * Matrix parameter is allways part of URL.
+	 */
+	public SenderRequest addMartix(String name, Object value) {
 		if (name.charAt(0) != ';') {
 			name = ";" + name;
 		}
-		addParam(name, value);
+		this.parameters.put(name, value, false);
 		return this;
 	}
 
-	private static final String[] EMPTY = new String[0];
-
-	private static final String[] BLANK = new String[] { "" };
-
 	/**
-	 * converts array of values to array of strings
+	 * Matrix parameter is allways part of URL.
 	 */
-	public static <T> String[] toString(T... values) {
-		if (values != null && values.length != 0) {
-			String[] strings = new String[values.length];
-			for (int i = 0; i < values.length; ++i) {
-				strings[i] = toString(values[i]);
-			}
-			return strings;
-		} else {
-			return BLANK; //XXX null handling
+	public SenderRequest setMartix(String name, Object value) {
+		if (name.charAt(0) != ';') {
+			name = ";" + name;
 		}
-	}
-
-	/**
-	 * converts single value to string
-	 */
-	public static String toString(Object value) {
-		if (value == null) {
-			return ""; //TODO handle null strategy
-		} else if (value instanceof String) {
-			return (String) value;
-		} else if (value instanceof Number) {
-			return String.valueOf(value);
-		} else if (value instanceof Date) {
-			return HttpDateUtil.formatDate((Date) value);
-		} else {
-			throw new IllegalArgumentException("Unsupported type : " + value.getClass().getName() + " of value: " + value);
-		}
+		this.parameters.put(name, value, true);
+		return this;
 	}
 
 	//XXX test this....

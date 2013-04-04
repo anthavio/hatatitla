@@ -45,7 +45,7 @@ public class AsyncTest {
 
 			server.stop(); //stop server
 
-			SenderRequest request = new GetRequest("/").addParam("sleep", 1);
+			SenderRequest request = new GetRequest("/").addParameter("sleep", 1);
 
 			Future<SenderResponse> future = sender.start(request);
 			try {

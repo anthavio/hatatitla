@@ -3,7 +3,6 @@ package com.anthavio.hatatitla;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,7 +13,6 @@ import org.fest.assertions.api.Fail;
 import org.testng.annotations.Test;
 
 import com.anthavio.hatatitla.Authentication.Scheme;
-import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.SenderRequest.Method;
 
 /**
@@ -22,7 +20,7 @@ import com.anthavio.hatatitla.SenderRequest.Method;
  * @author martin.vanek
  *
  */
-public class SimpleTest {
+public class RequestTest {
 
 	@Test
 	public void requestUrl() {
@@ -35,25 +33,35 @@ public class SimpleTest {
 		assertThat(paq[0]).isEqualTo("/path");
 		assertThat(paq[1]).isNull();
 
-		rGet.addParam("p1", (Serializable) null);
+		rGet.addParameter("p0", (Object) null);
 		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path?p1=");
-		assertThat(paq[1]).isEqualTo("p1=");
+		assertThat(paq[0]).isEqualTo("/path?p0");
+		assertThat(paq[1]).isEqualTo("p0");
 
-		rGet.addParam("p2", 1);
+		rGet.addParameter("p1", "");
 		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path?p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[0]).isEqualTo("/path?p0&p1=");
+		assertThat(paq[1]).isEqualTo("p0&p1=");
 
-		rGet.addParam(";m1", null); //add matrix parameter
+		rGet.addParameter("p2", 1);
 		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path;m1=?p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[0]).isEqualTo("/path?p0&p1=&p2=1");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		rGet.addParam(";m2", 2); //add matrix parameter
+		rGet.addMartix("m0", null);//null is skipped by default
 		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path;m1=;m2=2?p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[0]).isEqualTo("/path;m0?p0&p1=&p2=1");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+
+		rGet.addMartix("m1", "");//blank is not skipped by default
+		paq = sender.getPathAndQuery(rGet);
+		assertThat(paq[0]).isEqualTo("/path;m0;m1=?p0&p1=&p2=1");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+
+		rGet.addParameter(";m2", 2);
+		paq = sender.getPathAndQuery(rGet);
+		assertThat(paq[0]).isEqualTo("/path;m0;m1=;m2=2?p0&p1=&p2=1");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
 		//now with POST request
 
@@ -62,31 +70,41 @@ public class SimpleTest {
 		assertThat(paq[0]).isEqualTo("/path");
 		assertThat(paq[1]).isNull();
 
-		rPost.addParam("p1", null);
+		rPost.addParameter("p0", (Object) null);
 		paq = sender.getPathAndQuery(rPost);
 		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isEqualTo("p1=");
+		assertThat(paq[1]).isEqualTo("p0");
 
-		rPost.addParam("p2", 1);
+		rPost.addParameter("p1", "");
 		paq = sender.getPathAndQuery(rPost);
 		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[1]).isEqualTo("p0&p1=");
 
-		rPost.addParam(";m1", null); //add matrix parameter
+		rPost.addParameter("p2", 1);
 		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m1=");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[0]).isEqualTo("/path");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		rPost.addParam(";m2", 2); //add matrix parameter
+		rPost.addMartix("m0", null);
 		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m1=;m2=2");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[0]).isEqualTo("/path;m0");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		//setting custom POST body moves query parameters from body to path 
+		rPost.addMartix("m1", ""); //add matrix parameter
+		paq = sender.getPathAndQuery(rPost);
+		assertThat(paq[0]).isEqualTo("/path;m0;m1=");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+
+		rPost.addParameter(";m2", 2); //add matrix parameter
+		paq = sender.getPathAndQuery(rPost);
+		assertThat(paq[0]).isEqualTo("/path;m0;m1=;m2=2");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+
+		//setting request body moves query parameters from body to path 
 		rPost.setBody(new ByteArrayInputStream(new byte[0]), "application/json; charset=utf-8");
 		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m1=;m2=2?p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p1=&p2=1");
+		assertThat(paq[0]).isEqualTo("/path;m0;m1=;m2=2?p0&p1=&p2=1");
+		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 	}
 
 	@Test
@@ -103,21 +121,28 @@ public class SimpleTest {
 		assertThat(request.getParameters()).isEmpty();
 		assertThat(request.getHeaders()).isEmpty();
 
-		Multival parameters = new Multival(
-				Arrays.asList(new String[][] { { "p1", "y" }, { "p2", "a", "b", "c" }, { "p3" } }));
-		Map<String, List<String>> mHeaders = new HashMap<String, List<String>>();
-		mHeaders.put("h1", Arrays.asList("v1"));
-		mHeaders.put("h2", Arrays.asList("v21", "v22", "v23"));
-		mHeaders.put("h3", Collections.EMPTY_LIST);
-		Multival headers = new Multival(mHeaders);
+		Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+		parameters.put("p1", Arrays.asList("y"));
+		parameters.put("p2", Arrays.asList("a", "b", "c"));
+		parameters.put("p3", Collections.EMPTY_LIST);
+		parameters.put("p4", null);
+		parameters.put("p5", Arrays.asList(""));
+
+		Map<String, List<String>> headers = new HashMap<String, List<String>>();
+		headers.put("h1", Arrays.asList("v1"));
+		headers.put("h2", Arrays.asList("v21", "v22", "v23"));
+		headers.put("h3", Collections.EMPTY_LIST);
+		headers.put("h4", null);
+		headers.put("h5", Arrays.asList(""));
+
 		String path = "/path/to/somewhere?pname=pvalue";
 		request = new PostRequest(path).setParameters(parameters).setHeaders(headers);
 		assertThat(request.getMethod()).isEqualTo(Method.POST);
 		assertThat(request.getUrlPath()).isEqualTo(path);
 
-		assertThat(request.getParameters()).isEqualTo(parameters);
-		assertThat(request.getParameters().size()).isEqualTo(3);
-		assertThat(request.getParameters().names().size()).isEqualTo(3);
+		//assertThat(request.getParameters()).isEqualTo(parameters);
+		assertThat(request.getParameters().size()).isEqualTo(5);
+		assertThat(request.getParameters().names().size()).isEqualTo(5);
 
 		assertThat(request.getParameters().get("p1")).hasSize(1);
 		assertThat(request.getParameters().getFirst("p1")).isEqualTo("y");
@@ -125,13 +150,20 @@ public class SimpleTest {
 		assertThat(request.getParameters().get("p2")).hasSize(3);
 		assertThat(request.getParameters().getFirst("p2")).isEqualTo("a");
 		assertThat(request.getParameters().getLast("p2")).isEqualTo("c");
-		assertThat(request.getParameters().get("p3")).hasSize(1);
-		assertThat(request.getParameters().getFirst("p3")).isEqualTo("");
-		assertThat(request.getParameters().getLast("p3")).isEqualTo("");
+		assertThat(request.getParameters().get("p3")).hasSize(0);
+		assertThat(request.getParameters().getFirst("p3")).isNull();
+		assertThat(request.getParameters().getLast("p3")).isNull();
+		assertThat(request.getParameters().get("p4")).hasSize(1);
+		assertThat(request.getParameters().getFirst("p4")).isNull();
+		assertThat(request.getParameters().getLast("p4")).isNull();
 
-		assertThat(request.getHeaders()).isEqualTo(headers);
-		assertThat(request.getHeaders().size()).isEqualTo(3);
-		assertThat(request.getHeaders().names().size()).isEqualTo(3);
+		assertThat(request.getParameters().get("p5")).hasSize(1);
+		assertThat(request.getParameters().getFirst("p5")).isEqualTo("");
+		assertThat(request.getParameters().getLast("p5")).isEqualTo("");
+
+		//assertThat(request.getHeaders()).isEqualTo(headers);
+		assertThat(request.getHeaders().size()).isEqualTo(5);
+		assertThat(request.getHeaders().names().size()).isEqualTo(5);
 
 		assertThat(request.getHeaders().get("h1")).hasSize(1);
 		assertThat(request.getHeaders().getFirst("h1")).isEqualTo("v1");
@@ -141,14 +173,22 @@ public class SimpleTest {
 		assertThat(request.getHeaders().getFirst("h2")).isEqualTo("v21");
 		assertThat(request.getHeaders().getLast("h2")).isEqualTo("v23");
 
-		assertThat(request.getHeaders().get("h3")).hasSize(1);
-		assertThat(request.getHeaders().getFirst("h3")).isEqualTo("");
-		assertThat(request.getHeaders().getLast("h3")).isEqualTo("");
+		assertThat(request.getHeaders().get("h3")).hasSize(0);
+		assertThat(request.getHeaders().getFirst("h3")).isNull();
+		assertThat(request.getHeaders().getLast("h3")).isNull();
+
+		assertThat(request.getHeaders().get("h4")).hasSize(1);
+		assertThat(request.getHeaders().getFirst("h4")).isNull();
+		assertThat(request.getHeaders().getLast("h4")).isNull();
+
+		assertThat(request.getHeaders().get("h5")).hasSize(1);
+		assertThat(request.getHeaders().getFirst("h5")).isEqualTo("");
+		assertThat(request.getHeaders().getLast("h5")).isEqualTo("");
 
 		//parameteres allow duplicit names
-		request.addParam("param", "something");
+		request.addParameter("param", "something");
 		assertThat(request.getParameters().get("param")).hasSize(1);
-		request.addParam("param", "something");
+		request.addParameter("param", "something");
 		assertThat(request.getParameters().get("param")).hasSize(2);
 
 		//header do not allow duplicit names
