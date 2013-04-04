@@ -32,6 +32,8 @@ public abstract class HttpSenderConfig {
 
 	private String defaultAccept; //default Accept header
 
+	private int poolMaximumSize = 10;
+
 	private int connectTimeoutMillis = 5 * 1000; //in millis
 
 	private int readTimeoutMillis = 20 * 1000; //in millis
@@ -109,6 +111,14 @@ public abstract class HttpSenderConfig {
 
 	public URL getHostUrl() {
 		return this.hostUrl;
+	}
+
+	public int getPoolMaximumSize() {
+		return poolMaximumSize;
+	}
+
+	public void setPoolMaximumSize(int poolMaximum) {
+		this.poolMaximumSize = poolMaximum;
 	}
 
 	public Authentication getAuthentication() {

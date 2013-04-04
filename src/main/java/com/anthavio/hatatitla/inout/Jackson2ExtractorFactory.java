@@ -19,7 +19,7 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 	private final ObjectMapper objectMapper;
 
 	public Jackson2ExtractorFactory() {
-		this.objectMapper = new ObjectMapper();
+		this.objectMapper = Jackson2Util.build();
 	}
 
 	public Map<Class<?>, Jackson2ResponseExtractor<?>> getCache() {

@@ -23,8 +23,6 @@ public class HttpClient3Config extends HttpSenderConfig {
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 
-	private int poolMaximumSize = 10;
-
 	public HttpClient3Config(String url) {
 		super(url);
 	}
@@ -48,8 +46,8 @@ public class HttpClient3Config extends HttpSenderConfig {
 		HttpConnectionManagerParams managerParams = new HttpConnectionManagerParams();
 		HostConfiguration hostConfig = new HostConfiguration();
 		hostConfig.setHost(getHostUrl().getHost(), getHostUrl().getPort(), getHostUrl().getProtocol());
-		managerParams.setMaxConnectionsPerHost(hostConfig, poolMaximumSize);
-		managerParams.setMaxTotalConnections(poolMaximumSize);
+		managerParams.setMaxConnectionsPerHost(hostConfig, getPoolMaximumSize());
+		managerParams.setMaxTotalConnections(getPoolMaximumSize());
 		managerParams.setConnectionTimeout(getConnectTimeoutMillis());//http.connection.timeout
 		connectionManager.setParams(managerParams);
 
@@ -89,14 +87,6 @@ public class HttpClient3Config extends HttpSenderConfig {
 
 	public void setPoolAcquireTimeoutMillis(int poolAcquireTimeout) {
 		this.poolAcquireTimeoutMillis = poolAcquireTimeout;
-	}
-
-	public int getPoolMaximumSize() {
-		return poolMaximumSize;
-	}
-
-	public void setPoolMaximumSize(int poolMaximum) {
-		this.poolMaximumSize = poolMaximum;
 	}
 
 }

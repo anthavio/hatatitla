@@ -37,11 +37,13 @@ public class URLHttpSender extends HttpSender {
 
 	private String basicAuthHeader;
 
+	private HttpURLConnection connection;
+
 	public URLHttpSender(String baseUrl) {
-		this(new URLSenderConfig(baseUrl));
+		this(new URLHttpConfig(baseUrl));
 	}
 
-	public URLHttpSender(URLSenderConfig config) {
+	public URLHttpSender(URLHttpConfig config) {
 		super(config);
 		this.config = config;
 
@@ -64,11 +66,20 @@ public class URLHttpSender extends HttpSender {
 				});
 			}
 		}
+		//Great way to configure stuff...
+		System.setProperty("http.keepAlive", "true");
+		System.setProperty("http.maxConnections", String.valueOf(config.getPoolMaximumSize()));
 	}
 
 	@Override
 	public void close() {
-		//nothing can be closed here
+		if (connection != null) {
+			try {
+				connection.disconnect();
+			} catch (Exception x) {
+				//ignore
+			}
+		}
 	}
 
 	@Override
@@ -78,6 +89,7 @@ public class URLHttpSender extends HttpSender {
 				path);
 
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		this.connection = connection;
 
 		connection.setUseCaches(false);
 		connection.setDoInput(true);

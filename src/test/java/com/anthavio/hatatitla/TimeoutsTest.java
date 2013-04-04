@@ -141,7 +141,7 @@ public class TimeoutsTest {
 	}
 
 	private URLHttpSender newSimple(String url) {
-		URLSenderConfig config = new URLSenderConfig(url);
+		URLHttpConfig config = new URLHttpConfig(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		System.setProperty("http.keepAlive", "true");

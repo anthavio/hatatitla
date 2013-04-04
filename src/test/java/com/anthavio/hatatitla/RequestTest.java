@@ -235,7 +235,7 @@ public class RequestTest {
 			//ok
 		}
 		try {
-			sender = new URLHttpSender((URLSenderConfig) null);
+			sender = new URLHttpSender((URLHttpConfig) null);
 			Fail.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok

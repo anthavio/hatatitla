@@ -45,8 +45,6 @@ public class HttpClient4Config extends HttpSenderConfig {
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 
-	private int poolMaximumSize = 10;
-
 	private HttpContext authContext;
 
 	public HttpClient4Config(String url) {
@@ -152,8 +150,8 @@ public class HttpClient4Config extends HttpSenderConfig {
 		//we access only one host
 		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager(schemeRegistry,
 				this.poolReleaseTimeoutMillis, TimeUnit.MILLISECONDS);
-		connectionManager.setMaxTotal(this.poolMaximumSize);
-		connectionManager.setDefaultMaxPerRoute(this.poolMaximumSize);
+		connectionManager.setMaxTotal(getPoolMaximumSize());
+		connectionManager.setDefaultMaxPerRoute(getPoolMaximumSize());
 		return connectionManager;
 	}
 
@@ -171,14 +169,6 @@ public class HttpClient4Config extends HttpSenderConfig {
 
 	public void setPoolAcquireTimeoutMillis(int millis) {
 		this.poolAcquireTimeoutMillis = millis;
-	}
-
-	public int getPoolMaximumSize() {
-		return this.poolMaximumSize;
-	}
-
-	public void setPoolMaximumSize(int poolMaximum) {
-		this.poolMaximumSize = poolMaximum;
 	}
 
 }

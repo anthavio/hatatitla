@@ -21,7 +21,7 @@ public class Jackson1RequestMarshaller implements RequestBodyMarshaller {
 	private final ObjectMapper objectMapper;
 
 	public Jackson1RequestMarshaller() {
-		this.objectMapper = new ObjectMapper();
+		this.objectMapper = Jackson1Util.build();
 	}
 
 	public Jackson1RequestMarshaller(ObjectMapper mapper) {

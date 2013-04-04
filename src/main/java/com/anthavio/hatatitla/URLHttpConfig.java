@@ -8,9 +8,9 @@ package com.anthavio.hatatitla;
  * @author martin.vanek
  *
  */
-public class URLSenderConfig extends HttpSenderConfig {
+public class URLHttpConfig extends HttpSenderConfig {
 
-	public URLSenderConfig(String urlString) {
+	public URLHttpConfig(String urlString) {
 		super(urlString);
 	}
 

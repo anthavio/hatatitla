@@ -2,8 +2,6 @@ package com.anthavio.hatatitla.inout;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -20,7 +18,7 @@ import com.anthavio.hatatitla.SenderResponse;
 public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	//primitive cache for Jackson ObjectMappers
-	private static Map<Class<?>, ObjectMapper> cache = new HashMap<Class<?>, ObjectMapper>();
+	//private static Map<Class<?>, ObjectMapper> cache = new HashMap<Class<?>, ObjectMapper>();
 
 	private final Class<T> resultType;
 
@@ -28,7 +26,6 @@ public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	/**
 	 * Creates default Jackson ObjectMapper
-	 */
 	public Jackson1ResponseExtractor(Class<T> resultType) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
@@ -42,6 +39,7 @@ public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 		}
 		this.mapper = mapper;
 	}
+	*/
 
 	/**
 	 * Using custom externaly created ObjectMapper is probably better way...

@@ -1,6 +1,5 @@
 package com.anthavio.hatatitla;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Map;
@@ -163,7 +162,7 @@ public class SenderRequestBuilders {
 		 * Set Object as request body (entity)
 		 * Object will be marshalled/serialized to String
 		 */
-		public X body(Object body, String contentType) throws IOException {
+		public X body(Object body, String contentType) {
 			body(body, contentType, true);
 			return getX();
 		}
@@ -174,7 +173,7 @@ public class SenderRequestBuilders {
 		 * 
 		 * @param streaming write directly into output stream or create interim String / byte[]
 		 */
-		public X body(Object body, String contentType, boolean streaming) throws IOException {
+		public X body(Object body, String contentType, boolean streaming) {
 			this.bodyStream = new FakeStream(body, streaming);
 			this.contentType = contentType;
 			return getX();

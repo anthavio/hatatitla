@@ -52,7 +52,7 @@ public class AuthenticationTest {
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
 		//NOW setup BASIC authentication
-		URLSenderConfig config = new URLSenderConfig(url);
+		URLHttpConfig config = new URLHttpConfig(url);
 		//authentication.setPreemptive(false);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		config.setAuthentication(basic);

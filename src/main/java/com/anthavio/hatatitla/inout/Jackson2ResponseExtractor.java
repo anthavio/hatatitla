@@ -2,8 +2,6 @@ package com.anthavio.hatatitla.inout;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.anthavio.hatatitla.SenderResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class Jackson2ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	//primitive cache for Jackson ObjectMappers
-	private static Map<Class<?>, ObjectMapper> cache = new HashMap<Class<?>, ObjectMapper>();
+	//private static Map<Class<?>, ObjectMapper> cache = new HashMap<Class<?>, ObjectMapper>();
 
 	private final Class<T> resultType;
 
@@ -27,7 +25,7 @@ public class Jackson2ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	/**
 	 * Creates default Jackson ObjectMapper
-	 */
+	 
 	public Jackson2ResponseExtractor(Class<T> resultType) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
@@ -41,7 +39,7 @@ public class Jackson2ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 		}
 		this.mapper = mapper;
 	}
-
+	*/
 	/**
 	 * Using custom externaly created ObjectMapper is probably better way...
 	 */

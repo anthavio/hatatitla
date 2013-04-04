@@ -21,7 +21,7 @@ public class Jackson1ExtractorFactory implements ResponseExtractorFactory {
 	private final ObjectMapper objectMapper;
 
 	public Jackson1ExtractorFactory() {
-		this.objectMapper = new ObjectMapper();
+		this.objectMapper = Jackson1Util.build();
 	}
 
 	public Jackson1ExtractorFactory(ObjectMapper objectMapper) {
