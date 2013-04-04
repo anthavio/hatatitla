@@ -50,9 +50,9 @@ public abstract class SenderRequest {
 
 	private Integer readTimeoutMillis; //millis - override config value
 
-	private ValueStrategy nullValueStrategy = ValueStrategy.KEEP;
+	private ValueStrategy nullValueStrategy = null;
 
-	private ValueStrategy emptyValueStrategy = ValueStrategy.KEEP;
+	private ValueStrategy emptyValueStrategy = null;
 
 	// Constructors of managed request instance knowing it's Sender
 

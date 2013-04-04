@@ -7,6 +7,8 @@ import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.hatatitla.SenderRequest.ValueStrategy;
+
 /**
  * 
  * @author martin.vanek
@@ -33,6 +35,10 @@ public abstract class HttpSenderConfig {
 	private int connectTimeoutMillis = 5 * 1000; //in millis
 
 	private int readTimeoutMillis = 20 * 1000; //in millis
+
+	private ValueStrategy nullValueStrategy = ValueStrategy.KEEP;
+
+	private ValueStrategy emptyValueStrategy = ValueStrategy.KEEP;
 
 	public HttpSenderConfig(String urlString) {
 		if (Cutils.isBlank(urlString)) {
@@ -135,6 +141,22 @@ public abstract class HttpSenderConfig {
 
 	public void setFollowRedirects(boolean followRedirects) {
 		this.followRedirects = followRedirects;
+	}
+
+	public ValueStrategy getNullValueStrategy() {
+		return nullValueStrategy;
+	}
+
+	public void setNullValueStrategy(ValueStrategy nullValueStrategy) {
+		this.nullValueStrategy = nullValueStrategy;
+	}
+
+	public ValueStrategy getEmptyValueStrategy() {
+		return emptyValueStrategy;
+	}
+
+	public void setEmptyValueStrategy(ValueStrategy emptyValueStrategy) {
+		this.emptyValueStrategy = emptyValueStrategy;
 	}
 
 }

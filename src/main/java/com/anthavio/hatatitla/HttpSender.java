@@ -60,8 +60,6 @@ public abstract class HttpSender implements Closeable {
 
 	private ResponseErrorHandler errorResponseHandler;
 
-	//private NullValueHandling nullHandling = NullValueHandling.EMPTY_STRING;
-
 	public HttpSender(HttpSenderConfig config) {
 		if (config == null) {
 			throw new IllegalArgumentException("null config");
@@ -355,8 +353,10 @@ public abstract class HttpSender implements Closeable {
 	 * Returns full path with query on first index and query string on second
 	 */
 	protected String[] getPathAndQuery(SenderRequest request) {
-		ValueStrategy nullStrategy = request.getNullValueStrategy();
-		ValueStrategy emptyStrategy = request.getEmptyValueStrategy();
+		ValueStrategy nullStrategy = request.getNullValueStrategy() != null ? request.getNullValueStrategy() : config
+				.getNullValueStrategy();
+		ValueStrategy emptyStrategy = request.getEmptyValueStrategy() != null ? request.getEmptyValueStrategy() : config
+				.getEmptyValueStrategy();
 		StringBuilder sbMxParams = null;
 		StringBuilder sbQuParams = null;
 		boolean bQp = false; //is any query parameter
