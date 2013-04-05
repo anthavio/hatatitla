@@ -4,10 +4,10 @@ Hatatitla
 Configurable and tweakable REST client library you have been dreaming of
 
 * Both fluent & traditional (constructor/setter) request interface
-* XML (JAXB) request/response payload support
-* JSON (Jackson) request/response payload support
+* XML request/response payload support (JAXB)
+* JSON request/response payload support (Jackson)
 * Response caching (memory/ehcache/memcached)
-* Response content negotiation (content-type and charset)
+* Response content negotiation (content-type, charset, gzip)
 * Extensive configuration with reasonable defaults
 * Connection pooling
 * Asynchronous requests
@@ -39,10 +39,9 @@ Maven coordinates
         <version>1.0.0-SNAPSHOT</version>
     </dependency>
 ```
-Examples
--------------
 
-### Fluent API
+Fluent API
+-------------
 
 ```java
 		//Create sender with utf-8 encoding, default timeouts and connection pool
@@ -56,7 +55,8 @@ Examples
 		sender.close();
 ```
 
-### Traditional API
+Traditional API
+-------------
 
 ```java
 		//Sender can be built from Configuration
@@ -75,7 +75,8 @@ Examples
 		sender.close();
 ```
 
-### Extensive configuration
+Configuration
+-------------
 
 ```java
 		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
@@ -112,9 +113,10 @@ Examples
 		sender.close();
 ```
 
-### Sender Implementations
+Sender Implementations
+-------------
 
-Easy to start with
+### URLHttpSender - Easy to start with
 
 ```java
 		//No additional dependency - vanilla java
@@ -122,36 +124,37 @@ Easy to start with
 		URLHttpSender urlSender = urlConfig.buildSender();
 ```
 
-Recommended choice
+### HttpClient4Sender - Recommended choice
 
 ```java		
-		//Dependency - http://hc.apache.org/httpcomponents-client-ga/
 		HttpClient4Config http4config = new HttpClient4Config("https://api.twitter.com");
 		HttpClient4Sender http4sender = http4config.buildSender();
 ```
+Dependency - http://hc.apache.org/httpcomponents-client-ga/
 
 ```xml
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.2.3</version>
-			<optional>true</optional>
-		</dependency>	
+		</dependency>
 ```
 
-Legacy choice
+Missing dependency - java.lang.NoClassDefFoundError: org/apache/http/client/methods/HttpRequestBase
+
+### HttpClient3Sender - Legacy choice
 
 ```java
-		//Dependency - http://hc.apache.org/httpclient-3.x/
 		HttpClient3Config http3config = new HttpClient3Config("https://api.twitter.com");
 		HttpClient3Sender http3sender = http3config.buildSender();
 ```
+Dependency - http://hc.apache.org/httpclient-3.x/
 
 ```xml
 		<dependency>
 			<groupId>commons-httpclient</groupId>
 			<artifactId>commons-httpclient</artifactId>
 			<version>3.1</version>
-			<optional>true</optional>
 		</dependency>
 ```
+Missing dependency - java.lang.NoClassDefFoundError: org/apache/commons/httpclient/HttpMethodBase
