@@ -25,7 +25,7 @@ public class FakeSender extends HttpSender {
 	private AtomicInteger executions = new AtomicInteger(0);
 
 	public FakeSender(SenderResponse response) {
-		super(new URLHttpConfig("http://never.really.sent.anywhere/"));
+		super(new HttpURLConfig("http://never.really.sent.anywhere/"));
 		if (response == null) {
 			throw new IllegalArgumentException("response is null");
 		}
@@ -37,7 +37,7 @@ public class FakeSender extends HttpSender {
 	}
 
 	public FakeSender(int responseCode, String responseBody) {
-		super(new URLHttpConfig("http://never.really.sent.anywhere/"));
+		super(new HttpURLConfig("http://never.really.sent.anywhere/"));
 		setResponse(responseCode, responseBody);
 	}
 

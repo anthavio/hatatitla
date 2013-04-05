@@ -24,12 +24,12 @@ import com.anthavio.hatatitla.SenderBodyRequest.FakeStream;
 import com.anthavio.hatatitla.inout.RequestBodyMarshaller;
 
 /**
- * Simple java HttpUrlConnection implementation of the HttpSender. No additional library is required
+ * Simple java HttpURLConnection implementation of the HttpSender. No additional library is required
  * 
  * @author martin.vanek
  *
  */
-public class URLHttpSender extends HttpSender {
+public class HttpURLSender extends HttpSender {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -39,11 +39,11 @@ public class URLHttpSender extends HttpSender {
 
 	private HttpURLConnection connection;
 
-	public URLHttpSender(String baseUrl) {
-		this(new URLHttpConfig(baseUrl));
+	public HttpURLSender(String baseUrl) {
+		this(new HttpURLConfig(baseUrl));
 	}
 
-	public URLHttpSender(URLHttpConfig config) {
+	public HttpURLSender(HttpURLConfig config) {
 		super(config);
 		this.config = config;
 
@@ -225,10 +225,10 @@ public class URLHttpSender extends HttpSender {
 		try {
 			responseStream = connection.getInputStream();
 		} catch (IOException iox) {
-			return new URLHttpResponse(responseCode, responseMessage, responseHeaders, connection.getErrorStream(),
+			return new HttpURLResponse(responseCode, responseMessage, responseHeaders, connection.getErrorStream(),
 					connection);
 		}
-		return new URLHttpResponse(responseCode, responseMessage, responseHeaders, responseStream, connection);
+		return new HttpURLResponse(responseCode, responseMessage, responseHeaders, responseStream, connection);
 	}
 
 	private void writeStream(HttpURLConnection connection, InputStream input) throws IOException {

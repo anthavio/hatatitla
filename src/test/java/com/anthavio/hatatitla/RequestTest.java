@@ -24,7 +24,7 @@ public class RequestTest {
 
 	@Test
 	public void requestUrl() {
-		URLHttpSender sender = new URLHttpSender("www.somewhere.com/path");
+		HttpURLSender sender = new HttpURLSender("www.somewhere.com/path");
 		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.somewhere.com"); //add http prefix and remove path suffix
 		//SimpleHttpSender sender = null;
 
@@ -201,7 +201,7 @@ public class RequestTest {
 	@Test
 	public void simpleDefauts() {
 		String url = "http://www.hostname.com:8080/path/to/somewhere";
-		URLHttpSender sender = new URLHttpSender(url);
+		HttpURLSender sender = new HttpURLSender(url);
 		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.hostname.com:8080");// file(path) URL part is thrown away
 		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
 		assertThat(sender.getConfig().getAuthentication()).isNull();
@@ -227,27 +227,27 @@ public class RequestTest {
 
 	@Test
 	public void senderBadParameters() {
-		URLHttpSender sender;
+		HttpURLSender sender;
 		try {
-			sender = new URLHttpSender((String) null);
+			sender = new HttpURLSender((String) null);
 			Fail.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}
 		try {
-			sender = new URLHttpSender((URLHttpConfig) null);
+			sender = new HttpURLSender((HttpURLConfig) null);
 			Fail.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}
 		try {
-			sender = new URLHttpSender("");
+			sender = new HttpURLSender("");
 			Fail.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}
 		try {
-			sender = new URLHttpSender("http:///");
+			sender = new HttpURLSender("http:///");
 			Fail.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok

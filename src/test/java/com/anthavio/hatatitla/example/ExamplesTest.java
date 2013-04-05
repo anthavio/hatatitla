@@ -12,8 +12,8 @@ import com.anthavio.hatatitla.HttpClient3Sender;
 import com.anthavio.hatatitla.HttpClient4Config;
 import com.anthavio.hatatitla.HttpClient4Sender;
 import com.anthavio.hatatitla.SenderRequest.ValueStrategy;
-import com.anthavio.hatatitla.URLHttpConfig;
-import com.anthavio.hatatitla.URLHttpSender;
+import com.anthavio.hatatitla.HttpURLConfig;
+import com.anthavio.hatatitla.HttpURLSender;
 import com.anthavio.hatatitla.inout.Jackson2RequestMarshaller;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
@@ -96,16 +96,18 @@ public class ExamplesTest {
 	public static void senders() {
 		//Easy to start with
 		//No additional dependency - vanilla java 
-		URLHttpConfig urlConfig = new URLHttpConfig("https://graph.facebook.com");
-		URLHttpSender urlSender = urlConfig.buildSender();
+		HttpURLConfig urlConfig = new HttpURLConfig("https://graph.facebook.com");
+		HttpURLSender urlSender = urlConfig.buildSender();
 
 		//Recommended choice
 		//Dependency - http://hc.apache.org/httpcomponents-client-ga/
+		//java.lang.NoClassDefFoundError: org/apache/http/client/methods/HttpRequestBase
 		HttpClient4Config http4config = new HttpClient4Config("https://api.twitter.com");
 		HttpClient4Sender http4sender = http4config.buildSender();
 
 		//Legacy choice
 		//Dependency - http://hc.apache.org/httpclient-3.x/
+		//java.lang.NoClassDefFoundError: org/apache/commons/httpclient/HttpMethodBase
 		HttpClient3Config http3config = new HttpClient3Config("https://api.twitter.com");
 		HttpClient3Sender http3sender = http3config.buildSender();
 	}

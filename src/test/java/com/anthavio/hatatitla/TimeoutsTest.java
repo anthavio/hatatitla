@@ -140,13 +140,13 @@ public class TimeoutsTest {
 		}
 	}
 
-	private URLHttpSender newSimple(String url) {
-		URLHttpConfig config = new URLHttpConfig(url);
+	private HttpURLSender newSimple(String url) {
+		HttpURLConfig config = new HttpURLConfig(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		System.setProperty("http.keepAlive", "true");
 		System.setProperty("http.maxConnections", "1");
-		URLHttpSender sender = new URLHttpSender(config);
+		HttpURLSender sender = new HttpURLSender(config);
 		sender.setExecutor(executor);
 		return sender;
 	}

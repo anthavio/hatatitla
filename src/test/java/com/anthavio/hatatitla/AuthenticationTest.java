@@ -34,7 +34,7 @@ public class AuthenticationTest {
 		System.setProperty("http.keepAlive", "false");
 
 		String url = "http://localhost:" + this.server.getHttpPort();
-		URLHttpSender sender = new URLHttpSender(url);
+		HttpURLSender sender = new HttpURLSender(url);
 
 		SenderResponse response = sender.GET("/").param("x", "y").execute();
 		response.close();
@@ -52,18 +52,18 @@ public class AuthenticationTest {
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
 		//NOW setup BASIC authentication
-		URLHttpConfig config = new URLHttpConfig(url);
+		HttpURLConfig config = new HttpURLConfig(url);
 		//authentication.setPreemptive(false);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		config.setAuthentication(basic);
 
-		sender = new URLHttpSender(config);
+		sender = new HttpURLSender(config);
 		response = sender.GET("/basic").execute();
 		response.close();
 		//can access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 
-		sender = new URLHttpSender(config);
+		sender = new HttpURLSender(config);
 		response = sender.GET("/digest").execute();
 		response.close();
 		//can't access DIGEST protected
@@ -73,13 +73,13 @@ public class AuthenticationTest {
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
 
-		sender = new URLHttpSender(config);
+		sender = new HttpURLSender(config);
 		response = sender.GET("/basic").execute();
 		response.close();
 		//can't access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		sender = new URLHttpSender(config);
+		sender = new HttpURLSender(config);
 		response = sender.GET("/digest").execute();
 		response.close();
 		//can access DIGEST protected

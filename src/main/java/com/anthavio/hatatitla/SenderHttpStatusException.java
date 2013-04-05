@@ -14,17 +14,27 @@ public class SenderHttpStatusException extends SenderException {
 
 	private final int httpStatusCode;
 
-	public SenderHttpStatusException(int httpStatusCode, String message) {
-		super(httpStatusCode + " " + message);
-		this.httpStatusCode = httpStatusCode;
-	}
+	private final String httpStatusMessage;
+
+	private final String response;
 
 	public SenderHttpStatusException(SenderResponse response) throws IOException {
-		this(response.getHttpStatusCode(), HttpHeaderUtil.readAsString(response));
+		super(response.getHttpStatusCode() + " " + response.getHttpStatusMessage());
+		this.httpStatusCode = response.getHttpStatusCode();
+		this.httpStatusMessage = response.getHttpStatusMessage();
+		this.response = HttpHeaderUtil.readAsString(response);
 	}
 
 	public int getHttpStatusCode() {
 		return httpStatusCode;
+	}
+
+	public String getHttpStatusMessage() {
+		return httpStatusMessage;
+	}
+
+	public String getResponse() {
+		return response;
 	}
 
 }

@@ -34,7 +34,7 @@ public class DevelopmentTest {
 
 	private static CachingExtractor newExtractorSender(int port) {
 		String url = "http://localhost:" + port;
-		HttpSender sender = new URLHttpSender(url);
+		HttpSender sender = new HttpURLSender(url);
 		//HttpSender sender = new HttpClient4Sender(url);
 		SimpleRequestCache<Serializable> cache = new SimpleRequestCache<Serializable>();
 		CachingExtractor csender = new CachingExtractor(sender, cache);

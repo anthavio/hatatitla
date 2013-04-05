@@ -8,15 +8,15 @@ package com.anthavio.hatatitla;
  * @author martin.vanek
  *
  */
-public class URLHttpConfig extends HttpSenderConfig {
+public class HttpURLConfig extends HttpSenderConfig {
 
-	public URLHttpConfig(String urlString) {
+	public HttpURLConfig(String urlString) {
 		super(urlString);
 	}
 
 	@Override
-	public URLHttpSender buildSender() {
-		return new URLHttpSender(this);
+	public HttpURLSender buildSender() {
+		return new HttpURLSender(this);
 	}
 
 }

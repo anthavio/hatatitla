@@ -11,13 +11,13 @@ import com.anthavio.hatatitla.HttpSender.Multival;
  * @author martin.vanek
  *
  */
-public class URLHttpResponse extends SenderResponse {
+public class HttpURLResponse extends SenderResponse {
 
 	private static final long serialVersionUID = 1L;
 
 	private transient HttpURLConnection connection;
 
-	public URLHttpResponse(int code, String message, Multival headers, InputStream stream, HttpURLConnection connection)
+	public HttpURLResponse(int code, String message, Multival headers, InputStream stream, HttpURLConnection connection)
 			throws IOException {
 		super(code, message, headers, stream);
 		if (connection == null) {
