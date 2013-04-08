@@ -236,6 +236,52 @@ public class SenderRequestBuilders {
 	}
 
 	/**
+	 * Builder for HEAD request
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static class SenderHeadRequestBuilder extends SenderRequestBuilder<SenderHeadRequestBuilder> {
+
+		public SenderHeadRequestBuilder(HttpSender httpSender, String path) {
+			super(httpSender, path);
+		}
+
+		@Override
+		public HeadRequest build() {
+			return new HeadRequest(httpSender, path, parameters, headers);
+		}
+
+		@Override
+		protected SenderHeadRequestBuilder getX() {
+			return this;
+		}
+	}
+
+	/**
+	 * Builder for OPTIONS request
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static class SenderOptionsRequestBuilder extends SenderRequestBuilder<SenderOptionsRequestBuilder> {
+
+		public SenderOptionsRequestBuilder(HttpSender httpSender, String path) {
+			super(httpSender, path);
+		}
+
+		@Override
+		public OptionsRequest build() {
+			return new OptionsRequest(httpSender, path, parameters, headers);
+		}
+
+		@Override
+		protected SenderOptionsRequestBuilder getX() {
+			return this;
+		}
+	}
+
+	/**
 	 * Builder for POST request
 	 * 
 	 * @author martin.vanek

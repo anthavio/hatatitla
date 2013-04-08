@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import com.anthavio.hatatitla.SenderRequest.ValueStrategy;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderDeleteRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderGetRequestBuilder;
+import com.anthavio.hatatitla.SenderRequestBuilders.SenderHeadRequestBuilder;
+import com.anthavio.hatatitla.SenderRequestBuilders.SenderOptionsRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderPostRequestBuilder;
 import com.anthavio.hatatitla.SenderRequestBuilders.SenderPutRequestBuilder;
 import com.anthavio.hatatitla.cache.CachedResponse;
@@ -345,6 +347,14 @@ public abstract class HttpSender implements Closeable {
 
 	public SenderPutRequestBuilder PUT(String path) {
 		return new SenderPutRequestBuilder(this, path);
+	}
+
+	public SenderHeadRequestBuilder HEAD(String path) {
+		return new SenderHeadRequestBuilder(this, path);
+	}
+
+	public SenderOptionsRequestBuilder OPTIONS(String path) {
+		return new SenderOptionsRequestBuilder(this, path);
 	}
 
 	/**
