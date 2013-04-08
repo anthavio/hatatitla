@@ -33,12 +33,12 @@ public class FakeSender extends HttpSender {
 	}
 
 	public FakeSender(String responseBody) {
-		this(200, responseBody);
+		this(200, "text/plain", responseBody);
 	}
 
-	public FakeSender(int responseCode, String responseBody) {
+	public FakeSender(int responseCode, String contentType, String responseBody) {
 		super(new HttpURLConfig("http://never.really.sent.anywhere/"));
-		setResponse(responseCode, responseBody);
+		setResponse(responseCode, contentType, responseBody);
 	}
 
 	/**
@@ -68,9 +68,11 @@ public class FakeSender extends HttpSender {
 	/**
 	 * Change Response returned from doExecute
 	 */
-	public void setResponse(int code, String body) {
+	public void setResponse(int code, String contentType, String body) {
 		try {
-			this.response = new FakeResponse(code, body);
+			Multival headers = new Multival();
+			headers.add("Content-Type", contentType);
+			this.response = new FakeResponse(code, headers, body);
 		} catch (IOException iox) {
 			throw new IllegalArgumentException("What the hell?!?", iox);
 		}
@@ -125,8 +127,8 @@ public class FakeSender extends HttpSender {
 
 		private boolean closed;
 
-		public FakeResponse(int code, String body) throws IOException {
-			super(code, "fake " + code + " http response", null, null);
+		public FakeResponse(int code, Multival headers, String body) throws IOException {
+			super(code, "fake " + code + " http response", headers, null);
 			this.bodyBytes = body.getBytes(Charset.forName("utf-8"));
 		}
 
