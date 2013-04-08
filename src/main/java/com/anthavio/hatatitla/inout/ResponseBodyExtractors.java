@@ -1,7 +1,6 @@
 package com.anthavio.hatatitla.inout;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -110,7 +109,7 @@ public class ResponseBodyExtractors {
 	 * Extracts Response into desired resultType or fails miserably.
 	 * This method does NOT close Response
 	 */
-	public <T extends Serializable> T extract(SenderResponse response, Class<T> resultType) throws IOException {
+	public <T> T extract(SenderResponse response, Class<T> resultType) throws IOException {
 		String contentType = response.getFirstHeader("Content-Type");
 		ResponseBodyExtractor<?> extractor = getExtractor(contentType, response, resultType);
 		if (extractor == null) {
@@ -120,8 +119,7 @@ public class ResponseBodyExtractors {
 		return (T) extractor.extract(response);
 	}
 
-	public <T extends Serializable> ResponseBodyExtractor<T> getExtractor(String contentType, SenderResponse response,
-			Class<T> clazz) {
+	public <T> ResponseBodyExtractor<T> getExtractor(String contentType, SenderResponse response, Class<T> clazz) {
 		// Ignore Content-Type for String or Byte Array result
 		if (clazz.equals(String.class)) {
 			return (ResponseBodyExtractor<T>) ResponseBodyExtractors.STRING;

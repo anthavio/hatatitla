@@ -72,7 +72,7 @@ public class AsyncTest {
 				//this is expected
 			}
 			assertThat(conman.getTotalStats().getLeased()).isEqualTo(1); //request is still in progress
-			Thread.sleep(550); //after server complete request
+			Thread.sleep(600); //after server complete request
 			assertThat(conman.getTotalStats().getLeased()).isEqualTo(0); //response is cached and closed
 			SenderResponse response2 = future2.get();
 			assertThat(response2.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);

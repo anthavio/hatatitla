@@ -1,7 +1,6 @@
 package com.anthavio.hatatitla.inout;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import com.anthavio.hatatitla.SenderResponse;
 
@@ -22,7 +21,7 @@ public interface ResponseBodyExtractor<T> {
 	 * @author martin.vanek
 	 * 
 	 */
-	public static class ExtractedBodyResponse<T extends Serializable> {
+	public static class ExtractedBodyResponse<T> {
 
 		private final SenderResponse response;
 

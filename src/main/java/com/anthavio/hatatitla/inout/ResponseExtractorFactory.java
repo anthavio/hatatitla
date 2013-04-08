@@ -1,7 +1,5 @@
 package com.anthavio.hatatitla.inout;
 
-import java.io.Serializable;
-
 import com.anthavio.hatatitla.SenderResponse;
 
 /**
@@ -11,5 +9,5 @@ import com.anthavio.hatatitla.SenderResponse;
  */
 public interface ResponseExtractorFactory {
 
-	public <T extends Serializable> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Class<T> resultType);
+	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Class<T> resultType);
 }

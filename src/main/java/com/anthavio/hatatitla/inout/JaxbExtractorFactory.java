@@ -1,6 +1,5 @@
 package com.anthavio.hatatitla.inout;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +38,7 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 	}
 
 	@Override
-	public <T extends Serializable> JaxbResponseExctractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
+	public <T> JaxbResponseExctractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
 		JaxbResponseExctractor<T> extractor = (JaxbResponseExctractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			if (this.jaxbContext != null) {

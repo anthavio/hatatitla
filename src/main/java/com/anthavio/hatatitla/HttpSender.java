@@ -197,8 +197,7 @@ public abstract class HttpSender implements Closeable {
 	 * Response is closed automaticaly.
 	 * 
 	 */
-	public <T extends Serializable> void execute(SenderRequest request, ResponseBodyHandler<T> handler)
-			throws SenderException {
+	public <T> void execute(SenderRequest request, ResponseBodyHandler<T> handler) throws SenderException {
 		if (handler == null) {
 			throw new IllegalArgumentException("null handler");
 		}
@@ -229,8 +228,7 @@ public abstract class HttpSender implements Closeable {
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 * ResponseExtractor is created and used to extract the specified resultType
 	 */
-	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType)
-			throws SenderException {
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType) throws SenderException {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
@@ -246,7 +244,7 @@ public abstract class HttpSender implements Closeable {
 	/**
 	 * Mainly for CachingSender and CachingExtractor
 	 */
-	public <T extends Serializable> T extract(SenderResponse response, Class<T> resultType) throws SenderException {
+	public <T> T extract(SenderResponse response, Class<T> resultType) throws SenderException {
 		try {
 			if (response.getHttpStatusCode() >= 300) {
 				if (errorResponseHandler != null) {
@@ -267,8 +265,8 @@ public abstract class HttpSender implements Closeable {
 	/**
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 */
-	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request,
-			ResponseBodyExtractor<T> extractor) throws SenderException {
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor)
+			throws SenderException {
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor is null");
 		}
@@ -295,7 +293,7 @@ public abstract class HttpSender implements Closeable {
 	/**
 	 * Asynchronous extraction with Future as response
 	 */
-	public <T extends Serializable> Future<ExtractedBodyResponse<T>> start(final SenderRequest request,
+	public <T> Future<ExtractedBodyResponse<T>> start(final SenderRequest request,
 			final ResponseBodyExtractor<T> extractor) {
 		if (executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
@@ -312,8 +310,7 @@ public abstract class HttpSender implements Closeable {
 	/**
 	 * Asynchronous extraction with Future as response
 	 */
-	public <T extends Serializable> Future<ExtractedBodyResponse<T>> start(final SenderRequest request,
-			final Class<T> resultType) {
+	public <T> Future<ExtractedBodyResponse<T>> start(final SenderRequest request, final Class<T> resultType) {
 		if (executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
@@ -345,7 +342,7 @@ public abstract class HttpSender implements Closeable {
 		});
 	}
 
-	public <T extends Serializable> void start(final SenderRequest request, final ResponseBodyHandler<T> handler) {
+	public <T> void start(final SenderRequest request, final ResponseBodyHandler<T> handler) {
 		if (executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}

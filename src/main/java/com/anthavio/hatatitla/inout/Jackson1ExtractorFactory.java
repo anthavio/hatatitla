@@ -1,6 +1,5 @@
 package com.anthavio.hatatitla.inout;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ public class Jackson1ExtractorFactory implements ResponseExtractorFactory {
 	}
 
 	@Override
-	public <T extends Serializable> Jackson1ResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
+	public <T> Jackson1ResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
 		Jackson1ResponseExtractor<T> extractor = (Jackson1ResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			extractor = new Jackson1ResponseExtractor<T>(resultType, objectMapper);
