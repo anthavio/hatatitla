@@ -156,7 +156,7 @@ public class CachingSender {
 		}
 	}
 
-	private <T extends Serializable> void doScheduled(CachingRequest request, String cacheKey) {
+	private <T> void doScheduled(CachingRequest request, String cacheKey) {
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {
 			logger.debug("Request is already scheduled to refresh" + cacheKey);
@@ -199,8 +199,8 @@ public class CachingSender {
 	 * 
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 */
-	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request,
-			ResponseBodyExtractor<T> extractor) throws IOException {
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor)
+			throws IOException {
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor is null");
 		}
@@ -222,8 +222,7 @@ public class CachingSender {
 	 * 
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 */
-	public <T extends Serializable> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType)
-			throws IOException {
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType) throws IOException {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
@@ -305,7 +304,7 @@ public class CachingSender {
 	 * Runnable for {@link RefreshMode#ASYNC_REQUEST}
 	 * 
 	 */
-	private class CacheUpdateRunner<T extends Serializable> implements Runnable {
+	private class CacheUpdateRunner<T> implements Runnable {
 
 		private final CachingRequest request;
 
