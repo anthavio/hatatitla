@@ -28,7 +28,7 @@ import com.anthavio.httl.TestResponse.NameValue;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
 import com.anthavio.httl.cache.RequestCache;
-import com.anthavio.httl.cache.SimpleRequestCache;
+import com.anthavio.httl.cache.HeapMapRequestCache;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.anthavio.httl.inout.ResponseErrorHandler;
@@ -188,7 +188,7 @@ public class MarshallingExtractingTest {
 			//System.out.println(nameValue.getName() + " " + nameValue.getValue());
 		}
 
-		RequestCache<Serializable> cache = new SimpleRequestCache<Serializable>();
+		RequestCache<Serializable> cache = new HeapMapRequestCache<Serializable>();
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
 		CachingExtractorRequest<String> crequest = cextractor.with(request).softTtl(1, TimeUnit.MINUTES)
 				.hardTtl(2, TimeUnit.MINUTES).build(String.class);

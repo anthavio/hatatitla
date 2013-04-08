@@ -1,7 +1,5 @@
 package com.anthavio.httl.example;
 
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
@@ -14,7 +12,10 @@ import com.anthavio.httl.HttpClient4Sender;
 import com.anthavio.httl.HttpURLConfig;
 import com.anthavio.httl.HttpURLSender;
 import com.anthavio.httl.SenderRequest.ValueStrategy;
-import com.anthavio.httl.inout.Jackson2RequestMarshaller;
+import com.anthavio.httl.cache.CachedResponse;
+import com.anthavio.httl.cache.CachingSender;
+import com.anthavio.httl.cache.HeapMapRequestCache;
+import com.anthavio.httl.cache.RequestCache;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
@@ -26,7 +27,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 public class ExamplesTest {
 
 	public static void main(String[] args) {
-		binding();
+		json();
 	}
 
 	public static void fluent() {
@@ -112,21 +113,27 @@ public class ExamplesTest {
 		HttpClient3Sender http3sender = http3config.buildSender();
 	}
 
-	public static void binding() {
-		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
-		HttpClient4Sender sender = new HttpClient4Sender(config);
+	public static void json() {
+		//Precondition is to have Jackson 1 or Jackson 2 on classpath, otherwise following exception will occur
+		//java.lang.IllegalArgumentException: Request body marshaller not found for application/json
+		//java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
+		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
 
-		Jackson2RequestMarshaller marshaller = (Jackson2RequestMarshaller) sender.getRequestMarshaller("application/json");
-		marshaller.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-
+		//Send HttpbinIn instance marshalled as JSON document
 		HttpbinIn binIn = new HttpbinIn();
 		binIn.setSomeDate(new Date());
 		binIn.setSomeString("Hello!");
 
-		ExtractedBodyResponse<HttpbinOut> extract = sender.PUT("/put").body(binIn, "application/json")
+		//Using extract method will parse returned Httpbin JSON document into HttpbinOut instance
+		ExtractedBodyResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
 				.extract(HttpbinOut.class);
-		System.out.println(extract.getBody().getOrigin());
+
+		HttpbinOut body = extract.getBody(); //voila!
+
 		sender.close();
+
+		//Jackson2RequestMarshaller marshaller = (Jackson2RequestMarshaller) sender.getRequestMarshaller("application/json");
+		//marshaller.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
 		/*
 		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
 		sender = config.buildSender();
@@ -137,112 +144,120 @@ public class ExamplesTest {
 		*/
 	}
 
-	static class HttpbinIn {
+	public static void cachingResponse() {
+		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
+		RequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		CachingSender csender = new CachingSender(sender, cache);
 
-		private String someString;
+		GetRequest request = sender.GET("/get").build();
+		//csender.extract(request, HttpbinOut.class);
+	}
+}
 
-		private Date someDate;
+class HttpbinIn {
 
-		public String getSomeString() {
-			return someString;
-		}
+	private String someString;
 
-		public void setSomeString(String someString) {
-			this.someString = someString;
-		}
+	private Date someDate;
 
-		public Date getSomeDate() {
-			return someDate;
-		}
-
-		public void setSomeDate(Date someDate) {
-			this.someDate = someDate;
-		}
-
+	public String getSomeString() {
+		return someString;
 	}
 
-	static class HttpbinOut implements Serializable {
+	public void setSomeString(String someString) {
+		this.someString = someString;
+	}
 
-		private String origin;
+	public Date getSomeDate() {
+		return someDate;
+	}
 
-		private String url;
+	public void setSomeDate(Date someDate) {
+		this.someDate = someDate;
+	}
 
-		private Map<String, String> files;
+}
 
-		private Map<String, String> form;
+class HttpbinOut {
 
-		private Map<String, String> headers;
+	private String origin;
 
-		private Map<String, String> args;
+	private String url;
 
-		private String json;
+	private Map<String, String> files;
 
-		private String data;
+	private Map<String, String> form;
 
-		public String getOrigin() {
-			return origin;
-		}
+	private Map<String, String> headers;
 
-		public void setOrigin(String origin) {
-			this.origin = origin;
-		}
+	private Map<String, String> args;
 
-		public String getUrl() {
-			return url;
-		}
+	private String json;
 
-		public void setUrl(String url) {
-			this.url = url;
-		}
+	private String data;
 
-		public Map<String, String> getFiles() {
-			return files;
-		}
+	public String getOrigin() {
+		return origin;
+	}
 
-		public void setFiles(Map<String, String> files) {
-			this.files = files;
-		}
+	public void setOrigin(String origin) {
+		this.origin = origin;
+	}
 
-		public Map<String, String> getForm() {
-			return form;
-		}
+	public String getUrl() {
+		return url;
+	}
 
-		public void setForm(Map<String, String> form) {
-			this.form = form;
-		}
+	public void setUrl(String url) {
+		this.url = url;
+	}
 
-		public Map<String, String> getHeaders() {
-			return headers;
-		}
+	public Map<String, String> getFiles() {
+		return files;
+	}
 
-		public void setHeaders(Map<String, String> headers) {
-			this.headers = headers;
-		}
+	public void setFiles(Map<String, String> files) {
+		this.files = files;
+	}
 
-		public Map<String, String> getArgs() {
-			return args;
-		}
+	public Map<String, String> getForm() {
+		return form;
+	}
 
-		public void setArgs(Map<String, String> args) {
-			this.args = args;
-		}
+	public void setForm(Map<String, String> form) {
+		this.form = form;
+	}
 
-		public String getJson() {
-			return json;
-		}
+	public Map<String, String> getHeaders() {
+		return headers;
+	}
 
-		public void setJson(String json) {
-			this.json = json;
-		}
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
+	}
 
-		public String getData() {
-			return data;
-		}
+	public Map<String, String> getArgs() {
+		return args;
+	}
 
-		public void setData(String data) {
-			this.data = data;
-		}
+	public void setArgs(Map<String, String> args) {
+		this.args = args;
+	}
 
+	public String getJson() {
+		return json;
+	}
+
+	public void setJson(String json) {
+		this.json = json;
+	}
+
+	public String getData() {
+		return data;
+	}
+
+	public void setData(String data) {
+		this.data = data;
 	}
 
 }

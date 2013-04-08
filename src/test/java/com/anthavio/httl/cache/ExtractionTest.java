@@ -22,7 +22,7 @@ import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
-import com.anthavio.httl.cache.SimpleRequestCache;
+import com.anthavio.httl.cache.HeapMapRequestCache;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
@@ -302,7 +302,7 @@ public class ExtractionTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new JavaHttpSender(url);
 		HttpSender sender = new HttpClient4Sender(url);
-		SimpleRequestCache<Serializable> cache = new SimpleRequestCache<Serializable>();
+		HeapMapRequestCache<Serializable> cache = new HeapMapRequestCache<Serializable>();
 		CachingExtractor csender = new CachingExtractor(sender, cache);
 		csender.setExecutor(executor);
 		return csender;

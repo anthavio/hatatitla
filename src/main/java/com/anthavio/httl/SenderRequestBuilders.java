@@ -7,9 +7,9 @@ import java.util.concurrent.Future;
 import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.SenderBodyRequest.FakeStream;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
+import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyHandler;
 import com.anthavio.httl.inout.ResponseHandler;
-import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
  * Equivalent of Jersey/JAX-RS-2.0 RequestBuilder
@@ -178,10 +178,10 @@ public class SenderRequestBuilders {
 		/**
 		 * Set String as request body (entity)
 		 */
-		public SenderRequestBuilder<X> body(String body, String contentType) {
+		public X body(String body, String contentType) {
 			this.bodyStream = new FakeStream(body);
 			this.contentType = contentType;
-			return this;
+			return getX();
 		}
 
 		/**
@@ -208,10 +208,10 @@ public class SenderRequestBuilders {
 		/**
 		 * Set InputStream as request body (entity)
 		 */
-		public SenderRequestBuilder<X> body(InputStream stream, String contentType) {
+		public X body(InputStream stream, String contentType) {
 			this.bodyStream = stream;
 			this.contentType = contentType;
-			return this;
+			return getX();
 		}
 	}
 

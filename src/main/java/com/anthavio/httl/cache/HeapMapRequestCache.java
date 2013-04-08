@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class SimpleRequestCache<V extends Serializable> extends RequestCache<V> {
+public class HeapMapRequestCache<V extends Serializable> extends RequestCache<V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -22,11 +22,11 @@ public class SimpleRequestCache<V extends Serializable> extends RequestCache<V> 
 
 	private Map<String, CacheEntry<V>> storage = new ConcurrentHashMap<String, CacheEntry<V>>();
 
-	public SimpleRequestCache() {
+	public HeapMapRequestCache() {
 		this(0, null);
 	}
 
-	public SimpleRequestCache(int evictionInterval, TimeUnit evictionUnit) {
+	public HeapMapRequestCache(int evictionInterval, TimeUnit evictionUnit) {
 		super("SIMPLE");
 		if (evictionInterval > 0) {
 			ttlEvictingThread = new TtlEvictingThread(evictionInterval, evictionUnit);
@@ -86,7 +86,7 @@ public class SimpleRequestCache<V extends Serializable> extends RequestCache<V> 
 			if (this.interval < 1000) {
 				throw new IllegalArgumentException("Interval " + this.interval + " must be >= 1000 millis");
 			}
-			this.setName(SimpleRequestCache.this.getName() + "-reaper");
+			this.setName(HeapMapRequestCache.this.getName() + "-reaper");
 			this.setDaemon(true);
 		}
 

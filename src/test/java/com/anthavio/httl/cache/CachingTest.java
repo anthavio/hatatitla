@@ -38,7 +38,7 @@ import com.anthavio.httl.cache.CachingRequest;
 import com.anthavio.httl.cache.CachingSender;
 import com.anthavio.httl.cache.EHRequestCache;
 import com.anthavio.httl.cache.RequestCache;
-import com.anthavio.httl.cache.SimpleRequestCache;
+import com.anthavio.httl.cache.HeapMapRequestCache;
 import com.anthavio.httl.cache.SpyRequestCache;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
@@ -117,7 +117,7 @@ public class CachingTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new SimpleHttpSender(url);
 		HttpSender sender = new HttpClient4Sender(url);
-		SimpleRequestCache<CachedResponse> cache = new SimpleRequestCache<CachedResponse>();
+		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		csender.setExecutor(executor);
 		return csender;
@@ -129,7 +129,7 @@ public class CachingTest {
 		HttpSender sender1 = new HttpClient4Sender("127.0.0.1:" + server.getHttpPort());
 		HttpSender sender2 = new HttpClient4Sender("localhost:" + server.getHttpPort());
 		//shared cache for 2 senders
-		RequestCache<CachedResponse> cache = new SimpleRequestCache<CachedResponse>();
+		RequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
 		CachingSender csender1 = new CachingSender(sender1, cache);
 		CachingSender csender2 = new CachingSender(sender2, cache);
 		GetRequest request1 = new GetRequest("/");
@@ -195,7 +195,7 @@ public class CachingTest {
 	@Test
 	public void testSimpleCache() throws Exception {
 		RequestCache<CachedResponse> cache;
-		cache = new SimpleRequestCache<CachedResponse>();
+		cache = new HeapMapRequestCache<CachedResponse>();
 		doCacheTest(cache);
 	}
 
@@ -330,7 +330,7 @@ public class CachingTest {
 		//ETag: "9ea8f5a5b1d659bc8358daad6f2e347f15f6e683"
 		//Expires: Sat, 01 Jan 2000 00:00:00 GMT
 		HttpSender sender = new HttpClient4Sender("https://graph.facebook.com");
-		SimpleRequestCache<CachedResponse> cache = new SimpleRequestCache<CachedResponse>();
+		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 
 		GetRequest request = new GetRequest("/me/friends");
@@ -358,7 +358,7 @@ public class CachingTest {
 		//Date: Tue, 26 Feb 2013 16:11:16 GMT
 		//Expires: Wed, 27 Feb 2013 16:11:16 GMT
 		HttpSender sender = new HttpClient4Sender("http://maps.googleapis.com/maps/api/staticmap");
-		SimpleRequestCache<CachedResponse> cache = new SimpleRequestCache<CachedResponse>();
+		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		GetRequest request = new GetRequest("/");
 		request.addParameter("key", "AIzaSyCgNUVqbYTyIP_f4Ew2wJXSZ9XjIQ8F5w8");
@@ -410,7 +410,7 @@ public class CachingTest {
 		//Expires: -1
 		//Cache-Control: private, max-age=0
 		HttpSender sender = new HttpClient4Sender("http://www.google.co.uk");
-		SimpleRequestCache<CachedResponse> cache = new SimpleRequestCache<CachedResponse>();
+		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 
 		SenderResponse response = csender.execute(new GetRequest("/"));
