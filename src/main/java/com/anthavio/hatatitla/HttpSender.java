@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.lang.reflect.ParameterizedType;
 import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import com.anthavio.hatatitla.inout.RequestBodyMarshallers;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractors;
+import com.anthavio.hatatitla.inout.ResponseBodyHandler;
 import com.anthavio.hatatitla.inout.ResponseErrorHandler;
 import com.anthavio.hatatitla.inout.ResponseExtractorFactory;
 import com.anthavio.hatatitla.inout.ResponseHandler;
@@ -191,6 +193,39 @@ public abstract class HttpSender implements Closeable {
 	}
 
 	/**
+	 * Execute Request and use ResponseBodyHandler parameter to process Response.
+	 * Response is closed automaticaly.
+	 * 
+	 */
+	public <T extends Serializable> void execute(SenderRequest request, ResponseBodyHandler<T> handler)
+			throws SenderException {
+		if (handler == null) {
+			throw new IllegalArgumentException("null handler");
+		}
+		SenderResponse response = null;
+		try {
+
+			try {
+				response = execute(request);
+
+				Class<T> clazz = (Class<T>) ((ParameterizedType) handler.getClass().getGenericSuperclass())
+						.getActualTypeArguments()[0];
+				ExtractedBodyResponse<T> extracted = extract(request, clazz);
+				handler.onResponse(response, extracted.getBody());
+			} catch (Exception x) {
+				if (response == null) {
+					handler.onRequestError(request, x);
+				} else {
+					handler.onResponseError(response, x);
+				}
+			}
+
+		} finally {
+			Cutils.close(response);
+		}
+	}
+
+	/**
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 * ResponseExtractor is created and used to extract the specified resultType
 	 */
@@ -295,6 +330,22 @@ public abstract class HttpSender implements Closeable {
 	 * Asynchronous execution whith ResponseHandler
 	 */
 	public void start(final SenderRequest request, final ResponseHandler handler) {
+		if (executor == null) {
+			throw new IllegalStateException("Executor for asynchronous requests is not configured");
+		}
+		executor.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					execute(request, handler);
+				} catch (Exception x) {
+					logger.warn("Failed asynchronous request", x);
+				}
+			}
+		});
+	}
+
+	public <T extends Serializable> void start(final SenderRequest request, final ResponseBodyHandler<T> handler) {
 		if (executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}

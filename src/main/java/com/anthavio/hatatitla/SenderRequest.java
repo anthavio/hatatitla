@@ -251,6 +251,14 @@ public abstract class SenderRequest {
 	}
 
 	/**
+	 * Set Parameters replacing all existing
+	 */
+	public SenderRequest setParameters(Multival parameters) {
+		this.parameters = parameters;
+		return this;
+	}
+
+	/**
 	 * Add Parameters
 	 */
 	public SenderRequest addParameters(Map<String, ?> headers) {

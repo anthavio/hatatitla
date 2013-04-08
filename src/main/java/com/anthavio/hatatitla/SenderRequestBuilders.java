@@ -3,11 +3,13 @@ package com.anthavio.hatatitla;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import com.anthavio.hatatitla.HttpSender.Multival;
 import com.anthavio.hatatitla.SenderBodyRequest.FakeStream;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor;
 import com.anthavio.hatatitla.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.hatatitla.inout.ResponseBodyHandler;
 import com.anthavio.hatatitla.inout.ResponseHandler;
 
 /**
@@ -129,6 +131,31 @@ public class SenderRequestBuilders {
 		public <T extends Serializable> ExtractedBodyResponse<T> extract(ResponseBodyExtractor<T> extractor) {
 			SenderRequest request = build();
 			return httpSender.extract(request, extractor);
+		}
+
+		public Future<SenderResponse> start() {
+			SenderRequest request = build();
+			return httpSender.start(request);
+		}
+
+		public <T extends Serializable> Future<ExtractedBodyResponse<T>> start(ResponseBodyExtractor<T> extractor) {
+			SenderRequest request = build();
+			return httpSender.start(request, extractor);
+		}
+
+		public <T extends Serializable> Future<ExtractedBodyResponse<T>> start(Class<T> resultType) {
+			SenderRequest request = build();
+			return httpSender.start(request, resultType);
+		}
+
+		public void start(ResponseHandler handler) {
+			SenderRequest request = build();
+			httpSender.start(request, handler);
+		}
+
+		public <T extends Serializable> void start(ResponseBodyHandler<T> handler) {
+			SenderRequest request = build();
+			httpSender.start(request, handler);
 		}
 	}
 
