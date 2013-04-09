@@ -47,7 +47,7 @@ Fluent API
 		//Create sender with utf-8 encoding, default timeouts and connection pool
 		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
 
-		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 666).extract(String.class);
+		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
 		System.out.println(extracted1.getBody());
 
@@ -66,12 +66,43 @@ Traditional API
 		HttpClient4Sender sender = new HttpClient4Sender(config);
 		
 		GetRequest request = new GetRequest("/users");
-		request.setParameter("since", 666);
+		request.setParameter("since", 333);
 		ExtractedBodyResponse<String> extracted = sender.extract(request, String.class);
 		//Just print unprocessed JSON String
 		System.out.println(extracted.getBody());
 
 		//Free connection pool
+		sender.close();
+```
+
+Request/Response marshalling
+-------------
+
+For XML bodies, standard JAXB used for marshalling requests and responses and no additional library is required.
+
+For JSON bodies, Jackson 1 or Jackson 2 must be present on classpath, otherwise following exception will occur.
+
+```
+java.lang.IllegalArgumentException: Request body marshaller not found for application/json
+or
+java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
+```
+Java beans representing bodies must be existing. In this example, HttpbinIn and HttpbinOut are model beans.
+
+```java
+		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
+
+		//Send HttpbinIn instance marshalled as JSON document
+		HttpbinIn binIn = new HttpbinIn();
+		binIn.setSomeDate(new Date());
+		binIn.setSomeString("Hello!");
+
+		//Using extract method will parse returned Httpbin JSON document into HttpbinOut instance
+		ExtractedBodyResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
+				.extract(HttpbinOut.class);
+
+		HttpbinOut body = extract.getBody(); //voila!
+
 		sender.close();
 ```
 
