@@ -14,6 +14,7 @@ import com.anthavio.httl.HttpURLConfig;
 import com.anthavio.httl.HttpURLSender;
 import com.anthavio.httl.SenderRequest.ValueStrategy;
 import com.anthavio.httl.cache.CachedResponse;
+import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingRequest;
 import com.anthavio.httl.cache.CachingSender;
 import com.anthavio.httl.cache.HeapMapRequestCache;
@@ -154,14 +155,20 @@ public class ExamplesTest {
 		//Create caching sender
 		CachingSender csender = new CachingSender(sender, cache);
 
-		ExtractedBodyResponse<HttpbinOut> extract = csender.GET("/users").param("since", 333).extract(HttpbinOut.class);
+		//1. fluent interface
+		ExtractedBodyResponse<HttpbinOut> extract = csender.GET("/users").param("since", 333).cache(1, TimeUnit.MINUTES)
+				.extract(HttpbinOut.class);
 
+		//2. prepared request
 		GetRequest request = sender.GET("/users").param("since", 333).build();
-		//ExtractedBodyResponse<HttpbinOut> extract = csender.extract(request, HttpbinOut.class);
-
 		CachingRequest crequest = new CachingRequest(request, 1, TimeUnit.MINUTES);
+		//
+		ExtractedBodyResponse<HttpbinOut> extract2 = csender.extract(crequest, HttpbinOut.class);
 
-		//CachingExtractor cextractor = new CachingExtractor(sender, cache);
+		RequestCache<Object> ecache = new HeapMapRequestCache<Object>();
+		CachingExtractor cextractor = new CachingExtractor(sender, ecache);
+		cextractor.with(request).extract(HttpbinOut.class);
+		cextractor.extract(null);
 		//cextractor.extract(null);
 
 		cache.destroy();

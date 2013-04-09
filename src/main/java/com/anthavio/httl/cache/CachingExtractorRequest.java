@@ -1,6 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import com.anthavio.httl.SenderRequest;
@@ -11,7 +10,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractor;
  * @author martin.vanek
  *
  */
-public class CachingExtractorRequest<T extends Serializable> extends CachingRequest {
+public class CachingExtractorRequest<T> extends CachingRequest {
 
 	private final ResponseBodyExtractor<T> extractor;
 

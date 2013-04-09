@@ -16,7 +16,7 @@ import com.anthavio.httl.HttpSender.Multival;
  * @author martin.vanek
  *
  */
-public abstract class SenderRequest {
+public class SenderRequest {
 
 	public static enum ValueStrategy {
 		SKIP, KEEP

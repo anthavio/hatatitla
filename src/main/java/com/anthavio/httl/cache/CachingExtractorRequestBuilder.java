@@ -1,7 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import com.anthavio.httl.SenderRequest;
@@ -49,7 +47,7 @@ public class CachingExtractorRequestBuilder {
 	}
 
 	//this is not a best name for this method
-	public <T extends Serializable> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
+	public <T> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
 		if (extractor == null) {
 			throw new IllegalArgumentException("response extractor is null");
 		}
@@ -57,19 +55,19 @@ public class CachingExtractorRequestBuilder {
 	}
 
 	//this is not a best name for this method
-	public <T extends Serializable> CachingExtractorRequest<T> build(Class<T> resultType) {
+	public <T> CachingExtractorRequest<T> build(Class<T> resultType) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("response type is null");
 		}
 		return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.MILLISECONDS, refreshMode);
 	}
 
-	public <T extends Serializable> T extract(Class<T> resultType) throws IOException {
+	public <T> T extract(Class<T> resultType) {
 		CachingExtractorRequest<T> build = build(resultType);
 		return cextractor.extract(build);
 	}
 
-	public <T extends Serializable> T extract(ResponseBodyExtractor<T> extractor) throws IOException {
+	public <T> T extract(ResponseBodyExtractor<T> extractor) {
 		CachingExtractorRequest<T> build = build(extractor);
 		return cextractor.extract(build);
 	}

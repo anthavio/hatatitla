@@ -11,7 +11,7 @@ import com.anthavio.httl.Cutils;
  * @author martin.vanek
  *
  */
-public class CacheEntry<T extends Serializable> implements Serializable {
+public class CacheEntry<T> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 

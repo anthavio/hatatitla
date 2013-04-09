@@ -3,7 +3,6 @@ package com.anthavio.httl;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -13,27 +12,16 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.anthavio.httl.HttpClient3Config;
-import com.anthavio.httl.HttpClient3Sender;
-import com.anthavio.httl.HttpClient4Config;
-import com.anthavio.httl.HttpClient4Sender;
-import com.anthavio.httl.HttpHeaderUtil;
-import com.anthavio.httl.HttpSender;
-import com.anthavio.httl.PostRequest;
-import com.anthavio.httl.SenderException;
-import com.anthavio.httl.SenderHttpStatusException;
-import com.anthavio.httl.SenderRequest;
-import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.TestResponse.NameValue;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
-import com.anthavio.httl.cache.RequestCache;
 import com.anthavio.httl.cache.HeapMapRequestCache;
+import com.anthavio.httl.cache.RequestCache;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
+import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.anthavio.httl.inout.ResponseErrorHandler;
 import com.anthavio.httl.inout.ResponseHandler;
-import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
  * 
@@ -188,7 +176,7 @@ public class MarshallingExtractingTest {
 			//System.out.println(nameValue.getName() + " " + nameValue.getValue());
 		}
 
-		RequestCache<Serializable> cache = new HeapMapRequestCache<Serializable>();
+		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
 		CachingExtractorRequest<String> crequest = cextractor.with(request).softTtl(1, TimeUnit.MINUTES)
 				.hardTtl(2, TimeUnit.MINUTES).build(String.class);

@@ -1,6 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -12,7 +11,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public abstract class RequestCache<V extends Serializable> implements Cache<String, V> {
+public abstract class RequestCache<V> implements Cache<String, V> {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 

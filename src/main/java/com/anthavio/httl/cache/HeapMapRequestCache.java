@@ -1,6 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class HeapMapRequestCache<V extends Serializable> extends RequestCache<V> {
+public class HeapMapRequestCache<V> extends RequestCache<V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 

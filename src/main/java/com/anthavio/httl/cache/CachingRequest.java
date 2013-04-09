@@ -40,6 +40,7 @@ public class CachingRequest {
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, long softTtl, TimeUnit unit, RefreshMode refreshMode) {
+		//super(request.getSender(), request.getMethod(), request.getUrlPath(), request.getParameters(), request.getHeaders());
 		if (request == null) {
 			throw new IllegalArgumentException("null request");
 		}
@@ -101,7 +102,7 @@ public class CachingRequest {
 
 	@Override
 	public String toString() {
-		return "CachingRequest [request=" + senderRequest + ", hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", refreshMode="
+		return "CachingRequest [" + super.toString() + ", hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", refreshMode="
 				+ refreshMode + "]";
 	}
 

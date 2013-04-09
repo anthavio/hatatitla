@@ -2,7 +2,6 @@ package com.anthavio.httl.cache;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -20,9 +19,6 @@ import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
-import com.anthavio.httl.cache.CachingExtractor;
-import com.anthavio.httl.cache.CachingExtractorRequest;
-import com.anthavio.httl.cache.HeapMapRequestCache;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
@@ -302,7 +298,7 @@ public class ExtractionTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new JavaHttpSender(url);
 		HttpSender sender = new HttpClient4Sender(url);
-		HeapMapRequestCache<Serializable> cache = new HeapMapRequestCache<Serializable>();
+		HeapMapRequestCache<Object> cache = new HeapMapRequestCache<Object>();
 		CachingExtractor csender = new CachingExtractor(sender, cache);
 		csender.setExecutor(executor);
 		return csender;

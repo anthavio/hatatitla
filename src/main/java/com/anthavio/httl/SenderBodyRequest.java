@@ -11,7 +11,7 @@ import com.anthavio.httl.HttpSender.Multival;
  * @author martin.vanek
  *
  */
-public abstract class SenderBodyRequest extends SenderRequest {
+public class SenderBodyRequest extends SenderRequest {
 
 	private InputStream bodyStream;
 
@@ -23,7 +23,7 @@ public abstract class SenderBodyRequest extends SenderRequest {
 		super(sender, method, urlPath, parameters, null);
 	}
 
-	protected SenderBodyRequest(HttpSender sender, Method method, String urlPath, Multival parameters, Multival headers) {
+	public SenderBodyRequest(HttpSender sender, Method method, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 

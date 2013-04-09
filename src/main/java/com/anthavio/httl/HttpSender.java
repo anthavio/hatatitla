@@ -392,20 +392,20 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 		return new SenderDeleteRequestBuilder(this, path);
 	}
 
-	public SenderPostRequestBuilder POST(String path) {
-		return new SenderPostRequestBuilder(this, path);
-	}
-
-	public SenderPutRequestBuilder PUT(String path) {
-		return new SenderPutRequestBuilder(this, path);
-	}
-
 	public SenderHeadRequestBuilder HEAD(String path) {
 		return new SenderHeadRequestBuilder(this, path);
 	}
 
 	public SenderOptionsRequestBuilder OPTIONS(String path) {
 		return new SenderOptionsRequestBuilder(this, path);
+	}
+
+	public SenderPostRequestBuilder POST(String path) {
+		return new SenderPostRequestBuilder(this, path);
+	}
+
+	public SenderPutRequestBuilder PUT(String path) {
+		return new SenderPutRequestBuilder(this, path);
 	}
 
 	/**

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.anthavio.httl.Cutils;
+import com.anthavio.httl.ExtractionOperations;
 import com.anthavio.httl.HttpDateUtil;
 import com.anthavio.httl.HttpHeaderUtil;
 import com.anthavio.httl.HttpSender;
@@ -20,17 +21,13 @@ import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
 import com.anthavio.httl.SenderOperations;
 import com.anthavio.httl.SenderRequest;
+import com.anthavio.httl.SenderRequest.Method;
 import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingDeleteRequestBuilder;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingGetRequestBuilder;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingHeadRequestBuilder;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingOptionsRequestBuilder;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingPostRequestBuilder;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingPutRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingBodyRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingBodylessRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
-import com.anthavio.httl.inout.ResponseHandler;
 
 /**
  * Sender warpper that caches Responses as they are recieved from remote server
@@ -43,7 +40,7 @@ import com.anthavio.httl.inout.ResponseHandler;
  * @author martin.vanek
  *
  */
-public class CachingSender implements SenderOperations {
+public class CachingSender implements SenderOperations, ExtractionOperations {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -107,28 +104,28 @@ public class CachingSender implements SenderOperations {
 	 * Fluent builders 
 	 */
 
-	public CachingGetRequestBuilder GET(String path) {
-		return new CachingGetRequestBuilder(this, path);
+	public CachingBodylessRequestBuilder GET(String path) {
+		return new CachingBodylessRequestBuilder(this, Method.GET, path);
 	}
 
-	public CachingDeleteRequestBuilder DELETE(String path) {
-		return new CachingDeleteRequestBuilder(this, path);
+	public CachingBodylessRequestBuilder DELETE(String path) {
+		return new CachingBodylessRequestBuilder(this, Method.DELETE, path);
 	}
 
-	public CachingPostRequestBuilder POST(String path) {
-		return new CachingPostRequestBuilder(this, path);
+	public CachingBodylessRequestBuilder HEAD(String path) {
+		return new CachingBodylessRequestBuilder(this, Method.HEAD, path);
 	}
 
-	public CachingPutRequestBuilder PUT(String path) {
-		return new CachingPutRequestBuilder(this, path);
+	public CachingBodylessRequestBuilder OPTIONS(String path) {
+		return new CachingBodylessRequestBuilder(this, Method.OPTIONS, path);
 	}
 
-	public CachingHeadRequestBuilder HEAD(String path) {
-		return new CachingHeadRequestBuilder(this, path);
+	public CachingBodyRequestBuilder POST(String path) {
+		return new CachingBodyRequestBuilder(this, Method.POST, path);
 	}
 
-	public CachingOptionsRequestBuilder OPTIONS(String path) {
-		return new CachingOptionsRequestBuilder(this, path);
+	public CachingBodyRequestBuilder PUT(String path) {
+		return new CachingBodyRequestBuilder(this, Method.PUT, path);
 	}
 
 	/**
@@ -142,7 +139,7 @@ public class CachingSender implements SenderOperations {
 	}
 
 	/**
-	 * Static caching based on specified ttl and unit
+	 * Static caching based on specified TTL
 	 */
 	public SenderResponse execute(CachingRequest request) {
 		if (request.isAsyncRefresh() && this.executor == null) {
@@ -204,6 +201,11 @@ public class CachingSender implements SenderOperations {
 		}
 	}
 
+	/**
+	 * Schedule this CachingRequest to be updated(refreshed) automatically in the background. 
+	 * 
+	 * Also starts scheduler thread if it is not running yet.
+	 */
 	private <T> void doScheduled(CachingRequest request, String cacheKey) {
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {
@@ -219,6 +221,9 @@ public class CachingSender implements SenderOperations {
 		}
 	}
 
+	/**
+	 * Puts Response into Cache if http status < 300
+	 */
 	private SenderResponse doCachePut(String cacheKey, CachingRequest request, SenderResponse response) {
 		if (response.getHttpStatusCode() < 300) {
 			CachedResponse cached = new CachedResponse(request.getSenderRequest(), response);
@@ -233,30 +238,26 @@ public class CachingSender implements SenderOperations {
 	}
 
 	/**
-	 * Caching based on HTTP response headers (ETag, Last-Modified, Cache-Control, Expires).
-	 * 
-	 * Caller provides ResponseHandler for Response processing. Response is closed automaticaly.
-	 * 
-	 * XXX Almost exactly same as HttpSender's method. Can't be reused somehow?
+	 * Static caching based on specified TTL
 	 */
-	public void execute(SenderRequest request, ResponseHandler handler) {
-		if (handler == null) {
-			throw new IllegalArgumentException("null handler");
-		}
-		SenderResponse response = null;
+	public <T> ExtractedBodyResponse<T> extract(CachingRequest request, Class<T> resultType) {
+		SenderResponse response = execute(request);
 		try {
+			T extracted = sender.extract(response, resultType);
+			return new ExtractedBodyResponse<T>(response, extracted);
+		} finally {
+			Cutils.close(response);
+		}
+	}
 
-			try {
-				response = execute(request);
-			} catch (Exception x) {
-				if (response == null) {
-					handler.onRequestError(request, x);
-				} else {
-					handler.onResponseError(response, x);
-				}
-			}
-
-			handler.onResponse(response);
+	/**
+	 * Static caching based on specified TTL
+	 */
+	public <T> ExtractedBodyResponse<T> extract(CachingRequest request, ResponseBodyExtractor<T> extractor) {
+		SenderResponse response = execute(request);
+		try {
+			T extracted = extractor.extract(response);
+			return new ExtractedBodyResponse<T>(response, extracted);
 
 		} catch (IOException iox) {
 			throw new SenderException(iox);
@@ -360,7 +361,7 @@ public class CachingSender implements SenderOperations {
 	}
 
 	/**
-	 * Close undelying sender and cache 
+	 * Stops scheduler thread if running
 	 */
 	public void close() {
 		if (this.scheduler != null) {

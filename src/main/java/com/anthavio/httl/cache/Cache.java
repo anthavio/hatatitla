@@ -1,6 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -8,7 +7,7 @@ import java.util.concurrent.TimeUnit;
  * @author martin.vanek
  *
  */
-public interface Cache<K, V extends Serializable> {
+public interface Cache<K, V> {
 
 	public CacheEntry<V> get(K key);
 

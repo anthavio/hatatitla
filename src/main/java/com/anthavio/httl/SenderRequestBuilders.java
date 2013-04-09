@@ -6,6 +6,7 @@ import java.util.concurrent.Future;
 
 import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.SenderBodyRequest.FakeStream;
+import com.anthavio.httl.SenderRequest.Method;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyHandler;
@@ -20,30 +21,38 @@ import com.anthavio.httl.inout.ResponseHandler;
 public class SenderRequestBuilders {
 
 	/**
+	 * Base class for all request fluent builders
 	 * 
 	 * @author martin.vanek
 	 *
 	 */
-	public static abstract class SenderRequestBuilder<X extends SenderRequestBuilder<?>> {
+	public abstract static class AbstractRequestBuilder<X extends AbstractRequestBuilder<?>> {
 
 		protected final HttpSender httpSender;
 
-		protected final String path;
+		protected final Method method;
+
+		protected final String urlPath;
 
 		protected Multival headers = new Multival();
 
 		protected Multival parameters = new Multival();
 
-		public SenderRequestBuilder(HttpSender httpSender, String path) {
+		public AbstractRequestBuilder(HttpSender httpSender, Method method, String urlPath) {
 			if (httpSender == null) {
 				throw new IllegalArgumentException("sender is null");
 			}
 			this.httpSender = httpSender;
 
-			if (Cutils.isEmpty(path)) {
-				throw new IllegalArgumentException("path is blank");
+			if (method == null) {
+				throw new IllegalArgumentException("method is null");
 			}
-			this.path = path;
+			this.method = method;
+
+			if (Cutils.isEmpty(urlPath)) {
+				throw new IllegalArgumentException("urlPath is blank");
+			}
+			this.urlPath = urlPath;
 		}
 
 		/**
@@ -89,12 +98,26 @@ public class SenderRequestBuilders {
 			return getX();
 		}
 
+		public SenderRequest build() {
+			return new SenderRequest(httpSender, method, urlPath, parameters, headers);
+		}
+
 		protected abstract X getX(); //Generic trick
 
-		/**
-		 * End of the fluent builder chain.
-		 */
-		public abstract SenderRequest build();
+	}
+
+	/**
+	 * Base for HttpSender's fluent builders
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static abstract class SenderRequestBuilder<X extends SenderRequestBuilder<?>> extends
+			AbstractRequestBuilder<X> {
+
+		public SenderRequestBuilder(HttpSender httpSender, Method method, String urlPath) {
+			super(httpSender, method, urlPath);
+		}
 
 		/**
 		 * Execute Request and return raw unprocessed Response.
@@ -159,7 +182,26 @@ public class SenderRequestBuilders {
 	}
 
 	/**
-	 * Base builder for requests with body
+	 * GET, HEAD, DELETE, OPTIONS
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static class SenderNobodyRequestBuilder extends SenderRequestBuilder<SenderNobodyRequestBuilder> {
+
+		public SenderNobodyRequestBuilder(HttpSender httpSender, Method method, String urlPath) {
+			super(httpSender, method, urlPath);
+		}
+
+		@Override
+		protected SenderNobodyRequestBuilder getX() {
+			return this;
+		}
+
+	}
+
+	/**
+	 * PUT, POST
 	 * 
 	 * @author martin.vanek
 	 *
@@ -167,8 +209,8 @@ public class SenderRequestBuilders {
 	public static abstract class SenderBodyRequestBuilder<X extends SenderRequestBuilder<?>> extends
 			SenderRequestBuilder<X> {
 
-		public SenderBodyRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+		public SenderBodyRequestBuilder(HttpSender httpSender, Method method, String path) {
+			super(httpSender, method, path);
 		}
 
 		protected String contentType;
@@ -213,6 +255,16 @@ public class SenderRequestBuilders {
 			this.contentType = contentType;
 			return getX();
 		}
+
+		@Override
+		public SenderBodyRequest build() {
+			SenderBodyRequest request = (SenderBodyRequest) super.build();
+			if (bodyStream != null) {
+				request.setBody(bodyStream, contentType);
+			}
+			return request;
+		}
+
 	}
 
 	/**
@@ -224,12 +276,12 @@ public class SenderRequestBuilders {
 	public static class SenderGetRequestBuilder extends SenderRequestBuilder<SenderGetRequestBuilder> {
 
 		public SenderGetRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+			super(httpSender, Method.GET, path);
 		}
 
 		@Override
 		public GetRequest build() {
-			return new GetRequest(httpSender, path, parameters, headers);
+			return new GetRequest(httpSender, urlPath, parameters, headers);
 		}
 
 		@Override
@@ -247,12 +299,12 @@ public class SenderRequestBuilders {
 	public static class SenderDeleteRequestBuilder extends SenderRequestBuilder<SenderDeleteRequestBuilder> {
 
 		public SenderDeleteRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+			super(httpSender, Method.DELETE, path);
 		}
 
 		@Override
 		public DeleteRequest build() {
-			return new DeleteRequest(httpSender, path, parameters, headers);
+			return new DeleteRequest(httpSender, urlPath, parameters, headers);
 		}
 
 		@Override
@@ -270,12 +322,12 @@ public class SenderRequestBuilders {
 	public static class SenderHeadRequestBuilder extends SenderRequestBuilder<SenderHeadRequestBuilder> {
 
 		public SenderHeadRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+			super(httpSender, Method.HEAD, path);
 		}
 
 		@Override
 		public HeadRequest build() {
-			return new HeadRequest(httpSender, path, parameters, headers);
+			return new HeadRequest(httpSender, urlPath, parameters, headers);
 		}
 
 		@Override
@@ -293,12 +345,12 @@ public class SenderRequestBuilders {
 	public static class SenderOptionsRequestBuilder extends SenderRequestBuilder<SenderOptionsRequestBuilder> {
 
 		public SenderOptionsRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+			super(httpSender, Method.OPTIONS, path);
 		}
 
 		@Override
 		public OptionsRequest build() {
-			return new OptionsRequest(httpSender, path, parameters, headers);
+			return new OptionsRequest(httpSender, urlPath, parameters, headers);
 		}
 
 		@Override
@@ -316,12 +368,12 @@ public class SenderRequestBuilders {
 	public static class SenderPostRequestBuilder extends SenderBodyRequestBuilder<SenderPostRequestBuilder> {
 
 		public SenderPostRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+			super(httpSender, Method.POST, path);
 		}
 
 		@Override
 		public PostRequest build() {
-			PostRequest request = new PostRequest(httpSender, path, parameters, headers);
+			PostRequest request = new PostRequest(httpSender, urlPath, parameters, headers);
 			if (bodyStream != null) {
 				request.setBody(bodyStream, contentType);
 			}
@@ -341,15 +393,15 @@ public class SenderRequestBuilders {
 	 * @author martin.vanek
 	 *
 	 */
-	public static class SenderPutRequestBuilder extends SenderBodyRequestBuilder<SenderPutRequestBuilder> {
+	public static class SenderPutRequestBuilder extends SenderBodyRequestBuilder {
 
 		public SenderPutRequestBuilder(HttpSender httpSender, String path) {
-			super(httpSender, path);
+			super(httpSender, Method.PUT, path);
 		}
 
 		@Override
 		public PutRequest build() {
-			PutRequest request = new PutRequest(httpSender, path, parameters, headers);
+			PutRequest request = new PutRequest(httpSender, urlPath, parameters, headers);
 			if (bodyStream != null) {
 				request.setBody(bodyStream, contentType);
 			}

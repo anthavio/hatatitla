@@ -1,6 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,7 +23,7 @@ public class CachingExtractor {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final RequestCache<Serializable> cache;
+	private final RequestCache<Object> cache;
 
 	private final HttpSender sender;
 
@@ -44,7 +43,7 @@ public class CachingExtractor {
 	 * @param cache underlying cache
 	 * @param executor for asynchronous updates
 	 */
-	public CachingExtractor(HttpSender sender, RequestCache<Serializable> cache, ExecutorService executor) {
+	public CachingExtractor(HttpSender sender, RequestCache<Object> cache, ExecutorService executor) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -68,7 +67,7 @@ public class CachingExtractor {
 	 * @param sender
 	 * @param cache
 	 */
-	public CachingExtractor(HttpSender sender, RequestCache<Serializable> cache) {
+	public CachingExtractor(HttpSender sender, RequestCache<Object> cache) {
 		this(sender, cache, null);
 	}
 
@@ -96,11 +95,11 @@ public class CachingExtractor {
 	/**
 	 * @return underlying cache
 	 */
-	public RequestCache<Serializable> getCache() {
+	public RequestCache<?> getCache() {
 		return cache;
 	}
 
-	public <T extends Serializable> CachingExtractorRequestBuilder with(SenderRequest request) {
+	public <T> CachingExtractorRequestBuilder with(SenderRequest request) {
 		return new CachingExtractorRequestBuilder(this, request);
 	}
 
@@ -108,12 +107,12 @@ public class CachingExtractor {
 	 * Extracted response version. Response is extracted, then closed and result is returned to caller
 	 * Static caching based on specified amount and unit
 	 */
-	public <T extends Serializable> T extract(CachingExtractorRequest<T> request) {
+	public <T> T extract(CachingExtractorRequest<T> request) {
 		if (request.isAsyncRefresh() && this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
 		String cacheKey = sender.getCacheKey(request.getSenderRequest());
-		CacheEntry<Serializable> entry = cache.get(cacheKey);
+		CacheEntry<?> entry = cache.get(cacheKey);
 		if (entry != null) {
 			if (!entry.isSoftExpired()) {
 				return (T) entry.getValue(); //nice nonexpired hit
@@ -154,8 +153,7 @@ public class CachingExtractor {
 		}
 	}
 
-	private <T extends Serializable> ExtractedBodyResponse<T> doExtract(CachingExtractorRequest<T> request,
-			String cacheKey) {
+	private <T> ExtractedBodyResponse<T> doExtract(CachingExtractorRequest<T> request, String cacheKey) {
 		ExtractedBodyResponse<T> extracted;
 		if (request.getExtractor() != null) {
 			extracted = sender.extract(request.getSenderRequest(), request.getExtractor());
@@ -163,13 +161,12 @@ public class CachingExtractor {
 			extracted = sender.extract(request.getSenderRequest(), request.getResultType());
 		}
 		request.setLastRefresh(System.currentTimeMillis());
-		CacheEntry<Serializable> entry = new CacheEntry<Serializable>(extracted.getBody(), request.getHardTtl(),
-				request.getSoftTtl());
+		CacheEntry<Object> entry = new CacheEntry<Object>(extracted.getBody(), request.getHardTtl(), request.getSoftTtl());
 		cache.set(cacheKey, entry);
 		return extracted;
 	}
 
-	private <T extends Serializable> void doScheduled(CachingExtractorRequest<T> request, String cacheKey) {
+	private <T> void doScheduled(CachingExtractorRequest<T> request, String cacheKey) {
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {
 			logger.debug("Request is already scheduled to refresh" + cacheKey);
@@ -184,7 +181,7 @@ public class CachingExtractor {
 		}
 	}
 
-	private <T extends Serializable> void startRefresh(String cacheKey, CachingExtractorRequest<T> request) {
+	private <T> void startRefresh(String cacheKey, CachingExtractorRequest<T> request) {
 		synchronized (updated) {
 			if (updated.containsKey(cacheKey)) {
 				logger.debug("Request is already being refreshed " + cacheKey);
@@ -216,7 +213,7 @@ public class CachingExtractor {
 	 * Runnable for {@link RefreshMode#ASYNC_REQUEST}
 	 * 
 	 */
-	private class CacheUpdateRunner<T extends Serializable> implements Runnable {
+	private class CacheUpdateRunner<T> implements Runnable {
 
 		private final CachingExtractorRequest<T> request;
 
