@@ -17,7 +17,7 @@ public class GetRequest extends SenderRequest {
 		super(sender, method, urlPath);
 	}
 
-	protected GetRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
+	public GetRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 

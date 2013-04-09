@@ -16,8 +16,7 @@ import com.anthavio.httl.cache.CachedResponse;
 
 public class HttpHeaderUtil {
 
-	public static CacheEntry<CachedResponse> buildCacheEntry(SenderRequest request, SenderResponse response)
-			throws IOException {
+	public static CacheEntry<CachedResponse> buildCacheEntry(SenderRequest request, SenderResponse response) {
 
 		Multival headers = response.getHeaders();
 
@@ -89,9 +88,8 @@ public class HttpHeaderUtil {
 		long hardTtl = softTtl > 0 ? softTtl : 10; //XXX default hardTtl is 10 seconds - should be parametrized
 
 		CachedResponse cachedResponse = new CachedResponse(request, response);
+		return new CacheEntry<CachedResponse>(cachedResponse, hardTtl, softTtl, etag, modified);
 
-		CacheEntry<CachedResponse> entry = new CacheEntry<CachedResponse>(cachedResponse, hardTtl, softTtl, etag, modified);
-		return entry;
 	}
 
 	/**

@@ -2,6 +2,7 @@ package com.anthavio.httl.example;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.anthavio.httl.Authentication;
 import com.anthavio.httl.GetRequest;
@@ -13,6 +14,7 @@ import com.anthavio.httl.HttpURLConfig;
 import com.anthavio.httl.HttpURLSender;
 import com.anthavio.httl.SenderRequest.ValueStrategy;
 import com.anthavio.httl.cache.CachedResponse;
+import com.anthavio.httl.cache.CachingRequest;
 import com.anthavio.httl.cache.CachingSender;
 import com.anthavio.httl.cache.HeapMapRequestCache;
 import com.anthavio.httl.cache.RequestCache;
@@ -27,14 +29,14 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 public class ExamplesTest {
 
 	public static void main(String[] args) {
-		json();
+		cachingSender();
 	}
 
 	public static void fluent() {
 		//Create sender with utf-8 encoding, default timeouts and connection pool
 		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
 
-		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 666).extract(String.class);
+		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
 		System.out.println(extracted1.getBody());
 
@@ -50,7 +52,7 @@ public class ExamplesTest {
 		HttpClient4Sender sender = new HttpClient4Sender(config);
 
 		GetRequest request = new GetRequest("/users");
-		request.setParameter("since", 666);
+		request.setParameter("since", 333);
 		ExtractedBodyResponse<String> extracted = sender.extract(request, String.class);
 		//Just print unprocessed JSON String
 		System.out.println(extracted.getBody());
@@ -144,13 +146,29 @@ public class ExamplesTest {
 		*/
 	}
 
-	public static void cachingResponse() {
-		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
+	public static void cachingSender() {
+		//Github uses ETag and Cache control headers nicely
+		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
+		//Provide cache instance - Simple Heap Hashmap in this case
 		RequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		//Create caching sender
 		CachingSender csender = new CachingSender(sender, cache);
 
-		GetRequest request = sender.GET("/get").build();
-		//csender.extract(request, HttpbinOut.class);
+		ExtractedBodyResponse<HttpbinOut> extract = csender.GET("/users").param("since", 333).extract(HttpbinOut.class);
+
+		GetRequest request = sender.GET("/users").param("since", 333).build();
+		//ExtractedBodyResponse<HttpbinOut> extract = csender.extract(request, HttpbinOut.class);
+
+		CachingRequest crequest = new CachingRequest(request, 1, TimeUnit.MINUTES);
+
+		//CachingExtractor cextractor = new CachingExtractor(sender, cache);
+		//cextractor.extract(null);
+
+		cache.destroy();
+		sender.close();
+
+		System.out.println(extract.getBody().getArgs());
+
 	}
 }
 

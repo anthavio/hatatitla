@@ -1,6 +1,5 @@
 package com.anthavio.httl.cache;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,13 @@ public class CachingExtractor {
 	private RefreshSchedulerThread scheduler;
 
 	//private ReadWriteLock lock = new ReentrantReadWriteLock();
-
+	/**
+	 * Create fully initialized CachingExtractor
+	 * 
+	 * @param sender underlying HttpSender
+	 * @param cache underlying cache
+	 * @param executor for asynchronous updates
+	 */
 	public CachingExtractor(HttpSender sender, RequestCache<Serializable> cache, ExecutorService executor) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
@@ -57,14 +62,26 @@ public class CachingExtractor {
 		}
 	}
 
+	/**
+	 * Create CachingExtractor without asychronous updates support
+	 * 
+	 * @param sender
+	 * @param cache
+	 */
 	public CachingExtractor(HttpSender sender, RequestCache<Serializable> cache) {
 		this(sender, cache, null);
 	}
 
+	/**
+	 * @return underlying executor service
+	 */
 	public ExecutorService getExecutor() {
 		return executor;
 	}
 
+	/**
+	 * Sets executor service for asychronous updates
+	 */
 	public void setExecutor(ExecutorService executor) {
 		this.executor = executor;
 	}
@@ -91,7 +108,7 @@ public class CachingExtractor {
 	 * Extracted response version. Response is extracted, then closed and result is returned to caller
 	 * Static caching based on specified amount and unit
 	 */
-	public <T extends Serializable> T extract(CachingExtractorRequest<T> request) throws IOException {
+	public <T extends Serializable> T extract(CachingExtractorRequest<T> request) {
 		if (request.isAsyncRefresh() && this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
@@ -138,7 +155,7 @@ public class CachingExtractor {
 	}
 
 	private <T extends Serializable> ExtractedBodyResponse<T> doExtract(CachingExtractorRequest<T> request,
-			String cacheKey) throws IOException {
+			String cacheKey) {
 		ExtractedBodyResponse<T> extracted;
 		if (request.getExtractor() != null) {
 			extracted = sender.extract(request.getSenderRequest(), request.getExtractor());

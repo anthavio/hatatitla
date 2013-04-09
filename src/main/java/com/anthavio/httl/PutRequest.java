@@ -17,7 +17,7 @@ public class PutRequest extends SenderBodyRequest {
 		super(sender, method, urlPath);
 	}
 
-	protected PutRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
+	public PutRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 

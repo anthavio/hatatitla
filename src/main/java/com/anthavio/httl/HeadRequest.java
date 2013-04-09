@@ -17,7 +17,7 @@ public class HeadRequest extends SenderRequest {
 		super(sender, method, urlPath);
 	}
 
-	protected HeadRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
+	public HeadRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 

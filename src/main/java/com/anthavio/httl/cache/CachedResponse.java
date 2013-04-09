@@ -12,9 +12,10 @@ import org.slf4j.LoggerFactory;
 
 import com.anthavio.httl.Cutils;
 import com.anthavio.httl.HttpHeaderUtil;
+import com.anthavio.httl.HttpSender.Multival;
+import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.HttpSender.Multival;
 
 /**
  * 
@@ -40,7 +41,7 @@ public class CachedResponse extends SenderResponse implements Serializable {
 		//serialization
 	}
 
-	public CachedResponse(SenderRequest request, SenderResponse response) throws IOException {
+	public CachedResponse(SenderRequest request, SenderResponse response) {
 		super(response.getHttpStatusCode(), response.getHttpStatusMessage(), response.getHeaders(), DUMMY_STREAM);
 		this.request = request;
 		try {
@@ -49,6 +50,8 @@ public class CachedResponse extends SenderResponse implements Serializable {
 			} else {
 				contentString = HttpHeaderUtil.readAsString(response);
 			}
+		} catch (IOException iox) {
+			throw new SenderException(iox);
 		} finally {
 			Cutils.close(response);
 		}

@@ -18,11 +18,16 @@ public class SenderHttpStatusException extends SenderException {
 
 	private final String response;
 
-	public SenderHttpStatusException(SenderResponse response) throws IOException {
+	public SenderHttpStatusException(SenderResponse response) {
 		super(response.getHttpStatusCode() + " " + response.getHttpStatusMessage());
 		this.httpStatusCode = response.getHttpStatusCode();
 		this.httpStatusMessage = response.getHttpStatusMessage();
-		this.response = HttpHeaderUtil.readAsString(response);
+		try {
+			this.response = HttpHeaderUtil.readAsString(response);
+		} catch (IOException iox) {
+			//XXX maybe just log warning...
+			throw new SenderException(iox);
+		}
 	}
 
 	public int getHttpStatusCode() {

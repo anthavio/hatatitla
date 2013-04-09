@@ -17,7 +17,7 @@ public class DeleteRequest extends SenderRequest {
 		super(sender, method, urlPath);
 	}
 
-	protected DeleteRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
+	public DeleteRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 

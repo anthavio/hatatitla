@@ -34,19 +34,19 @@ import com.anthavio.httl.cache.CachedResponse;
 import com.anthavio.httl.inout.RequestBodyMarshaller;
 import com.anthavio.httl.inout.RequestBodyMarshallers;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
+import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.anthavio.httl.inout.ResponseBodyHandler;
 import com.anthavio.httl.inout.ResponseErrorHandler;
 import com.anthavio.httl.inout.ResponseExtractorFactory;
 import com.anthavio.httl.inout.ResponseHandler;
-import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public abstract class HttpSender implements Closeable {
+public abstract class HttpSender implements SenderOperations, Closeable {
 
 	public static enum NullValueHandling {
 		SKIP_IGNORE, EMPTY_STRING;
@@ -193,7 +193,38 @@ public abstract class HttpSender implements Closeable {
 	}
 
 	/**
+	 * Extracted response version. Response is extracted, closed and result is returned to caller.
+	 * 
+	 * Response is closed automaticaly.
+	 */
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor)
+			throws SenderException {
+		if (extractor == null) {
+			throw new IllegalArgumentException("Extractor is null");
+		}
+		SenderResponse response = null;
+		try {
+			response = execute(request);
+			if (response.getHttpStatusCode() >= 300) {
+				if (errorResponseHandler != null) {
+					errorResponseHandler.onErrorResponse(response);
+					return new ExtractedBodyResponse<T>(response, null);
+				} else {
+					throw new SenderHttpStatusException(response);
+				}
+			}
+			T extracted = extractor.extract(response);
+			return new ExtractedBodyResponse<T>(response, extracted);
+		} catch (IOException iox) {
+			throw new SenderException(iox);
+		} finally {
+			Cutils.close(response);
+		}
+	}
+
+	/**
 	 * Execute Request and use ResponseBodyHandler parameter to process Response.
+	 * 
 	 * Response is closed automaticaly.
 	 * 
 	 */
@@ -242,7 +273,7 @@ public abstract class HttpSender implements Closeable {
 	}
 
 	/**
-	 * Mainly for CachingSender and CachingExtractor
+	 * Mainly for CachingSender and CachingExtractor to access HttpSenders extracting facilities
 	 */
 	public <T> T extract(SenderResponse response, Class<T> resultType) throws SenderException {
 		try {
@@ -255,34 +286,6 @@ public abstract class HttpSender implements Closeable {
 				}
 			}
 			return extractors.extract(response, resultType);
-		} catch (IOException iox) {
-			throw new SenderException(iox);
-		} finally {
-			Cutils.close(response);
-		}
-	}
-
-	/**
-	 * Extracted response version. Response is extracted, closed and result is returned to caller
-	 */
-	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor)
-			throws SenderException {
-		if (extractor == null) {
-			throw new IllegalArgumentException("Extractor is null");
-		}
-		SenderResponse response = null;
-		try {
-			response = execute(request);
-			if (response.getHttpStatusCode() >= 300) {
-				if (errorResponseHandler != null) {
-					errorResponseHandler.onErrorResponse(response);
-					return new ExtractedBodyResponse<T>(response, null);
-				} else {
-					throw new SenderHttpStatusException(response);
-				}
-			}
-			T extracted = extractor.extract(response);
-			return new ExtractedBodyResponse<T>(response, extracted);
 		} catch (IOException iox) {
 			throw new SenderException(iox);
 		} finally {

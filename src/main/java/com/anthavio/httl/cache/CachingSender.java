@@ -16,12 +16,21 @@ import com.anthavio.httl.Cutils;
 import com.anthavio.httl.HttpDateUtil;
 import com.anthavio.httl.HttpHeaderUtil;
 import com.anthavio.httl.HttpSender;
+import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
+import com.anthavio.httl.SenderOperations;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingDeleteRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingGetRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingHeadRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingOptionsRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingPostRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingPutRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.httl.inout.ResponseHandler;
 
 /**
  * Sender warpper that caches Responses as they are recieved from remote server
@@ -34,7 +43,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
  * @author martin.vanek
  *
  */
-public class CachingSender {
+public class CachingSender implements SenderOperations {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,8 +58,6 @@ public class CachingSender {
 	private Map<String, CachingRequest> scheduled = new HashMap<String, CachingRequest>();
 
 	private RefreshSchedulerThread scheduler;
-
-	private boolean cacheNon200 = false;
 
 	public CachingSender(HttpSender sender, RequestCache<CachedResponse> cache) {
 		this(sender, cache, null);
@@ -70,7 +77,7 @@ public class CachingSender {
 		if (executor != null) {
 			this.executor = executor;
 		} else {
-			this.executor = sender.getExecutor(); //can be null
+			this.executor = sender.getExecutor(); //can be null too
 		}
 	}
 
@@ -96,7 +103,48 @@ public class CachingSender {
 		return cache;
 	}
 
-	public SenderResponse execute(CachingRequest request) throws IOException {
+	/**
+	 * Fluent builders 
+	 */
+
+	public CachingGetRequestBuilder GET(String path) {
+		return new CachingGetRequestBuilder(this, path);
+	}
+
+	public CachingDeleteRequestBuilder DELETE(String path) {
+		return new CachingDeleteRequestBuilder(this, path);
+	}
+
+	public CachingPostRequestBuilder POST(String path) {
+		return new CachingPostRequestBuilder(this, path);
+	}
+
+	public CachingPutRequestBuilder PUT(String path) {
+		return new CachingPutRequestBuilder(this, path);
+	}
+
+	public CachingHeadRequestBuilder HEAD(String path) {
+		return new CachingHeadRequestBuilder(this, path);
+	}
+
+	public CachingOptionsRequestBuilder OPTIONS(String path) {
+		return new CachingOptionsRequestBuilder(this, path);
+	}
+
+	/**
+	 * Static caching based on specified ttl and unit
+	 */
+	public SenderResponse execute(SenderRequest request, long ttl, TimeUnit unit) {
+		if (request == null) {
+			throw new IllegalArgumentException("request is null");
+		}
+		return execute(new CachingRequest(request, ttl, unit));
+	}
+
+	/**
+	 * Static caching based on specified ttl and unit
+	 */
+	public SenderResponse execute(CachingRequest request) {
 		if (request.isAsyncRefresh() && this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
@@ -123,7 +171,7 @@ public class CachingSender {
 						updated.put(cacheKey, request);
 						SenderResponse response = sender.execute(request.getSenderRequest());
 						request.setLastRefresh(System.currentTimeMillis());
-						return doCache(cacheKey, request, response);
+						return doCachePut(cacheKey, request, response);
 					} catch (Exception x) {
 						logger.warn("Request refresh failed for " + request, x);
 						//bugger - but we still have our soft expired value
@@ -134,13 +182,13 @@ public class CachingSender {
 					}
 				}
 			}
-		} else { //entry is null -> execute request, extract response and put it into cache
+		} else { //null entry -> execute request, extract response and put it into cache
 			SenderResponse response = sender.execute(request.getSenderRequest());
 			request.setLastRefresh(System.currentTimeMillis());
 			if (request.getRefreshMode() == RefreshMode.ASYNC_SCHEDULE) {
 				doScheduled(request, cacheKey);
 			}
-			return doCache(cacheKey, request, response);
+			return doCachePut(cacheKey, request, response);
 		}
 	}
 
@@ -171,8 +219,8 @@ public class CachingSender {
 		}
 	}
 
-	private SenderResponse doCache(String cacheKey, CachingRequest request, SenderResponse response) throws IOException {
-		if (response.getHttpStatusCode() == HttpURLConnection.HTTP_OK || cacheNon200) {
+	private SenderResponse doCachePut(String cacheKey, CachingRequest request, SenderResponse response) {
+		if (response.getHttpStatusCode() < 300) {
 			CachedResponse cached = new CachedResponse(request.getSenderRequest(), response);
 			CacheEntry<CachedResponse> entry = new CacheEntry<CachedResponse>(cached, request.getHardTtl(),
 					request.getSoftTtl());
@@ -185,44 +233,68 @@ public class CachingSender {
 	}
 
 	/**
-	 * Static caching based on specified ttl and unit
-	 */
-	public SenderResponse execute(SenderRequest request, long ttl, TimeUnit unit) throws IOException {
-		if (request == null) {
-			throw new IllegalArgumentException("request is null");
-		}
-		return execute(new CachingRequest(request, ttl, unit));
-	}
-
-	/**
-	 * Caching based on HTTP headers values
+	 * Caching based on HTTP response headers (ETag, Last-Modified, Cache-Control, Expires).
 	 * 
-	 * Extracted response version. Response is extracted, closed and result is returned to caller
+	 * Caller provides ResponseHandler for Response processing. Response is closed automaticaly.
+	 * 
+	 * XXX Almost exactly same as HttpSender's method. Can't be reused somehow?
 	 */
-	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor)
-			throws IOException {
-		if (extractor == null) {
-			throw new IllegalArgumentException("Extractor is null");
+	public void execute(SenderRequest request, ResponseHandler handler) {
+		if (handler == null) {
+			throw new IllegalArgumentException("null handler");
 		}
-		SenderResponse response = execute(request);
+		SenderResponse response = null;
 		try {
-			if (response.getHttpStatusCode() >= 300) {
-				HttpHeaderUtil.readAsString(response);
-				throw new SenderHttpStatusException(response);
+
+			try {
+				response = execute(request);
+			} catch (Exception x) {
+				if (response == null) {
+					handler.onRequestError(request, x);
+				} else {
+					handler.onResponseError(response, x);
+				}
 			}
-			T extracted = extractor.extract(response);
-			return new ExtractedBodyResponse<T>(response, extracted);
+
+			handler.onResponse(response);
+
+		} catch (IOException iox) {
+			throw new SenderException(iox);
 		} finally {
 			Cutils.close(response);
 		}
 	}
 
 	/**
-	 * Caching based on HTTP headers values
+	 * Caching based on HTTP response headers
 	 * 
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 */
-	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType) throws IOException {
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor) {
+		if (extractor == null) {
+			throw new IllegalArgumentException("Extractor is null");
+		}
+		SenderResponse response = execute(request);
+		try {
+			if (response.getHttpStatusCode() >= 300) {
+				throw new SenderHttpStatusException(response);
+			}
+			T extracted = extractor.extract(response);
+			return new ExtractedBodyResponse<T>(response, extracted);
+
+		} catch (IOException iox) {
+			throw new SenderException(iox);
+		} finally {
+			Cutils.close(response);
+		}
+	}
+
+	/**
+	 * Caching based on HTTP response headers
+	 * 
+	 * Extracted response version. Response is extracted, closed and result is returned to caller
+	 */
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
@@ -236,9 +308,11 @@ public class CachingSender {
 	}
 
 	/**
-	 * Caching based on HTTP headers values (ETag, Last-Modified, Cache-Control, Expires)
+	 * Caching based on HTTP headers values (ETag, Last-Modified, Cache-Control, Expires).
+	 * 
+	 * Caller is responsible for closing Response.
 	 */
-	public SenderResponse execute(SenderRequest request) throws IOException {
+	public SenderResponse execute(SenderRequest request) {
 		if (request == null) {
 			throw new IllegalArgumentException("request is null");
 		}
@@ -265,16 +339,17 @@ public class CachingSender {
 		if (response.getHttpStatusCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
 			//only happen when we sent Etag => we have CacheEntry
 			//entry.setServerDate(response.getFirstHeader("Date"));
+			Cutils.close(response);
 			return entry.getValue();
 		}
 
-		if (response.getHttpStatusCode() == HttpURLConnection.HTTP_OK || cacheNon200) {
+		if (response.getHttpStatusCode() < 300) {
 			CacheEntry<CachedResponse> entryNew = HttpHeaderUtil.buildCacheEntry(request, response);
 			if (entryNew != null) {
 				cache.set(cacheKey, entryNew);
 				return entryNew.getValue();
 			} else {
-				logger.info("Response http headers disallows caching");
+				logger.info("Response http headers do not allow caching");
 				return response;
 			}
 
@@ -321,7 +396,7 @@ public class CachingSender {
 			try {
 				SenderResponse response = sender.execute(request.getSenderRequest());
 				request.setLastRefresh(System.currentTimeMillis());
-				doCache(cacheKey, request, response);
+				doCachePut(cacheKey, request, response);
 			} catch (Exception x) {
 				logger.warn("Failed to update request " + cacheKey, x);
 			} finally {

@@ -69,8 +69,9 @@ public abstract class SenderRequest {
 		this.method = method;
 
 		if (Cutils.isEmpty(urlPath)) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Empty url path");
 		}
+
 		if (urlPath != null) {
 			this.urlPath = urlPath;
 		} else {

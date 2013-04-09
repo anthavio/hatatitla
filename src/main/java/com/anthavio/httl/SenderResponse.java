@@ -29,14 +29,18 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	protected transient InputStream stream;
 
-	public SenderResponse(int code, String message, Multival headers, InputStream stream) throws IOException {
+	public SenderResponse(int code, String message, Multival headers, InputStream stream) {
 		this.httpStatusCode = code;
 		this.httpStatusMessage = message;
 		this.headers = headers;
 		String responseEncoding = headers.getFirst("Content-Encoding");
 		if (stream != null && responseEncoding != null) {
 			if (responseEncoding.indexOf("gzip") != -1) {
-				stream = new GZIPInputStream(stream);
+				try {
+					stream = new GZIPInputStream(stream);
+				} catch (IOException iox) {
+					throw new SenderException(iox);
+				}
 			} else if (responseEncoding.indexOf("deflate") != -1) {
 				stream = new InflaterInputStream(stream);
 			}

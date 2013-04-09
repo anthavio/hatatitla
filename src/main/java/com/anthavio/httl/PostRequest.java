@@ -17,7 +17,7 @@ public class PostRequest extends SenderBodyRequest {
 		super(sender, method, urlPath);
 	}
 
-	protected PostRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
+	public PostRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 

@@ -17,7 +17,7 @@ public class OptionsRequest extends SenderRequest {
 		super(sender, method, urlPath);
 	}
 
-	protected OptionsRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
+	public OptionsRequest(HttpSender sender, String urlPath, Multival parameters, Multival headers) {
 		super(sender, method, urlPath, parameters, headers);
 	}
 
