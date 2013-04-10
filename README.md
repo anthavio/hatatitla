@@ -3,17 +3,17 @@ Hatatitla
 
 Configurable and tweakable REST client library you have been dreaming of
 
-* Both fluent & traditional (constructor/setter) request interface
+* Both fluent & classic (constructor/setter) request interface
 * XML request/response payload support (JAXB)
 * JSON request/response payload support (Jackson)
 * Response caching (memory/ehcache/memcached)
 * Response content negotiation (content-type, charset, gzip)
 * Extensive configuration with reasonable defaults
-* Connection pooling
-* Asynchronous requests
-* Pluggable transport layer - Apache Httpclient4 / Apache Httpclient3 / HttpURLConnection
+* Connection pooling - multithreaded by default
+* Asynchronous requests - java Future and ExecutorService infrastructure
+* Multiple transport options - Apache Httpclient4 / Apache Httpclient3 / HttpURLConnection
 
-Maven Repository
+Maven Repository & coordinates
 -------------
 
 ```xml
@@ -29,9 +29,6 @@ Maven Repository
     </repository>
 ```
 
-Maven coordinates
--------------
-
 ```xml
     <dependency>
         <groupId>com.anthavio</groupId>
@@ -42,6 +39,7 @@ Maven coordinates
 
 Fluent API
 -------------
+Fluent buiders pattern is used for complex request creation and execution
 
 ```java
 		//Create sender with utf-8 encoding, default timeouts and connection pool
@@ -55,8 +53,9 @@ Fluent API
 		sender.close();
 ```
 
-Traditional API
+Classic API
 -------------
+Constructor and setter based API is friendly to dependency injection frameworks
 
 ```java
 		//Sender can be built from Configuration
@@ -85,7 +84,7 @@ For JSON bodies, Jackson 1 or Jackson 2 must be present on classpath, otherwise 
 ```
 java.lang.IllegalArgumentException: Request body marshaller not found for application/json
 or
-java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
+java.lang.IllegalArgumentException: Extractor factory not found for application/json
 ```
 Java beans representing bodies must be existing. In this example, HttpbinIn and HttpbinOut are model beans.
 
@@ -106,8 +105,90 @@ Java beans representing bodies must be existing. In this example, HttpbinIn and 
 		sender.close();
 ```
 
+Caching
+-------------
+Hatatitla can cache responses or extracted bodies of responses. Cached data can be refreshed synchronously or asynchronously during request or scheduled to be updated in the background.
+
+In memory, EHCache and SpyMemcache caches are available out of the box. Other implementation can be easily created by extending RequestCache class.
+
+```java
+		//Create normal HttpSender
+		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
+		//Provide cache instance - Simple Heap Hashmap in this case
+		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
+		//Create Caching Extractor
+		CachingExtractor cextractor = new CachingExtractor(sender, cache);
+
+		//Create normal request
+		GetRequest get = new GetRequest("/get");
+		
+		//Response will kept in cache for 10 seconds (hard TTL) and will be refreshed every 5 seconds (soft TTL) using background thread.
+
+		//Use fluent interface to execute/extract
+		for (int i = 0; i < 1000; ++i) {
+			HttpbinOut out = cextractor.request(get).ttl(10, 5, TimeUnit.SECONDS).extract(HttpbinOut.class);//Cache hit
+		}
+
+		//Precreated Caching request
+		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(10, 5, TimeUnit.SECONDS)
+				.build(HttpbinOut.class);
+		for (int i = 0; i < 1000; ++i) {
+			HttpbinOut out = cextractor.extract(crequest); //Cache hit
+		}
+
+		//Precreated Caching request
+		CachingExtractorRequest<HttpbinOut> crequest2 = new CachingExtractorRequest<HttpbinOut>(get, HttpbinOut.class, 10,
+				5, TimeUnit.SECONDS, RefreshMode.REQUEST_SYNC);
+		for (int i = 0; i < 1000; ++i) {
+			HttpbinOut out = cextractor.extract(crequest2);//Cache hit
+		}
+
+		cache.close();
+		cextractor.close();
+```
+
+Example of the automatic response refresh/update
+
+```java
+		//Create normal HttpSender
+		HttpSender sender = new HttpClient4Sender("http://httpbin.org");
+		//Provide cache instance - Simple Heap Hashmap in this case
+		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
+		//Setup asynchronous support
+		ExecutorService executor = ExecutorServiceBuilder.builder().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
+		//Create Caching Extractor
+		CachingExtractor cextractor = new CachingExtractor(sender, cache, executor);
+		//Create normal request
+		GetRequest get = new GetRequest("/get");
+
+		//Response will kept in cache for 60 seconds (hatr TTL) and will be refreshed every 3 seconds (soft TTL) using background thread. 
+		//Unavailability could happen only when remote service became unaccessible for more than 60-3 seconds
+		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(60, 3, TimeUnit.SECONDS)
+				.refresh(RefreshMode.SCHEDULED).build(HttpbinOut.class);
+
+		HttpbinOut out1 = cextractor.extract(crequest); //cache put
+		HttpbinOut out2 = cextractor.extract(crequest); //cache hit
+		Assert.assertTrue(out1 == out2); //same instance from cache
+
+		//sleep until background refresh is performed
+		try {
+			Thread.sleep(4 * 1000);
+		} catch (InterruptedException ix) {
+			ix.printStackTrace();
+		}
+
+		HttpbinOut out3 = cextractor.extract(crequest);
+		Assert.assertTrue(out1 != out3); //different instance now
+
+		sender.close();
+		executor.shutdown();
+		cache.close();
+```
+
 Configuration
 -------------
+
+Hatatitla Sender is extensively configurable with reasonable default values.
 
 ```java
 		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
