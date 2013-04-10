@@ -74,7 +74,7 @@ public class ResponseBodyExtractors {
 		String contentType = response.getFirstHeader("Content-Type");
 		ResponseBodyExtractor<?> extractor = getExtractor(contentType, response, resultType);
 		if (extractor == null) {
-			throw new IllegalArgumentException("No extractor found for class " + resultType.getName() + " and Content-Type "
+			throw new IllegalArgumentException("Extractor not found for class " + resultType.getName() + " and Content-Type "
 					+ contentType);
 		}
 		return (T) extractor.extract(response);
@@ -95,7 +95,7 @@ public class ResponseBodyExtractors {
 		String mimeType = HttpHeaderUtil.getMimeType(contentType);
 		ResponseExtractorFactory extractorFactory = factories.get(mimeType);
 		if (extractorFactory == null) {
-			throw new IllegalArgumentException("No extractor factory found for mime type " + mimeType);
+			throw new IllegalArgumentException("Extractor factory not found for " + mimeType);
 		}
 		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, clazz);
 		return extractor;

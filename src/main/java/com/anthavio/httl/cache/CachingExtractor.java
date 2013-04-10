@@ -159,6 +159,9 @@ public class CachingExtractor {
 		}
 	}
 
+	/**
+	 * Extract response and store product in cache
+	 */
 	private <T> ExtractedBodyResponse<T> doExtract(CachingExtractorRequest<T> request, String cacheKey) {
 		ExtractedBodyResponse<T> extracted;
 		if (request.getExtractor() != null) {
@@ -172,6 +175,9 @@ public class CachingExtractor {
 		return extracted;
 	}
 
+	/**
+	 * Schedule new request for automatic refresh
+	 */
 	private <T> void doScheduled(CachingExtractorRequest<T> request, String cacheKey) {
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {

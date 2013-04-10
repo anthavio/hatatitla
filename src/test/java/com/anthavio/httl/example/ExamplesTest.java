@@ -231,6 +231,8 @@ public class ExamplesTest {
 		//Create normal request
 		GetRequest get = new GetRequest("/get");
 
+		//Response will kept in cache for 10 seconds (hard TTL) and will be refreshed every 5 seconds (soft TTL) using background thread.
+
 		//Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
 			HttpbinOut out = cextractor.request(get).ttl(10, 5, TimeUnit.SECONDS).extract(HttpbinOut.class);//Cache hit
@@ -266,8 +268,8 @@ public class ExamplesTest {
 		//Create normal request
 		GetRequest get = new GetRequest("/get");
 
-		//Request will be refreshed every 3 seconds (soft TTL) using background thread. 
-		//60 seconds is hard TTL, when data will be evicted from cache. This could happen only when httpbin.org became unaccessible for 60-3 seconds
+		//Response will kept in cache for 60 seconds (hatr TTL) and will be refreshed every 3 seconds (soft TTL) using background thread. 
+		//Unavailability could happen only when remote service became unaccessible for more than 60-3 seconds
 		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(60, 3, TimeUnit.SECONDS)
 				.refresh(RefreshMode.SCHEDULED).build(HttpbinOut.class);
 
