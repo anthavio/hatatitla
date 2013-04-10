@@ -31,6 +31,9 @@ public class JaxbRequestMarshaller implements RequestBodyMarshaller {
 
 	private Map<String, Object> marshallerProperties;
 
+	/**
+	 * Without shared JAXB context
+	 */
 	public JaxbRequestMarshaller() {
 		this.jaxbContext = null;
 		this.marshallerProperties = null;
@@ -41,6 +44,9 @@ public class JaxbRequestMarshaller implements RequestBodyMarshaller {
 		this.marshallerProperties = marshallerProperties;
 	}
 
+	/**
+	 * With shared JAXB context
+	 */
 	public JaxbRequestMarshaller(JAXBContext context) {
 		if (context == null) {
 			throw new IllegalArgumentException("null jaxb context");
@@ -50,6 +56,21 @@ public class JaxbRequestMarshaller implements RequestBodyMarshaller {
 
 	public JaxbRequestMarshaller(JAXBContext context, Map<String, Object> marshallerProperties) {
 		this(context);
+		this.marshallerProperties = marshallerProperties;
+	}
+
+	/**
+	 * @return shared JAXB context
+	 */
+	public JAXBContext getJaxbContext() {
+		return jaxbContext;
+	}
+
+	public Map<String, Object> getMarshallerProperties() {
+		return marshallerProperties;
+	}
+
+	public void setMarshallerProperties(Map<String, Object> marshallerProperties) {
 		this.marshallerProperties = marshallerProperties;
 	}
 

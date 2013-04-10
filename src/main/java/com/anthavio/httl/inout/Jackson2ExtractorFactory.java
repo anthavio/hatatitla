@@ -17,10 +17,16 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Shared Jackson ObjectMapper will be created internally
+	 */
 	public Jackson2ExtractorFactory() {
 		this.objectMapper = Jackson2Util.build();
 	}
 
+	/**
+	 * Hackis access to internal cache
+	 */
 	public Map<Class<?>, Jackson2ResponseExtractor<?>> getCache() {
 		return cache;
 	}
@@ -29,6 +35,9 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 		return objectMapper;
 	}
 
+	/**
+	 * External Jackson ObjectMapper is provided
+	 */
 	public Jackson2ExtractorFactory(ObjectMapper objectMapper) {
 		if (objectMapper == null) {
 			throw new IllegalArgumentException("Jackson mapper is null");
@@ -36,6 +45,9 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 		this.objectMapper = objectMapper;
 	}
 
+	/**
+	 * Shared ObjectMapper is used to extract 
+	 */
 	@Override
 	public <T> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
 		Jackson2ResponseExtractor<T> extractor = (Jackson2ResponseExtractor<T>) cache.get(resultType);

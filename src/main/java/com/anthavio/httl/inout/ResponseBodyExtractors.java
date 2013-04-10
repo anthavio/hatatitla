@@ -15,46 +15,7 @@ import com.anthavio.httl.SenderResponse;
  *
  */
 public class ResponseBodyExtractors {
-	/*
-		private class ExtractorEntry<T> {
 
-			private final String mimeType; // null means any response mime type
-
-			private final int[] httpStatusCodes; //null means any http status code
-
-			private final ResponseBodyExtractor<T> extractor;
-
-			public ExtractorEntry(ResponseBodyExtractor<T> extractor) {
-				this(extractor, null, null);
-			}
-
-			public ExtractorEntry(ResponseBodyExtractor<T> extractor, String mimeType) {
-				this(extractor, mimeType, null);
-			}
-
-			public ExtractorEntry(ResponseBodyExtractor<T> extractor, String mimeType, int... httpStatusCodes) {
-				if (extractor == null) {
-					throw new IllegalArgumentException("Null extractor");
-				}
-				this.extractor = extractor;
-
-				if ("*".equals(mimeType)) {
-					this.mimeType = null;
-				} else {
-					this.mimeType = mimeType;
-				}
-
-				if (httpStatusCodes == null || httpStatusCodes.length == 0 || httpStatusCodes[0] == 0) {
-					this.httpStatusCodes = null;
-				} else {
-					this.httpStatusCodes = httpStatusCodes;
-				}
-			}
-
-		}
-
-		private List<ExtractorEntry<?>> extractors = new ArrayList<ExtractorEntry<?>>();
-	*/
 	private Map<String, ResponseExtractorFactory> factories = new HashMap<String, ResponseExtractorFactory>();
 
 	public ResponseBodyExtractors() {

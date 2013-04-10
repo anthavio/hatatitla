@@ -9,5 +9,8 @@ import com.anthavio.httl.SenderResponse;
  */
 public interface ResponseExtractorFactory {
 
+	/**
+	 * @return ResponseBodyExtractor for given SenderResponse and Class<T> resultType
+	 */
 	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Class<T> resultType);
 }

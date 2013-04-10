@@ -8,7 +8,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import com.anthavio.httl.SenderResponse;
 
 /**
- *  Json -> Java Jackson library based ResponseExtractor
+ * JSON -> Java 
+ * Jackson 1 library based ResponseExtractor
  * 
  * httpSender.extract(new GetRequest("/my_entity.json"), new JsonResponseExtractor(MyEntity.class));
  * 
@@ -17,32 +18,12 @@ import com.anthavio.httl.SenderResponse;
  */
 public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
-	//primitive cache for Jackson ObjectMappers
-	//private static Map<Class<?>, ObjectMapper> cache = new HashMap<Class<?>, ObjectMapper>();
-
 	private final Class<T> resultType;
 
 	private final ObjectMapper mapper;
 
 	/**
-	 * Creates default Jackson ObjectMapper
-	public Jackson1ResponseExtractor(Class<T> resultType) {
-		if (resultType == null) {
-			throw new IllegalArgumentException("resultType is null");
-		}
-		this.resultType = resultType;
-
-		ObjectMapper mapper = cache.get(resultType);
-		if (mapper == null) {
-			mapper = new ObjectMapper();
-			cache.put(resultType, mapper);
-		}
-		this.mapper = mapper;
-	}
-	*/
-
-	/**
-	 * Using custom externaly created ObjectMapper is probably better way...
+	 * Externaly created ObjectMapper is provided
 	 */
 	public Jackson1ResponseExtractor(Class<T> resultType, ObjectMapper mapper) {
 		if (resultType == null) {
@@ -69,4 +50,10 @@ public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 			throw new IllegalArgumentException(message, ccx);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "Jackson1ResponseExtractor [resultType=" + resultType + ", mapper=" + mapper + "]";
+	}
+
 }

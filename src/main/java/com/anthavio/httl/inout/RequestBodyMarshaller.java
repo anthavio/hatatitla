@@ -11,8 +11,14 @@ import java.nio.charset.Charset;
  */
 public interface RequestBodyMarshaller {
 
+	/**
+	 * Marshall Request body object into String
+	 */
 	public String marshall(Object requestBody) throws IOException;
 
+	/**
+	 * Marshall Request body object directly into OutputStream
+	 */
 	public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException;
 
 }

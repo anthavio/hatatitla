@@ -1,9 +1,12 @@
 package com.anthavio.httl.example;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javax.xml.bind.Marshaller;
 
 import org.testng.Assert;
 
@@ -26,6 +29,9 @@ import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.cache.CachingSender;
 import com.anthavio.httl.cache.HeapMapRequestCache;
 import com.anthavio.httl.cache.RequestCache;
+import com.anthavio.httl.inout.Jackson2ExtractorFactory;
+import com.anthavio.httl.inout.Jackson2RequestMarshaller;
+import com.anthavio.httl.inout.JaxbRequestMarshaller;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
@@ -37,7 +43,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 public class ExamplesTest {
 
 	public static void main(String[] args) {
-		cachingAdvanced();
+		cachingScheduled();
 	}
 
 	public static void fluent() {
@@ -142,8 +148,25 @@ public class ExamplesTest {
 
 		sender.close();
 
-		//Jackson2RequestMarshaller marshaller = (Jackson2RequestMarshaller) sender.getRequestMarshaller("application/json");
-		//marshaller.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+		//Tweak existing JSON RequestMarshaller - assume that Jackson 2 is present 
+		Jackson2RequestMarshaller jsonMarshaller = (Jackson2RequestMarshaller) sender
+				.getRequestMarshaller("application/json");
+		jsonMarshaller.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+
+		//Tweak existing XML RequestMarshaller
+		JaxbRequestMarshaller requestMarshaller = (JaxbRequestMarshaller) sender.getRequestMarshaller("application/xml");
+		//Set indented output
+		requestMarshaller.getMarshallerProperties().put(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+		//Set own JSON RequestMarshaller
+		//sender.setRequestMarshaller(new MyLovelyGsonMarshaller(), "application/json");
+
+		//Tweak existing JSON ResponseExtractorFactory
+		Jackson2ExtractorFactory jsonExtractorFactory = (Jackson2ExtractorFactory) sender
+				.getResponseExtractorFactory("application/json");
+		jsonExtractorFactory.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+
+		sender.setResponseExtractorFactory(jsonExtractorFactory, "application/json");
 		/*
 		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
 		sender = config.buildSender();
@@ -198,13 +221,14 @@ public class ExamplesTest {
 	}
 
 	public static void cachingExtractor() {
+		//Create normal HttpSender
 		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
 		//Provide cache instance - Simple Heap Hashmap in this case
 		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
 		//Create Caching Extractor
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
 
-		//Create normal request first
+		//Create normal request
 		GetRequest get = new GetRequest("/get");
 
 		//Use fluent interface to execute/extract
@@ -231,12 +255,15 @@ public class ExamplesTest {
 	}
 
 	public static void cachingScheduled() {
+		//Create normal HttpSender
 		HttpSender sender = new HttpClient4Sender("http://httpbin.org");
+		//Provide cache instance - Simple Heap Hashmap in this case
 		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
 		//Setup asynchronous support
 		ExecutorService executor = ExecutorServiceBuilder.builder().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
+		//Create Caching Extractor
 		CachingExtractor cextractor = new CachingExtractor(sender, cache, executor);
-
+		//Create normal request
 		GetRequest get = new GetRequest("/get");
 
 		//Request will be refreshed every 3 seconds (soft TTL) using background thread. 
@@ -248,7 +275,7 @@ public class ExamplesTest {
 		HttpbinOut out2 = cextractor.extract(crequest); //cache hit
 		Assert.assertTrue(out1 == out2); //same instance from cache
 
-		//sleep until scheduled refresh is performed
+		//sleep until background refresh is performed
 		try {
 			Thread.sleep(4 * 1000);
 		} catch (InterruptedException ix) {

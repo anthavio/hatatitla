@@ -11,12 +11,13 @@ import com.anthavio.httl.SenderResponse;
  */
 public interface ResponseBodyExtractor<T> {
 
+	/**
+	 * @return extracted body of SenderResponse
+	 */
 	public T extract(SenderResponse response) throws IOException;
 
-	//public T extract(SenderResponse response, Class<T> clazz) throws IOException;
-
 	/**
-	 * Used as wrapper of extracted response
+	 * Aggregation of reponse and extracted body
 	 * 
 	 * @author martin.vanek
 	 * 
@@ -32,10 +33,16 @@ public interface ResponseBodyExtractor<T> {
 			this.body = body;
 		}
 
+		/**
+		 * @return Recieved response
+		 */
 		public SenderResponse getResponse() {
 			return response;
 		}
 
+		/**
+		 * @return Extracted response body
+		 */
 		public T getBody() {
 			return body;
 		}

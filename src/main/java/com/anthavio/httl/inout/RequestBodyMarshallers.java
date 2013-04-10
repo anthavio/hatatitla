@@ -9,12 +9,13 @@ import org.slf4j.LoggerFactory;
 import com.anthavio.httl.Cutils;
 
 /**
- * Storage for HttpSender's RequestBodyMarshallers. JAXB marshaller is allways installed fro mime types text/xml and application/xml
+ * Storage for HttpSender's RequestBodyMarshallers. 
+ * JAXB marshaller is allways installed fro mime types text/xml and application/xml
  * When Jackson is found in classpath then JSON marshalling is initialized as well for mime type application/json
  * 
  * If user is unhappy with default marshallers, he can create and configure his own RequestJaxbMarshaller and set it via
- * httpSender.setMarshaller("application/xml", customJaxbMarshaller);
- * httpSender.setMarshaller("text/xml", customJaxbMarshaller);
+ * httpSender.setMarshaller(customJaxbMarshaller, "application/xml");
+ * httpSender.setMarshaller(customJaxbMarshaller, "text/xml");
  * 
  * @author martin.vanek
  *
@@ -55,6 +56,9 @@ public class RequestBodyMarshallers {
 		return marshallers.get(mimeType);
 	}
 
+	/**
+	 * Register request body marshaller with provided mimeType
+	 */
 	public void setMarshaller(RequestBodyMarshaller marshaller, String mimeType) {
 		if (Cutils.isBlank(mimeType)) {
 			throw new IllegalArgumentException("mime type is blank");

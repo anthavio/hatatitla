@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.anthavio.httl.SenderResponse;
 
 /**
+ * Sender global error handler. Intended for centralized exception creation
  * 
  * @author martin.vanek
  *

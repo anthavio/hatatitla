@@ -19,10 +19,16 @@ public class Jackson1ExtractorFactory implements ResponseExtractorFactory {
 
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * Create own shared ObjectMapper
+	 */
 	public Jackson1ExtractorFactory() {
 		this.objectMapper = Jackson1Util.build();
 	}
 
+	/**
+	 * @param objectMapper External Jackson ObjectMapper
+	 */
 	public Jackson1ExtractorFactory(ObjectMapper objectMapper) {
 		if (objectMapper == null) {
 			throw new IllegalArgumentException("objectMapper is null");
@@ -30,10 +36,16 @@ public class Jackson1ExtractorFactory implements ResponseExtractorFactory {
 		this.objectMapper = objectMapper;
 	}
 
+	/**
+	 * @return shared ObjectMapper
+	 */
 	public ObjectMapper getObjectMapper() {
 		return objectMapper;
 	}
 
+	/**
+	 * Hackish access to internal cache
+	 */
 	public Map<Class<?>, Jackson1ResponseExtractor<?>> getCache() {
 		return cache;
 	}
