@@ -12,9 +12,18 @@ import com.anthavio.httl.SenderRequest;
 public class CachingRequest {
 
 	public enum RefreshMode {
-		DURING_REQUEST, //request initiated synchronous refresh
-		ASYNC_REQUEST, //request initiated asynchronous thread refresh
-		ASYNC_SCHEDULE; //refresh is request independently in the background thread
+		/**
+		 * refresh is request initiated and done using synchronously using request thread
+		 */
+		REQUEST_SYNC,
+		/**
+		 * refresh is request initiated, but done using the background thread
+		 */
+		REQUEST_ASYN,
+		/**
+		 * refresh is scheduled and performed using the background thread
+		 */
+		SCHEDULED;
 	}
 
 	private final SenderRequest senderRequest;
@@ -28,7 +37,7 @@ public class CachingRequest {
 	private long lastRefresh;
 
 	public CachingRequest(SenderRequest request, long hardTtl, TimeUnit unit) {
-		this(request, hardTtl, hardTtl, unit, RefreshMode.DURING_REQUEST); //hardTtl = softTtl
+		this(request, hardTtl, hardTtl, unit, RefreshMode.REQUEST_SYNC); //hardTtl = softTtl
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, TimeUnit unit, RefreshMode refreshMode) {
@@ -36,11 +45,10 @@ public class CachingRequest {
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, long softTtl, TimeUnit unit) {
-		this(request, hardTtl, softTtl, unit, RefreshMode.DURING_REQUEST);
+		this(request, hardTtl, softTtl, unit, RefreshMode.REQUEST_SYNC);
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, long softTtl, TimeUnit unit, RefreshMode refreshMode) {
-		//super(request.getSender(), request.getMethod(), request.getUrlPath(), request.getParameters(), request.getHeaders());
 		if (request == null) {
 			throw new IllegalArgumentException("null request");
 		}
@@ -92,12 +100,12 @@ public class CachingRequest {
 		return lastRefresh;
 	}
 
-	public void setLastRefresh(long executed) {
+	protected void setLastRefresh(long executed) {
 		this.lastRefresh = executed;
 	}
 
 	public boolean isAsyncRefresh() {
-		return refreshMode == RefreshMode.ASYNC_SCHEDULE || refreshMode == RefreshMode.ASYNC_REQUEST;
+		return refreshMode == RefreshMode.SCHEDULED || refreshMode == RefreshMode.REQUEST_ASYN;
 	}
 
 	@Override

@@ -12,9 +12,13 @@ import org.slf4j.LoggerFactory;
 import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingExtractorRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
+ * Sender wrapper caches product of Response extraction.
+ * 
+ * For asynchronous/scheduled cache refreshing, executor service must be set.
  * 
  * @author martin.vanek
  *
@@ -35,7 +39,6 @@ public class CachingExtractor {
 
 	private RefreshSchedulerThread scheduler;
 
-	//private ReadWriteLock lock = new ReentrantReadWriteLock();
 	/**
 	 * Create fully initialized CachingExtractor
 	 * 
@@ -99,7 +102,10 @@ public class CachingExtractor {
 		return cache;
 	}
 
-	public <T> CachingExtractorRequestBuilder with(SenderRequest request) {
+	/**
+	 * Start fluent builder
+	 */
+	public <T> CachingExtractorRequestBuilder request(SenderRequest request) {
 		return new CachingExtractorRequestBuilder(this, request);
 	}
 
@@ -123,7 +129,7 @@ public class CachingExtractor {
 					//we will return soft expired value, but we will also start asynchronous refresh
 					startRefresh(cacheKey, request);
 
-					if (request.getRefreshMode() == RefreshMode.ASYNC_SCHEDULE) {
+					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
 						doScheduled(request, cacheKey);
 					}
 					logger.debug("Request soft expired value returned " + cacheKey);
@@ -146,7 +152,7 @@ public class CachingExtractor {
 			}
 		} else { //entry is null -> execute request, extract response and put it into cache
 			ExtractedBodyResponse<T> extracted = doExtract(request, cacheKey);
-			if (request.getRefreshMode() == RefreshMode.ASYNC_SCHEDULE) {
+			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
 				doScheduled(request, cacheKey);
 			}
 			return extracted.getBody();
@@ -210,7 +216,7 @@ public class CachingExtractor {
 	}
 
 	/**
-	 * Runnable for {@link RefreshMode#ASYNC_REQUEST}
+	 * Runnable for {@link RefreshMode#REQUEST_ASYN}
 	 * 
 	 */
 	private class CacheUpdateRunner<T> implements Runnable {
@@ -239,7 +245,7 @@ public class CachingExtractor {
 	}
 
 	/**
-	 * Thread for {@link RefreshMode#ASYNC_SCHEDULE}
+	 * Thread for {@link RefreshMode#SCHEDULED}
 	 * 
 	 * @author martin.vanek
 	 *

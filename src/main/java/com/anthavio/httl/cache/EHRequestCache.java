@@ -59,7 +59,7 @@ public class EHRequestCache<V extends Serializable> extends RequestCache<V> {
 	}
 
 	@Override
-	public void destroy() {
+	public void close() {
 		ehCache.dispose();
 	}
 

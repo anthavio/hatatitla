@@ -21,20 +21,20 @@ import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
 import com.anthavio.httl.SenderOperations;
 import com.anthavio.httl.SenderRequest;
-import com.anthavio.httl.SenderRequest.Method;
 import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingBodyRequestBuilder;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingBodylessRequestBuilder;
+import com.anthavio.httl.cache.CachingRequestBuilders.CachingRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
- * Sender warpper that caches Responses as they are recieved from remote server
+ * Sender warpper that caches Responses as they are recieved from remote server. Response body is stored in string or byte array.
  * 
- * Only Responses are cached and extraction of the Response is performed every call
+ * Only Responses are cached and extraction of the Response is performed every call.
  * 
- * For Extracted responses caching use CachingExtractor
+ * For extraction result caching use CachingExtractor
+ * 
+ * For asynchronous/scheduled cache refreshing, executor service must be set.
  * 
  * 
  * @author martin.vanek
@@ -101,41 +101,10 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	}
 
 	/**
-	 * Fluent builders 
+	 * Start fluent builder
 	 */
-
-	public CachingBodylessRequestBuilder GET(String path) {
-		return new CachingBodylessRequestBuilder(this, Method.GET, path);
-	}
-
-	public CachingBodylessRequestBuilder DELETE(String path) {
-		return new CachingBodylessRequestBuilder(this, Method.DELETE, path);
-	}
-
-	public CachingBodylessRequestBuilder HEAD(String path) {
-		return new CachingBodylessRequestBuilder(this, Method.HEAD, path);
-	}
-
-	public CachingBodylessRequestBuilder OPTIONS(String path) {
-		return new CachingBodylessRequestBuilder(this, Method.OPTIONS, path);
-	}
-
-	public CachingBodyRequestBuilder POST(String path) {
-		return new CachingBodyRequestBuilder(this, Method.POST, path);
-	}
-
-	public CachingBodyRequestBuilder PUT(String path) {
-		return new CachingBodyRequestBuilder(this, Method.PUT, path);
-	}
-
-	/**
-	 * Static caching based on specified ttl and unit
-	 */
-	public SenderResponse execute(SenderRequest request, long ttl, TimeUnit unit) {
-		if (request == null) {
-			throw new IllegalArgumentException("request is null");
-		}
-		return execute(new CachingRequest(request, ttl, unit));
+	public CachingRequestBuilder request(SenderRequest request) {
+		return new CachingRequestBuilder(this, request);
 	}
 
 	/**
@@ -157,7 +126,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 				if (request.isAsyncRefresh()) {
 					//we will return soft expired value, but we will also start asynchronous refresh
 					startRefresh(cacheKey, request);
-					if (request.getRefreshMode() == RefreshMode.ASYNC_SCHEDULE) {
+					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
 						doScheduled(request, cacheKey);
 					}
 					logger.debug("Request soft expired value returned " + cacheKey);
@@ -182,11 +151,15 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 		} else { //null entry -> execute request, extract response and put it into cache
 			SenderResponse response = sender.execute(request.getSenderRequest());
 			request.setLastRefresh(System.currentTimeMillis());
-			if (request.getRefreshMode() == RefreshMode.ASYNC_SCHEDULE) {
+			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
 				doScheduled(request, cacheKey);
 			}
 			return doCachePut(cacheKey, request, response);
 		}
+	}
+
+	public SenderResponse execute(SenderRequest request, int ttl, TimeUnit unit) {
+		return execute(new CachingRequest(request, ttl, unit));
 	}
 
 	private void startRefresh(String cacheKey, CachingRequest request) {
@@ -377,7 +350,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	}
 
 	/**
-	 * Runnable for {@link RefreshMode#ASYNC_REQUEST}
+	 * Runnable for {@link RefreshMode#REQUEST_ASYN}
 	 * 
 	 */
 	private class CacheUpdateRunner<T> implements Runnable {
@@ -407,7 +380,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	}
 
 	/**
-	 * Thread for {@link RefreshMode#ASYNC_SCHEDULE}
+	 * Thread for {@link RefreshMode#SCHEDULED}
 	 * 
 	 */
 	private class RefreshSchedulerThread extends Thread {

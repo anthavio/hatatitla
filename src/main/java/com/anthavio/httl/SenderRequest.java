@@ -60,7 +60,7 @@ public class SenderRequest {
 		this(sender, method, urlPath, null, null);
 	}
 
-	protected SenderRequest(HttpSender sender, Method method, String urlPath, Multival parameters, Multival headers) {
+	public SenderRequest(HttpSender sender, Method method, String urlPath, Multival parameters, Multival headers) {
 		this.sender = sender; //can be null
 
 		if (method == null) {

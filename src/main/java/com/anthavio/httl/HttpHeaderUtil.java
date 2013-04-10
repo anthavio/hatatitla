@@ -200,23 +200,30 @@ public class HttpHeaderUtil {
 		boolean istext = false;
 		String contentType = response.getFirstHeader("Content-Type");
 		if (contentType != null) {
-			if (contentType.startsWith("text")) { //text/...
-				istext = true;
-			} else if (contentType.endsWith("json")) {
-				//application/json
-				istext = true;
-			} else if (contentType.endsWith("xml")) {
-				//application/xml, application/atom+xml, application/rss+xml, ...
-				istext = true;
-			} else if (contentType.endsWith("javascript")) {
-				//application/javascript
-				istext = true;
-			} else if (contentType.endsWith("ecmascript")) {
-				istext = true;
-				//application/ecmascript
-			}
+			String mimeType = getMimeType(contentType);
+			istext = isTextContent(mimeType);
 		}
 		//application/octet-stream is default value when not found/detected
+		return istext;
+	}
+
+	public static boolean isTextContent(String mimeType) {
+		boolean istext = false;
+		if (mimeType.startsWith("text")) { //text/...
+			istext = true;
+		} else if (mimeType.endsWith("json")) {
+			//application/json
+			istext = true;
+		} else if (mimeType.endsWith("xml")) {
+			//application/xml, application/atom+xml, application/rss+xml, ...
+			istext = true;
+		} else if (mimeType.endsWith("javascript")) {
+			//application/javascript
+			istext = true;
+		} else if (mimeType.endsWith("ecmascript")) {
+			istext = true;
+			//application/ecmascript
+		}
 		return istext;
 	}
 

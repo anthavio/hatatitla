@@ -49,7 +49,7 @@ public class FakeSender extends HttpSender {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		this.closed = true;
 	}
 

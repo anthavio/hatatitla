@@ -27,9 +27,9 @@ public abstract class RequestCache<V> implements Cache<String, V> {
 
 	@Override
 	public final CacheEntry<V> get(String key) {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Cache get: " + key);
-		}
+		//if (logger.isDebugEnabled()) {
+		//	logger.debug("Cache get: " + key);
+		//}
 
 		CacheEntry<V> entry;
 		try {

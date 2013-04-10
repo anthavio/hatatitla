@@ -142,6 +142,12 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 	protected abstract SenderResponse doExecute(SenderRequest request, String path, String query) throws IOException;
 
 	/**
+	 * Remove annoying throws IOException from Closeable
+	 */
+	@Override
+	public abstract void close();
+
+	/**
 	 * Execute Request and return raw unprocessed Response.
 	 * Response is lefty open and caller is responsibe for closing.
 	 */

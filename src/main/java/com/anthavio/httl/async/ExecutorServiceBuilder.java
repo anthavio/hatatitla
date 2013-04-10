@@ -17,11 +17,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExecutorServiceBuilder {
 
+	public static ExecutorServiceBuilder builder() {
+		return new ExecutorServiceBuilder();
+	}
+
 	private int corePoolSize = 1;
 	private int maximumPoolSize = 10;
 	private int maximumQueueSize = 0;
 	private long keepAliveTime = 60L;
-	private TimeUnit unit = TimeUnit.SECONDS;
+	private TimeUnit timeUnit = TimeUnit.SECONDS;
 	private ThreadFactory threadFactory = new NamedDeamonThreadFactory();
 	private RejectedExecutionHandler rejectionHandler = new RejectingPolicy();
 
@@ -35,12 +39,8 @@ public class ExecutorServiceBuilder {
 		}
 		//LinkedBlockingQueue
 
-		return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, queue, threadFactory,
+		return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, queue, threadFactory,
 				rejectionHandler);
-	}
-
-	public int getCorePoolSize() {
-		return corePoolSize;
 	}
 
 	public ExecutorServiceBuilder setCorePoolSize(int corePoolSize) {
@@ -48,17 +48,9 @@ public class ExecutorServiceBuilder {
 		return this;
 	}
 
-	public int getMaximumPoolSize() {
-		return maximumPoolSize;
-	}
-
 	public ExecutorServiceBuilder setMaximumPoolSize(int maximumPoolSize) {
 		this.maximumPoolSize = maximumPoolSize;
 		return this;
-	}
-
-	public long getKeepAliveTime() {
-		return keepAliveTime;
 	}
 
 	public ExecutorServiceBuilder setKeepAliveTime(long keepAliveTime) {
@@ -66,17 +58,9 @@ public class ExecutorServiceBuilder {
 		return this;
 	}
 
-	public TimeUnit getUnit() {
-		return unit;
-	}
-
-	public ExecutorServiceBuilder setUnit(TimeUnit unit) {
-		this.unit = unit;
+	public ExecutorServiceBuilder setTimeUnit(TimeUnit unit) {
+		this.timeUnit = unit;
 		return this;
-	}
-
-	public ThreadFactory getThreadFactory() {
-		return threadFactory;
 	}
 
 	public ExecutorServiceBuilder setThreadFactory(ThreadFactory threadFactory) {
@@ -84,17 +68,9 @@ public class ExecutorServiceBuilder {
 		return this;
 	}
 
-	public RejectedExecutionHandler getRejectionHandler() {
-		return rejectionHandler;
-	}
-
 	public ExecutorServiceBuilder setRejectionHandler(RejectedExecutionHandler rejectionHandler) {
 		this.rejectionHandler = rejectionHandler;
 		return this;
-	}
-
-	public int getMaximumQueueSize() {
-		return maximumQueueSize;
 	}
 
 	public ExecutorServiceBuilder setMaximumQueueSize(int maximumQueueSize) {

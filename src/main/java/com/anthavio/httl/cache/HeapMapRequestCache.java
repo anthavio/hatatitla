@@ -66,7 +66,7 @@ public class HeapMapRequestCache<V> extends RequestCache<V> {
 	}
 
 	@Override
-	public void destroy() {
+	public void close() {
 		logger.debug("Cache destroy");
 		if (ttlEvictingThread != null) {
 			ttlEvictingThread.keepGoing = false;

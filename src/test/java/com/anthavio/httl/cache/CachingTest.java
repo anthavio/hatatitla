@@ -26,24 +26,16 @@ import org.testng.annotations.Test;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
 import com.anthavio.httl.HttpSender;
+import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.JokerServer;
 import com.anthavio.httl.PostRequest;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
-import com.anthavio.httl.cache.CacheEntry;
-import com.anthavio.httl.cache.CachedResponse;
-import com.anthavio.httl.cache.CachingRequest;
-import com.anthavio.httl.cache.CachingSender;
-import com.anthavio.httl.cache.EHRequestCache;
-import com.anthavio.httl.cache.RequestCache;
-import com.anthavio.httl.cache.HeapMapRequestCache;
-import com.anthavio.httl.cache.SpyRequestCache;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
-import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.thimbleware.jmemcached.CacheImpl;
 import com.thimbleware.jmemcached.Key;
 import com.thimbleware.jmemcached.LocalCacheElement;
@@ -132,8 +124,8 @@ public class CachingTest {
 		RequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
 		CachingSender csender1 = new CachingSender(sender1, cache);
 		CachingSender csender2 = new CachingSender(sender2, cache);
-		GetRequest request1 = new GetRequest("/");
-		GetRequest request2 = new GetRequest("/");
+		SenderRequest request1 = new GetRequest("/").addParameter("docache", 1);
+		SenderRequest request2 = new GetRequest("/").addParameter("docache", 1);
 
 		SenderResponse response1 = csender1.execute(request1, 1, TimeUnit.SECONDS);
 		SenderResponse response2 = csender2.execute(request2, 1, TimeUnit.SECONDS);
@@ -159,7 +151,7 @@ public class CachingTest {
 		CachingSender csender = newCachedSender(server.getHttpPort());
 		SenderRequest request = new GetRequest("/cs").addParameter("sleep", 1);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
-		CachingRequest crequest = new CachingRequest(request, 4, 2, TimeUnit.SECONDS, RefreshMode.ASYNC_SCHEDULE); //automatic updates!
+		CachingRequest crequest = new CachingRequest(request, 4, 2, TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
 		SenderResponse response1 = csender.execute(crequest);

@@ -104,7 +104,7 @@ public class SpyRequestCache<V extends Serializable> extends RequestCache<V> {
 	}
 
 	@Override
-	public void destroy() {
+	public void close() {
 		client.shutdown();
 	}
 

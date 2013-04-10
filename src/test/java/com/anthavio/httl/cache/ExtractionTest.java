@@ -129,7 +129,7 @@ public class ExtractionTest {
 		SenderRequest request = new GetRequest("/").addParameter("sleep", 1);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.ASYNC_SCHEDULE); //automatic updates!
+				TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
 		String extract1 = cextractor.extract(cerequest);
@@ -167,7 +167,7 @@ public class ExtractionTest {
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.ASYNC_REQUEST); //asynchronous updates!
+				TimeUnit.SECONDS, RefreshMode.REQUEST_ASYN); //asynchronous updates!
 
 		final int initialCount = server.getRequestCount();
 
@@ -251,7 +251,7 @@ public class ExtractionTest {
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.ASYNC_REQUEST); //asynchronous updates!
+				TimeUnit.SECONDS, RefreshMode.REQUEST_ASYN); //asynchronous updates!
 
 		//request must spent some time in server
 		cerequest.getSenderRequest().addParameter("sleep", 1);

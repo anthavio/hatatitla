@@ -1,14 +1,10 @@
 package com.anthavio.httl.cache;
 
-import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
-import com.anthavio.httl.SenderBodyRequest;
-import com.anthavio.httl.SenderBodyRequest.FakeStream;
 import com.anthavio.httl.SenderRequest;
-import com.anthavio.httl.SenderRequest.Method;
-import com.anthavio.httl.SenderRequestBuilders.AbstractRequestBuilder;
 import com.anthavio.httl.SenderResponse;
+import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
@@ -21,39 +17,131 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 public class CachingRequestBuilders {
 
 	/**
+	 * Base builder for existing SenderRequest
 	 * 
 	 * @author martin.vanek
 	 *
 	 */
-	public static abstract class CachingRequestBuilder<X extends CachingRequestBuilder<?>> extends
-			AbstractRequestBuilder<X> {
+	public static abstract class ExistingRequestBuilder<X extends ExistingRequestBuilder<?>> {
 
-		protected final CachingSender sender;
+		protected long hardTtl;
 
-		private long cacheAmount;
+		protected long softTtl;
 
-		private TimeUnit cacheUnit;
+		protected RefreshMode refreshMode = RefreshMode.REQUEST_SYNC;
 
-		public CachingRequestBuilder(CachingSender sender, Method method, String path) {
-			super(sender.getSender(), method, path);
-			this.sender = sender;
+		protected final SenderRequest request;
+
+		public ExistingRequestBuilder(SenderRequest request) {
+			if (request == null) {
+				throw new IllegalArgumentException("null request");
+			}
+			this.request = request;
 		}
 
 		/**
-		 * Sets static caching values - How long to keep response in cache
+		 * Sets hard TTL - How long to keep resource in cache
 		 */
-		public X cache(long amount, TimeUnit unit) {
-			if (amount <= 0) {
-				throw new IllegalArgumentException("Caching amount must be > 0");
-			}
-			this.cacheAmount = amount;
-
+		public X hardTTL(long ttl, TimeUnit unit) {
 			if (unit == null) {
 				throw new IllegalArgumentException("Caching unit is null");
 			}
-			this.cacheUnit = unit;
+
+			this.hardTtl = unit.toSeconds(ttl);
+
+			if (this.hardTtl <= 1) {
+				throw new IllegalArgumentException("Hard TTL must be at least 1 second");
+			}
+
+			if (softTtl == 0) {
+				softTtl = hardTtl;
+			}
 
 			return getX();
+		}
+
+		/**
+		 * Sets soft TTL - Interval between resource freshness checks
+		 */
+		public X softTTL(long ttl, TimeUnit unit) {
+			if (unit == null) {
+				throw new IllegalArgumentException("Caching unit is null");
+			}
+
+			this.softTtl = unit.toSeconds(ttl);
+
+			if (this.softTtl <= 1) {
+				throw new IllegalArgumentException("Soft TTL must be at least 1 second");
+			}
+
+			if (hardTtl == 0) {
+				hardTtl = softTtl;
+			}
+
+			return getX();
+		}
+
+		/**
+		 * Sets both hard and soft TTL to same value
+		 */
+		public X ttl(long ttl, TimeUnit unit) {
+			if (unit == null) {
+				throw new IllegalArgumentException("Caching unit is null");
+			}
+			this.hardTtl = unit.toSeconds(ttl);
+			if (this.hardTtl <= 1) {
+				throw new IllegalArgumentException("TTL must be at least 1 second");
+			}
+			this.softTtl = hardTtl;
+
+			return getX();
+		}
+
+		/**
+		 * Sets both hard and soft TTL
+		 */
+		public X ttl(long hardTtl, long softTtl, TimeUnit unit) {
+			if (softTtl > hardTtl) {
+				throw new IllegalArgumentException("Hard TTL must be greater then Soft TTL");
+			}
+			softTTL(softTtl, unit);
+			hardTTL(hardTtl, unit);
+			return getX();
+		}
+
+		public X refresh(RefreshMode mode) {
+			if (mode == null) {
+				throw new IllegalArgumentException("null mode");
+			}
+			this.refreshMode = mode;
+			return getX();
+		}
+
+		protected abstract X getX();
+
+	}
+
+	/**
+	 * Fluent builder for CachingRequest
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static class CachingRequestBuilder extends ExistingRequestBuilder<CachingRequestBuilder> {
+
+		private final CachingSender csender;
+
+		public CachingRequestBuilder(CachingSender csender, SenderRequest request) {
+			super(request);
+
+			if (csender == null) {
+				throw new IllegalArgumentException("null sender");
+			}
+			this.csender = csender;
+		}
+
+		public final CachingRequest build() {
+			return new CachingRequest(request, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode);
 		}
 
 		/**
@@ -61,19 +149,21 @@ public class CachingRequestBuilders {
 		 * Response is left open and caller is responsibe for closing.
 		 */
 		public SenderResponse execute() {
-			SenderRequest request = build();
-			return sender.execute(request);
+			if (hardTtl != 0) {
+				return csender.execute(build());
+			} else {
+				return csender.execute(request);
+			}
 		}
 
 		/**
 		 * Execute Request and extract Response. Response is closed automaticaly.
 		 */
 		public <T> ExtractedBodyResponse<T> extract(Class<T> clazz) {
-			SenderRequest request = build();
-			if (cacheAmount > 0) {
-				return sender.extract(new CachingRequest(request, cacheAmount, cacheUnit), clazz);
+			if (hardTtl != 0) {
+				return csender.extract(build(), clazz);
 			} else {
-				return sender.extract(request, clazz);
+				return csender.extract(request, clazz);
 			}
 		}
 
@@ -81,96 +171,78 @@ public class CachingRequestBuilders {
 		 * Execute request and extract response. Response is closed automaticaly.
 		 */
 		public <T> ExtractedBodyResponse<T> extract(ResponseBodyExtractor<T> extractor) {
-			SenderRequest request = build();
-			if (cacheAmount > 0) {
-				return sender.extract(new CachingRequest(request, cacheAmount, cacheUnit), extractor);
+			if (hardTtl != 0) {
+				return csender.extract(build(), extractor);
 			} else {
-				return sender.extract(request, extractor);
+				return csender.extract(request, extractor);
 			}
 		}
 
-	}
-
-	public static class CachingBodylessRequestBuilder extends CachingRequestBuilder<CachingBodylessRequestBuilder> {
-
-		public CachingBodylessRequestBuilder(CachingSender httpSender, Method method, String path) {
-			super(httpSender, method, path);
-		}
-
 		@Override
-		protected CachingBodylessRequestBuilder getX() {
+		protected CachingRequestBuilder getX() {
 			return this;
 		}
+
 	}
 
 	/**
-	 * Base builder for requests with body
+	 * Fluent builder for CachingExtractorRequest
 	 * 
 	 * @author martin.vanek
 	 *
 	 */
-	public static class CachingBodyRequestBuilder extends CachingRequestBuilder<CachingBodyRequestBuilder> {
+	public static class CachingExtractorRequestBuilder extends ExistingRequestBuilder<CachingExtractorRequestBuilder> {
 
-		public CachingBodyRequestBuilder(CachingSender httpSender, Method method, String path) {
-			super(httpSender, method, path);
-		}
+		private CachingExtractor cextractor;
 
-		protected String contentType;
-
-		protected InputStream bodyStream;
-
-		/**
-		 * Set String as request body (entity)
-		 */
-		public CachingBodyRequestBuilder body(String body, String contentType) {
-			this.bodyStream = new FakeStream(body);
-			this.contentType = contentType;
-			return getX();
-		}
-
-		/**
-		 * Set Object as request body (entity)
-		 * Object will be marshalled/serialized to String
-		 */
-		public CachingBodyRequestBuilder body(Object body, String contentType) {
-			body(body, contentType, true);
-			return getX();
-		}
-
-		/**
-		 * Set Object as request body (entity)
-		 * Object will be marshalled/serialized to String
-		 * 
-		 * @param streaming write directly into output stream or create interim String / byte[]
-		 */
-		public CachingBodyRequestBuilder body(Object body, String contentType, boolean streaming) {
-			this.bodyStream = new FakeStream(body, streaming);
-			this.contentType = contentType;
-			return getX();
-		}
-
-		/**
-		 * Set InputStream as request body (entity)
-		 */
-		public CachingBodyRequestBuilder body(InputStream stream, String contentType) {
-			this.bodyStream = stream;
-			this.contentType = contentType;
-			return getX();
-		}
-
-		@Override
-		public SenderBodyRequest build() {
-			SenderBodyRequest request = new SenderBodyRequest(sender.getSender(), method, urlPath, parameters, headers);
-			if (bodyStream != null) {
-				request.setBody(bodyStream, contentType);
+		public CachingExtractorRequestBuilder(CachingExtractor cextractor, SenderRequest request) {
+			super(request);
+			if (cextractor == null) {
+				throw new IllegalArgumentException("CachingExtractor is null");
 			}
-			return request;
+			this.cextractor = cextractor;
+
+		}
+
+		/**
+		 * Finish fluent builder flow and return CachingExtractorRequest
+		 */
+		public <T> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
+			if (extractor == null) {
+				throw new IllegalArgumentException("response extractor is null");
+			}
+			return new CachingExtractorRequest<T>(request, extractor, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode);
+		}
+
+		/**
+		 * Finish fluent builder flow and return CachingExtractorRequest
+		 */
+		public <T> CachingExtractorRequest<T> build(Class<T> resultType) {
+			if (resultType == null) {
+				throw new IllegalArgumentException("response type is null");
+			}
+			return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode);
+		}
+
+		/**
+		 * Go and extract!
+		 */
+		public <T> T extract(Class<T> resultType) {
+			CachingExtractorRequest<T> build = build(resultType);
+			return cextractor.extract(build);
+		}
+
+		/**
+		 * Go and extract!
+		 */
+		public <T> T extract(ResponseBodyExtractor<T> extractor) {
+			CachingExtractorRequest<T> build = build(extractor);
+			return cextractor.extract(build);
 		}
 
 		@Override
-		protected CachingBodyRequestBuilder getX() {
+		protected CachingExtractorRequestBuilder getX() {
 			return this;
 		}
 	}
-
 }

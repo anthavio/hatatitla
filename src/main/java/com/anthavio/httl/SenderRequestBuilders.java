@@ -98,10 +98,6 @@ public class SenderRequestBuilders {
 			return getX();
 		}
 
-		public SenderRequest build() {
-			return new SenderRequest(httpSender, method, urlPath, parameters, headers);
-		}
-
 		protected abstract X getX(); //Generic trick
 
 	}
@@ -117,6 +113,10 @@ public class SenderRequestBuilders {
 
 		public SenderRequestBuilder(HttpSender httpSender, Method method, String urlPath) {
 			super(httpSender, method, urlPath);
+		}
+
+		public SenderRequest build() {
+			return new SenderRequest(httpSender, method, urlPath, parameters, headers);
 		}
 
 		/**

@@ -24,7 +24,7 @@ public interface Cache<K, V> {
 
 	public void removeAll();
 
-	public void destroy();
+	public void close();
 
 	//public String getCacheKey(K key) throws Exception;
 

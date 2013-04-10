@@ -17,7 +17,7 @@ public class CachingExtractorRequest<T> extends CachingRequest {
 	private final Class<T> resultType;
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl, TimeUnit unit) {
-		this(request, extractor, hardTtl, hardTtl, unit, RefreshMode.DURING_REQUEST); //hardTtl = softTtl
+		this(request, extractor, hardTtl, hardTtl, unit, RefreshMode.REQUEST_SYNC); //hardTtl = softTtl
 	}
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl,
@@ -27,7 +27,7 @@ public class CachingExtractorRequest<T> extends CachingRequest {
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl, long softTtl,
 			TimeUnit unit) {
-		this(request, extractor, hardTtl, softTtl, unit, RefreshMode.DURING_REQUEST);
+		this(request, extractor, hardTtl, softTtl, unit, RefreshMode.REQUEST_SYNC);
 	}
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl, long softTtl,

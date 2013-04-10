@@ -60,7 +60,7 @@ public class NettySender extends HttpSender {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		channels.close().awaitUninterruptibly();
 		client.releaseExternalResources();
 	}

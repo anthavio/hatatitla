@@ -29,6 +29,10 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	protected transient InputStream stream;
 
+	protected String mimeType = "mime/unknown";
+
+	protected Charset charset = Charset.forName("ISO-8859-1");
+
 	public SenderResponse(int code, String message, Multival headers, InputStream stream) {
 		this.httpStatusCode = code;
 		this.httpStatusMessage = message;
@@ -46,6 +50,13 @@ public abstract class SenderResponse implements Closeable, Serializable {
 			}
 		}
 		this.stream = stream; //null for 304 Not Modified
+
+		String contentType = headers.getFirst("Content-Type");
+		if (contentType != null) {
+			Object[] parts = HttpHeaderUtil.splitContentType(contentType, charset);
+			this.mimeType = (String) parts[0];
+			this.charset = (Charset) parts[1];
+		}
 	}
 
 	protected SenderResponse() {
@@ -85,11 +96,15 @@ public abstract class SenderResponse implements Closeable, Serializable {
 	}
 
 	public boolean isBinaryContent() {
-		return !HttpHeaderUtil.isTextContent(this);
+		return !HttpHeaderUtil.isTextContent(mimeType);
 	}
 
 	public Charset getCharset() {
-		return HttpHeaderUtil.getCharset(getFirstHeader("Content-Type"));
+		return charset;
+	}
+
+	public String getMimeType() {
+		return mimeType;
 	}
 
 	@Override
