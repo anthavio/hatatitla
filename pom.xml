@@ -17,6 +17,13 @@
 	<description>Tweakable REST client library you have been dreaming of</description>
 	<url>http://anthavio.github.com/${project.name}</url>
 
+	<distributionManagement>
+		<site>
+			<id>github-project-site</id>
+			<url>gitsite:git@github.com/anthavio/${project.name}.git</url>
+		</site>
+	</distributionManagement>
+		
 	<dependencies>
 
 		<dependency>
@@ -196,7 +203,8 @@
 				</executions>
 			</plugin>
 
-<plugin>
+
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
 				<configuration>
