@@ -26,16 +26,12 @@ public class HttpURLResponse extends SenderResponse {
 		this.connection = connection;
 	}
 
-	@Override
-	public void close() {
-		if (stream != null) {
-			try {
-				stream.close();
-			} catch (IOException iox) {
-				//ignore
-			}
+	/*
+		@Override
+		public void close() {
+			Cutils.close(stream);
 		}
-	}
+	*/
 
 	/**
 	 * @return underlying HttpURLConnection

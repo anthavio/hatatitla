@@ -137,7 +137,8 @@ public class FakeSender extends HttpSender {
 		}
 
 		@Override
-		public void close() throws IOException {
+		public void close() {
+			super.close();
 			this.closed = true;
 		}
 

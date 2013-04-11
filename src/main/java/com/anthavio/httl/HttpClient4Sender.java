@@ -275,7 +275,7 @@ public class HttpClient4Sender extends HttpSender {
 		}
 	}
 
-	private class ObjectHttpEntity extends AbstractHttpEntity {
+	private static class ObjectHttpEntity extends AbstractHttpEntity {
 
 		private final Object objectBody;
 

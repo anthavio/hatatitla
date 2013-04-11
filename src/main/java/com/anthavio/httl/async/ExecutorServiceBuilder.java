@@ -78,7 +78,7 @@ public class ExecutorServiceBuilder {
 		return this;
 	}
 
-	public class RejectingPolicy implements RejectedExecutionHandler {
+	public static class RejectingPolicy implements RejectedExecutionHandler {
 
 		@Override
 		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {

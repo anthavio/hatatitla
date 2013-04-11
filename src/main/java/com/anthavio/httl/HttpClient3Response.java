@@ -16,7 +16,7 @@ public class HttpClient3Response extends SenderResponse {
 
 	private static final long serialVersionUID = 1L;
 
-	private HttpMethodBase httpMethod;
+	private transient HttpMethodBase httpMethod; //not serializable
 
 	public HttpClient3Response(int code, String message, Multival headers, InputStream stream, HttpMethodBase httpMethod)
 			throws IOException {
@@ -28,11 +28,16 @@ public class HttpClient3Response extends SenderResponse {
 
 	}
 
-	@Override
-	public void close() {
-		httpMethod.releaseConnection();
-	}
+	/*
+		@Override
+		public void close() {
+			//httpMethod.releaseConnection();
+		}
+	*/
 
+	/**
+	 * Hackish access to HttpMethod
+	 */
 	public HttpMethodBase getHttpMethod() {
 		return this.httpMethod;
 	}

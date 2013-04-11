@@ -112,6 +112,11 @@ public abstract class SenderResponse implements Closeable, Serializable {
 	}
 
 	@Override
+	public void close() {
+		Cutils.close(stream);
+	}
+
+	@Override
 	public String toString() {
 		return "SenderResponse {" + httpStatusCode + ", " + httpStatusMessage + "}";
 	}

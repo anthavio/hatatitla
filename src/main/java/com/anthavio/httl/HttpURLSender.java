@@ -187,6 +187,7 @@ public class HttpURLSender extends HttpSender {
 						if (fake.isStreaming()) {
 							marshaller.write(fake.getValue(), connection.getOutputStream(), charset);
 						} else {
+							//XXX create string first an then write...
 							marshaller.write(fake.getValue(), connection.getOutputStream(), charset);
 						}
 					}

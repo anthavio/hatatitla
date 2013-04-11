@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
 
 import com.anthavio.httl.HttpSender.Multival;
 
@@ -17,7 +16,7 @@ public class HttpClient4Response extends SenderResponse {
 
 	private static final long serialVersionUID = 1L;
 
-	private HttpResponse httpResponse;
+	private transient HttpResponse httpResponse; //non serializable
 
 	public HttpClient4Response(int code, String message, Multival headers, InputStream stream, HttpResponse httpResponse)
 			throws IOException {
@@ -28,11 +27,16 @@ public class HttpClient4Response extends SenderResponse {
 		this.httpResponse = httpResponse;
 	}
 
-	@Override
-	public void close() {
-		EntityUtils.consumeQuietly(httpResponse.getEntity());
-	}
+	/*
+		@Override
+		public void close() {
+			EntityUtils.consumeQuietly(httpResponse.getEntity());
+		}
+	*/
 
+	/**
+	 * Hackish access to HttpResponse
+	 */
 	public HttpResponse getHttpResponse() {
 		return httpResponse;
 	}

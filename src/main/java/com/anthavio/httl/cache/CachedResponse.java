@@ -64,7 +64,7 @@ public class CachedResponse extends SenderResponse implements Serializable {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		//nothing
 	}
 

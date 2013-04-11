@@ -212,7 +212,8 @@ public class HttpClient3Sender extends HttpSender {
 				cx.setStackTrace(x.getStackTrace());
 				throw cx;
 			} else if (x instanceof SocketTimeoutException) {
-				int timeout = httpRequest.getParams().getIntParameter(HttpMethodParams.SO_TIMEOUT, config.getReadTimeoutMillis());
+				int timeout = httpRequest.getParams().getIntParameter(HttpMethodParams.SO_TIMEOUT,
+						config.getReadTimeoutMillis());
 				SocketTimeoutException stx = new SocketTimeoutException("Read timeout " + timeout + " ms");
 				stx.setStackTrace(x.getStackTrace());
 				throw stx;
@@ -268,13 +269,11 @@ public class HttpClient3Sender extends HttpSender {
 	}
 	*/
 
-	private class ObjectEntity implements RequestEntity {
+	private static class ObjectEntity implements RequestEntity {
 
 		private final Object objectBody;
 
 		private final Charset charset;
-
-		private final boolean streaming;
 
 		private byte[] content;
 
@@ -285,7 +284,6 @@ public class HttpClient3Sender extends HttpSender {
 			this.objectBody = objectBody;
 			this.marshaller = marshaller;
 			this.charset = charset;
-			this.streaming = streaming;
 			if (streaming) {
 				this.content = null;
 			} else {
