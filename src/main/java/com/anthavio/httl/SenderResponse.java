@@ -21,17 +21,17 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	protected int httpStatusCode;
+	protected final int httpStatusCode;
 
-	protected String httpStatusMessage;
+	protected final String httpStatusMessage;
 
-	protected Multival headers;
+	protected final Multival headers;
 
 	protected transient InputStream stream;
 
 	protected String mimeType = "mime/unknown";
 
-	protected Charset charset = Charset.forName("ISO-8859-1");
+	protected String encoding = "ISO-8859-1";
 
 	public SenderResponse(int code, String message, Multival headers, InputStream stream) {
 		this.httpStatusCode = code;
@@ -53,9 +53,9 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 		String contentType = headers.getFirst("Content-Type");
 		if (contentType != null) {
-			Object[] parts = HttpHeaderUtil.splitContentType(contentType, charset);
-			this.mimeType = (String) parts[0];
-			this.charset = (Charset) parts[1];
+			String[] parts = HttpHeaderUtil.splitContentType(contentType, encoding);
+			this.mimeType = parts[0];
+			this.encoding = parts[1];
 		}
 	}
 
@@ -99,8 +99,12 @@ public abstract class SenderResponse implements Closeable, Serializable {
 		return !HttpHeaderUtil.isTextContent(mimeType);
 	}
 
+	public String getEncoding() {
+		return encoding;
+	}
+
 	public Charset getCharset() {
-		return charset;
+		return Charset.forName(encoding);
 	}
 
 	public String getMimeType() {
