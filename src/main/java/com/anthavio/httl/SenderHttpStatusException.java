@@ -2,6 +2,8 @@ package com.anthavio.httl;
 
 import java.io.IOException;
 
+import com.anthavio.httl.util.HttpHeaderUtil;
+
 /**
  * Exception including response http status code
  * 

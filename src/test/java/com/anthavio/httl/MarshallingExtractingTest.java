@@ -22,6 +22,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.anthavio.httl.inout.ResponseErrorHandler;
 import com.anthavio.httl.inout.ResponseHandler;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * 

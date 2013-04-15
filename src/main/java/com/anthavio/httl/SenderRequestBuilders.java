@@ -11,6 +11,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyHandler;
 import com.anthavio.httl.inout.ResponseHandler;
+import com.anthavio.httl.util.Cutils;
 
 /**
  * Equivalent of Jersey/JAX-RS-2.0 RequestBuilder

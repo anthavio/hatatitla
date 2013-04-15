@@ -1,4 +1,4 @@
-package com.anthavio.httl;
+package com.anthavio.httl.util;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;

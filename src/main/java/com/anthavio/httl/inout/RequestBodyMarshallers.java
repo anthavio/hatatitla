@@ -6,7 +6,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.anthavio.httl.Cutils;
+import com.anthavio.httl.util.Cutils;
 
 /**
  * Storage for HttpSender's RequestBodyMarshallers. 

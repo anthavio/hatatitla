@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import com.anthavio.httl.Cutils;
+import com.anthavio.httl.util.Cutils;
 
 /**
  * 

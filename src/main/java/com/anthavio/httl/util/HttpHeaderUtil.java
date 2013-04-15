@@ -1,4 +1,4 @@
-package com.anthavio.httl;
+package com.anthavio.httl.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,6 +11,8 @@ import java.text.ParseException;
 import java.util.Date;
 
 import com.anthavio.httl.HttpSender.Multival;
+import com.anthavio.httl.SenderRequest;
+import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.cache.CacheEntry;
 import com.anthavio.httl.cache.CachedResponse;
 
@@ -93,7 +95,7 @@ public class HttpHeaderUtil {
 	}
 
 	/**
-	 * Shared helper to parse mimeType and charset from Content-Type header
+	 * Shared helper to parse mediaType and charset from Content-Type header
 	 */
 	public static Object[] splitContentType(String contentType, Charset defaultCharset) {
 		String[] splited = splitContentType(contentType, defaultCharset.name());
@@ -104,12 +106,12 @@ public class HttpHeaderUtil {
 		if (Cutils.isBlank(contentType)) {
 			return new String[] { "text/plain", defaultCharset };
 		}
-		int idxMimeEnd = contentType.indexOf(";");
-		String mimeType;
-		if (idxMimeEnd != -1) {
-			mimeType = contentType.substring(0, idxMimeEnd);
+		int idxMediaEnd = contentType.indexOf(";");
+		String mediaType;
+		if (idxMediaEnd != -1) {
+			mediaType = contentType.substring(0, idxMediaEnd);
 		} else {
-			mimeType = contentType;
+			mediaType = contentType;
 		}
 		String charset;
 		int idxCharset = contentType.indexOf("charset=");
@@ -119,13 +121,13 @@ public class HttpHeaderUtil {
 			charset = defaultCharset;
 			//contentType = contentType + "; charset=" + charset;
 		}
-		return new String[] { mimeType, charset };
+		return new String[] { mediaType, charset };
 	}
 
-	public static String getMimeType(String contentType) {
-		int idxMimeEnd = contentType.indexOf(";");
-		if (idxMimeEnd != -1) {
-			return contentType.substring(0, idxMimeEnd);
+	public static String getMediaType(String contentType) {
+		int idxMediaEnd = contentType.indexOf(";");
+		if (idxMediaEnd != -1) {
+			return contentType.substring(0, idxMediaEnd);
 		} else {
 			return contentType;
 		}
@@ -200,27 +202,27 @@ public class HttpHeaderUtil {
 		boolean istext = false;
 		String contentType = response.getFirstHeader("Content-Type");
 		if (contentType != null) {
-			String mimeType = getMimeType(contentType);
-			istext = isTextContent(mimeType);
+			String mediaType = getMediaType(contentType);
+			istext = isTextContent(mediaType);
 		}
 		//application/octet-stream is default value when not found/detected
 		return istext;
 	}
 
-	public static boolean isTextContent(String mimeType) {
+	public static boolean isTextContent(String mediaType) {
 		boolean istext = false;
-		if (mimeType.startsWith("text")) { //text/...
+		if (mediaType.startsWith("text")) { //text/...
 			istext = true;
-		} else if (mimeType.endsWith("json")) {
+		} else if (mediaType.endsWith("json")) {
 			//application/json
 			istext = true;
-		} else if (mimeType.endsWith("xml")) {
+		} else if (mediaType.endsWith("xml")) {
 			//application/xml, application/atom+xml, application/rss+xml, ...
 			istext = true;
-		} else if (mimeType.endsWith("javascript")) {
+		} else if (mediaType.endsWith("javascript")) {
 			//application/javascript
 			istext = true;
-		} else if (mimeType.endsWith("ecmascript")) {
+		} else if (mediaType.endsWith("ecmascript")) {
 			istext = true;
 			//application/ecmascript
 		}

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.anthavio.httl.HttpSender.Multival;
+import com.anthavio.httl.util.Cutils;
 
 /**
  * Base class for POST and PUT Requests

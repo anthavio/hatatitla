@@ -12,10 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.anthavio.httl.Cutils;
 import com.anthavio.httl.ExtractionOperations;
-import com.anthavio.httl.HttpDateUtil;
-import com.anthavio.httl.HttpHeaderUtil;
 import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
@@ -26,6 +23,9 @@ import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.cache.CachingRequestBuilders.CachingRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.httl.util.Cutils;
+import com.anthavio.httl.util.HttpDateUtil;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * Sender warpper that caches Responses as they are recieved from remote server. Response body is stored in string or byte array.

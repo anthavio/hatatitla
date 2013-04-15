@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.anthavio.httl.Authentication.Scheme;
 import com.anthavio.httl.SenderBodyRequest.FakeStream;
 import com.anthavio.httl.inout.RequestBodyMarshaller;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * Simple java HttpURLConnection implementation of the HttpSender. No additional library is required

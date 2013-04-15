@@ -40,6 +40,7 @@ import com.anthavio.httl.inout.ResponseBodyHandler;
 import com.anthavio.httl.inout.ResponseErrorHandler;
 import com.anthavio.httl.inout.ResponseExtractorFactory;
 import com.anthavio.httl.inout.ResponseHandler;
+import com.anthavio.httl.util.Cutils;
 
 /**
  * 
@@ -178,24 +179,18 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 		}
 		SenderResponse response = null;
 		try {
-
-			try {
-				response = execute(request);
-			} catch (Exception x) {
-				if (response == null) {
-					handler.onRequestError(request, x);
-				} else {
-					handler.onResponseError(response, x);
-				}
-			}
-
+			response = execute(request);
 			handler.onResponse(response);
-
-		} catch (IOException iox) {
-			throw new SenderException(iox);
+		} catch (Exception x) {
+			if (response == null) {
+				handler.onRequestError(request, x);
+			} else {
+				handler.onResponseError(response, x);
+			}
 		} finally {
 			Cutils.close(response);
 		}
+
 	}
 
 	/**

@@ -6,7 +6,9 @@ import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
 
 /**
- * Suitable for streaming processing of the Responses 
+ * Suitable for streaming processing of the Responses.
+ * 
+ * Implementation is not required to close Response.
  * 
  * @author martin.vanek
  *
@@ -14,17 +16,17 @@ import com.anthavio.httl.SenderResponse;
 public interface ResponseBodyHandler<T> {
 
 	/**
-	 * Invoked when response is opened. Method is not required to close response.
+	 * Invoked when response is opened and response body extracted.
 	 */
 	public void onResponse(SenderResponse response, T body) throws IOException;
 
 	/**
-	 * Invoked when exception occurs during request sending
+	 * Invoked when exception occurs during Request sending.
 	 */
 	public void onRequestError(SenderRequest request, Exception exception);
 
 	/**
-	 * Invoked when exception occurs during response processing
+	 * Invoked when exception occurs during Response extraction. 
 	 */
 	public void onResponseError(SenderResponse response, Exception exception);
 }

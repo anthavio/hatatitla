@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.anthavio.httl.Cutils;
-import com.anthavio.httl.HttpHeaderUtil;
 import com.anthavio.httl.SenderResponse;
+import com.anthavio.httl.util.Cutils;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * Storage for ResponseExtractor
@@ -92,7 +92,7 @@ public class ResponseBodyExtractors {
 			throw new IllegalArgumentException("Content-Type header not found");
 		}
 
-		String mimeType = HttpHeaderUtil.getMimeType(contentType);
+		String mimeType = HttpHeaderUtil.getMediaType(contentType);
 		ResponseExtractorFactory extractorFactory = factories.get(mimeType);
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("Extractor factory not found for " + mimeType);

@@ -1,10 +1,16 @@
-package com.anthavio.httl;
+package com.anthavio.httl.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.anthavio.httl.HttpSender;
+import com.anthavio.httl.HttpURLConfig;
+import com.anthavio.httl.SenderRequest;
+import com.anthavio.httl.SenderResponse;
+import com.anthavio.httl.HttpSender.Multival;
 
 /**
  * Sometimes we need to test what is sent remote server without actualy sending it...

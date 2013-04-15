@@ -10,12 +10,12 @@ import java.io.StringReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.anthavio.httl.Cutils;
-import com.anthavio.httl.HttpHeaderUtil;
 import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
+import com.anthavio.httl.util.Cutils;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * 
@@ -36,11 +36,12 @@ public class CachedResponse extends SenderResponse implements Serializable {
 
 	private static final InputStream DUMMY_STREAM = new ByteArrayInputStream(new byte[0]);
 
-	protected CachedResponse() {
-		super();
-		//serialization
-	}
-
+	/*
+		protected CachedResponse() {
+			//super();
+			//serialization
+		}
+	*/
 	public CachedResponse(SenderRequest request, SenderResponse response) {
 		super(response.getHttpStatusCode(), response.getHttpStatusMessage(), response.getHeaders(), DUMMY_STREAM);
 		this.request = request;

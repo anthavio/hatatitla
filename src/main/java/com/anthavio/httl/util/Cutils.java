@@ -1,4 +1,4 @@
-package com.anthavio.httl;
+package com.anthavio.httl.util;
 
 import java.io.Closeable;
 import java.io.InputStream;

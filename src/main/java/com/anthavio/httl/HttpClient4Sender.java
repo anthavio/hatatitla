@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.anthavio.httl.SenderBodyRequest.FakeStream;
 import com.anthavio.httl.inout.RequestBodyMarshaller;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * 

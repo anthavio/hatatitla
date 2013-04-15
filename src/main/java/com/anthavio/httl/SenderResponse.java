@@ -11,6 +11,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import com.anthavio.httl.HttpSender.Multival;
+import com.anthavio.httl.util.Cutils;
+import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * 
@@ -29,7 +31,7 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	protected transient InputStream stream;
 
-	protected String mimeType = "mime/unknown";
+	protected String mediaType = "media/unknown";
 
 	protected String encoding = "ISO-8859-1";
 
@@ -54,19 +56,20 @@ public abstract class SenderResponse implements Closeable, Serializable {
 		String contentType = headers.getFirst("Content-Type");
 		if (contentType != null) {
 			String[] parts = HttpHeaderUtil.splitContentType(contentType, encoding);
-			this.mimeType = parts[0];
+			this.mediaType = parts[0];
 			this.encoding = parts[1];
 		}
 	}
 
-	protected SenderResponse() {
-		//for serialization
-		this.httpStatusCode = 0;
-		this.httpStatusMessage = null;
-		this.headers = null;
-		this.stream = null;
-	}
-
+	/*
+		protected SenderResponse() {
+			//for serialization
+			this.httpStatusCode = 0;
+			this.httpStatusMessage = null;
+			this.headers = null;
+			this.stream = null;
+		}
+	*/
 	public int getHttpStatusCode() {
 		return httpStatusCode;
 	}
@@ -95,20 +98,32 @@ public abstract class SenderResponse implements Closeable, Serializable {
 		return new InputStreamReader(stream, getCharset());
 	}
 
+	/**
+	 * @return guess if Content-Type is NOT of any known textual media types.
+	 */
 	public boolean isBinaryContent() {
-		return !HttpHeaderUtil.isTextContent(mimeType);
+		return !HttpHeaderUtil.isTextContent(mediaType);
 	}
 
+	/**
+	 * @return charset part of the Content-Type header. If header is missing, default ISO-8859-1 is returned
+	 */
 	public String getEncoding() {
 		return encoding;
 	}
 
+	/**
+	 * @return charset part of the Content-Type header. If header is missing, default ISO-8859-1 is returned
+	 */
 	public Charset getCharset() {
 		return Charset.forName(encoding);
 	}
 
-	public String getMimeType() {
-		return mimeType;
+	/**
+	 * @return media type part of the Content-Type header. If header is missing, default media/unknown is returned
+	 */
+	public String getMediaType() {
+		return mediaType;
 	}
 
 	@Override
