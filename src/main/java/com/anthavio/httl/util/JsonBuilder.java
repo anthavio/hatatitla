@@ -26,31 +26,41 @@ public class JsonBuilder {
 	private SimpleDateFormat dateFormat;
 
 	/**
-	 * Start JSON object
+	 * Start JSON object { ...
 	 * <br/>
 	 * Shorthand to new JsonBuilder().object()
 	 */
-	public static ObjectBuilder<JsonBuilder> Object() {
+	public static ObjectBuilder<JsonBuilder> OBJECT() {
 		return new JsonBuilder().object();
 	}
 
 	/**
-	 * Start JSON object with field as nested object -> { 'fieldName' : ...
+	 * Start JSON array { ...
+	 * <br/>
+	 * Shorthand to new JsonBuilder().array()
+	 */
+	public static ArrayBuilder<JsonBuilder> ARRAY() {
+		return new JsonBuilder().array();
+	}
+
+	/**
+	 * Start JSON object with field as nested object -> { 'fieldName' : { ...
 	 * <br/>
 	 * Shorthand to new JsonBuilder().object(fieldName)
-	 */
 	public static ObjectBuilder<ObjectBuilder<JsonBuilder>> Object(String fieldName) {
 		return new JsonBuilder().object(fieldName);
 	}
+	*/
 
 	/**
 	 * Start JSON object with field as simple value -> { 'fieldName' : 'fieldValue' ...
 	 * <br/>
 	 * Shorthand to new JsonBuilder().object(fieldName, fieldValue)
-	 */
-	public static ObjectBuilder<JsonBuilder> Object(String fieldName, Serializable fieldValue) {
+	 
+	public static ObjectBuilder<JsonBuilder> OBJECT(String fieldName, Serializable fieldValue) {
 		return new JsonBuilder().object(fieldName, fieldValue);
 	}
+	*/
 
 	public JsonBuilder(boolean indenting, String dateFormat) {
 		this.indenting = indenting;
