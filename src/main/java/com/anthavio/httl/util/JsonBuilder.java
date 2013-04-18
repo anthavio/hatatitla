@@ -10,7 +10,12 @@ import java.util.Date;
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * Jackson (weapon of choice) is missing simple JSON strings builder for and other libraries are just too heavy for this quite simple job
+ * Jackson (JSON weapon of choice) is missing simple JSON strings builder.
+ * Other libraries are just too heavy for this quite simple job.
+ * 
+ * By default, builder use ISO8601 date format and does NOT perform formatting and indentation
+ * 
+ * Funny stuff with generics included!
  * 
  * @author martin.vanek
  *
@@ -42,25 +47,6 @@ public class JsonBuilder {
 	public static ArrayBuilder<JsonBuilder> ARRAY() {
 		return new JsonBuilder().array();
 	}
-
-	/**
-	 * Start JSON object with field as nested object -> { 'fieldName' : { ...
-	 * <br/>
-	 * Shorthand to new JsonBuilder().object(fieldName)
-	public static ObjectBuilder<ObjectBuilder<JsonBuilder>> Object(String fieldName) {
-		return new JsonBuilder().object(fieldName);
-	}
-	*/
-
-	/**
-	 * Start JSON object with field as simple value -> { 'fieldName' : 'fieldValue' ...
-	 * <br/>
-	 * Shorthand to new JsonBuilder().object(fieldName, fieldValue)
-	 
-	public static ObjectBuilder<JsonBuilder> OBJECT(String fieldName, Serializable fieldValue) {
-		return new JsonBuilder().object(fieldName, fieldValue);
-	}
-	*/
 
 	public JsonBuilder(boolean indenting, String dateFormat) {
 		this.indenting = indenting;
@@ -106,7 +92,7 @@ public class JsonBuilder {
 	/**
 	 * Shorthand to start JSON object with field as simple value
 	 */
-	public ObjectBuilder<JsonBuilder> object(String fieldName, Serializable fieldValue) {
+	public ObjectBuilder<JsonBuilder> object(String fieldName, Object fieldValue) {
 		return new ObjectBuilder<JsonBuilder>(this).field(fieldName, fieldValue);
 	}
 
@@ -127,7 +113,7 @@ public class JsonBuilder {
 	/**
 	 * Shorthand to create simple JSON array out of collection
 	 */
-	public JsonBuilder array(Collection<Serializable> collection) {
+	public JsonBuilder array(Collection<Object> collection) {
 		value(collection);
 		return this;
 	}
@@ -135,7 +121,7 @@ public class JsonBuilder {
 	/**
 	 * Shorthand to create simple JSON array out of array
 	 */
-	public JsonBuilder array(Serializable... elements) {
+	public JsonBuilder array(Object... elements) {
 		value(elements);
 		return this;
 	}
@@ -143,14 +129,14 @@ public class JsonBuilder {
 	/**
 	 * Shorthand to start JSON object with array field
 	 */
-	public ObjectBuilder<JsonBuilder> array(String name, Collection<Serializable> collection) {
+	public ObjectBuilder<JsonBuilder> array(String name, Collection<Object> collection) {
 		return new ObjectBuilder<JsonBuilder>(this).array(name, collection);
 	}
 
 	/**
 	 * Shorthand to start JSON object with array filed
 	 */
-	public ObjectBuilder<JsonBuilder> array(String name, Serializable... elements) {
+	public ObjectBuilder<JsonBuilder> array(String name, Object... elements) {
 		return new ObjectBuilder<JsonBuilder>(this).array(name, elements);
 	}
 
@@ -275,7 +261,16 @@ public class JsonBuilder {
 		/**
 		 * Field @param name as simple value
 		 */
-		public ObjectBuilder<T> field(String name, Serializable value) {
+		public ObjectBuilder<T> field(String name, Object value) {
+			name(name);
+			value(value);
+			return this;
+		}
+
+		/**
+		 * Field @param name as array
+		 */
+		public ObjectBuilder<T> field(String name, Object... value) {
 			name(name);
 			value(value);
 			return this;
@@ -300,7 +295,7 @@ public class JsonBuilder {
 		/**
 		 * Shorthand for nested array with values
 		 */
-		public ObjectBuilder<T> array(String name, Collection<Serializable> collection) {
+		public ObjectBuilder<T> array(String name, Collection<Object> collection) {
 			name(name);
 			value(collection);
 			return this;
@@ -309,7 +304,7 @@ public class JsonBuilder {
 		/**
 		 * Shorthand for nested array with values
 		 */
-		public ObjectBuilder<T> array(String name, Serializable... elements) {
+		public ObjectBuilder<T> array(String name, Object... elements) {
 			name(name);
 			value(elements);
 			return this;
@@ -343,7 +338,7 @@ public class JsonBuilder {
 		/**
 		 * Simple value array element
 		 */
-		public ArrayBuilder<T> element(Serializable value) {
+		public ArrayBuilder<T> element(Object value) {
 			element();
 			value(value);
 			return this;
@@ -368,7 +363,7 @@ public class JsonBuilder {
 		/**
 		 * Shorthand for nested array with values
 		 */
-		public ArrayBuilder<T> array(Collection<Serializable> collection) {
+		public ArrayBuilder<T> array(Collection<Object> collection) {
 			element();
 			value(collection);
 			return this;
@@ -385,10 +380,9 @@ public class JsonBuilder {
 	}
 
 	public static void main(String[] args) {
-		//JsonBuilder builder = new JsonBuilder().object().end();
-		//JsonBuilder builder = new JsonBuilder().object().object("name").field("x", "y").end().field("y", "z").end();
-		JsonBuilder builder = new JsonBuilder(true).object("first", "sadasd").object("second").field("xxx", "yyy").end()
-				.field("third", new Object[] { 1, "x", 3 }).end();
+		JsonBuilder builder = new JsonBuilder(true).object("first", "value").object("second").field("yadda", "tadda").end()
+				.field("third", 1, "x", null).end();
+
 		System.out.println(builder.toString());
 	}
 
