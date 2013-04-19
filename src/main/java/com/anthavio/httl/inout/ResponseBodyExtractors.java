@@ -23,8 +23,14 @@ public class ResponseBodyExtractors {
 		//extractors.add(new ExtractorEntry<byte[]>(BYTES));
 
 		JaxbExtractorFactory jaxbFactory = new JaxbExtractorFactory();
-		this.factories.put("application/xml", jaxbFactory);
-		this.factories.put("text/xml", jaxbFactory);
+
+		try {
+			Class.forName("javax.xml.bind.JAXBContext");
+			this.factories.put("application/xml", jaxbFactory);
+			this.factories.put("text/xml", jaxbFactory);
+		} catch (ClassNotFoundException cnf) {
+			//no xml support then
+		}
 
 		//Jackson support is optional
 		try {

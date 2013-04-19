@@ -31,10 +31,15 @@ public class RequestBodyMarshallers {
 	 */
 	public RequestBodyMarshallers() {
 
-		JaxbRequestMarshaller jaxbMarshaller = new JaxbRequestMarshaller();
-		marshallers.put("text/xml", jaxbMarshaller);
-		marshallers.put("application/xml", jaxbMarshaller);
-		logger.debug("Adding RequestJaxbMarshaller for XML requests");
+		try {
+			Class.forName("javax.xml.bind.JAXBContext");
+			JaxbRequestMarshaller jaxbMarshaller = new JaxbRequestMarshaller();
+			marshallers.put("text/xml", jaxbMarshaller);
+			marshallers.put("application/xml", jaxbMarshaller);
+			logger.debug("Adding RequestJaxbMarshaller for XML requests");
+		} catch (ClassNotFoundException cnfx) {
+			logger.debug("JAXB not found. Built in XML requests support is off");
+		}
 
 		//Jackson support is optional
 		try {
