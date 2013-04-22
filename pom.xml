@@ -10,7 +10,7 @@
 
 	<groupId>com.anthavio</groupId>
 	<artifactId>hatatitla</artifactId>
-	<version>1.0.0</version>	
+	<version>1.0.0-SNAPSHOT</version>	
 	
 	<name>hatatitla</name>
 	<inceptionYear>2013</inceptionYear>
@@ -18,19 +18,19 @@
 	
 	<url>http://anthavio.github.com/${project.name}</url>
 	
+	<scm>
+		<url>https://github.com/anthavio/${project.name}</url>
+		<connection>scm:git:git://github.com/anthavio/${project.name}.git</connection>
+		<developerConnection>scm:git:git@github.com:anthavio/${project.name}.git</developerConnection>
+  </scm>
+
 	<distributionManagement>
 		<site>
 			<id>github-project-site</id>
 			<url>gitsite:git@github.com/anthavio/${project.name}.git</url>
 		</site>
-		<!--
-		<site>
-			<id>anthavio-cloudbees-site</id>
-			<url>dav:https://repository-anthavio.forge.cloudbees.com/release/sites/${project.name}</url>
-		</site>
-		-->
 	</distributionManagement>
-		
+	
 	<dependencies>
 
 		<dependency>
@@ -395,9 +395,5 @@
 						
 		</plugins>
 	</build>
-	
 
-  <scm>
-    <tag>hatatitla-1.0.0</tag>
-  </scm>
 </project>
