@@ -33,7 +33,7 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	protected String mediaType = "media/unknown";
 
-	protected String encoding = "ISO-8859-1";
+	protected String encoding = "utf-8";//"ISO-8859-1";
 
 	public SenderResponse(int code, String message, Multival headers, InputStream stream) {
 		this.httpStatusCode = code;
