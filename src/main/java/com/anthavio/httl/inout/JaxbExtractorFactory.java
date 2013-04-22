@@ -22,6 +22,9 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 		this.jaxbContext = null; //no shared jaxb context
 	}
 
+	/**
+	 * With external jaxb context
+	 */
 	public JaxbExtractorFactory(JAXBContext jaxbContext) {
 		if (jaxbContext == null) {
 			throw new IllegalArgumentException("JAXB context is null");
@@ -29,10 +32,16 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 		this.jaxbContext = jaxbContext;
 	}
 
+	/**
+	 * @return hackish access to cached extractors
+	 */
 	public Map<Class<?>, JaxbResponseExctractor<?>> getCache() {
 		return cache;
 	}
 
+	/**
+	 * @return shared jaxb context or null
+	 */
 	public JAXBContext getJaxbContext() {
 		return jaxbContext;
 	}

@@ -22,38 +22,77 @@ public class ResponseBodyExtractors {
 		//extractors.add(new ExtractorEntry<String>(STRING));
 		//extractors.add(new ExtractorEntry<byte[]>(BYTES));
 
-		JaxbExtractorFactory jaxbFactory = new JaxbExtractorFactory();
-
+		ResponseExtractorFactory factory = null;
+		//First try SimplXml
 		try {
-			Class.forName("javax.xml.bind.JAXBContext");
-			this.factories.put("application/xml", jaxbFactory);
-			this.factories.put("text/xml", jaxbFactory);
-		} catch (ClassNotFoundException cnf) {
-			//no xml support then
+			Class.forName("org.simpleframework.xml.core.Persister");
+			factory = new SimpleXmlExtractorFactory();
+			setExtractorFactory(factory, "text/xml");
+			setExtractorFactory(factory, "application/xml");
+		} catch (ClassNotFoundException cnfx) {
+			//nothing
 		}
 
-		//Jackson support is optional
+		//Then try JAXB
+		if (factory == null) {
+			try {
+				Class.forName("javax.xml.bind.JAXBContext");
+				factory = new JaxbExtractorFactory();
+				setExtractorFactory(factory, "text/xml");
+				setExtractorFactory(factory, "application/xml");
+			} catch (ClassNotFoundException cnf) {
+				//nothing
+			}
+		}
+
+		factory = null;
+		//JSON support
+
+		//First try Jackson 2
 		try {
 			Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
-			factories.put("application/json", new Jackson2ExtractorFactory());
+			factory = new Jackson2ExtractorFactory();
+			setExtractorFactory(factory, "application/json");
 		} catch (ClassNotFoundException cnf) {
+			//nothing
+		}
+
+		//Then try Jackson 1
+		if (factory == null) {
 			try {
 				Class.forName("org.codehaus.jackson.map.ObjectMapper");
-				factories.put("application/json", new Jackson1ExtractorFactory());
-			} catch (ClassNotFoundException cnf2) {
+				factory = new Jackson1ExtractorFactory();
+				setExtractorFactory(factory, "application/json");
+			} catch (ClassNotFoundException cnf) {
+				//nothing
+			}
+		}
+
+		//Then try Gson
+		if (factory == null) {
+			try {
+				Class.forName("com.google.gson.Gson");
+				factory = new GsonExtractorFactory();
+				setExtractorFactory(factory, "application/json");
+			} catch (ClassNotFoundException cnfx) {
+				//nothing
 			}
 		}
 	}
 
-	public ResponseExtractorFactory getExtractorFactory(String mimeType) {
-		return factories.get(mimeType);
+	public ResponseExtractorFactory getExtractorFactory(String mediaType) {
+		return factories.get(mediaType);
 	}
 
-	public void setExtractorFactory(ResponseExtractorFactory extractorFactory, String mimeType) {
+	public void setExtractorFactory(ResponseExtractorFactory extractorFactory, String mediaType) {
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("extractor factory is null");
 		}
-		factories.put(mimeType, extractorFactory);
+		if (Cutils.isBlank(mediaType)) {
+			throw new IllegalArgumentException("media type is blank");
+		}
+		//logger.debug("Adding " + extractorFactory.getClass().getName() + " for " + mediaType);
+		factories.put(mediaType, extractorFactory);
 	}
 
 	public static final ResponseBodyExtractor<String> STRING = new ResponseBodyExtractor<String>() {
@@ -98,10 +137,10 @@ public class ResponseBodyExtractors {
 			throw new IllegalArgumentException("Content-Type header not found");
 		}
 
-		String mimeType = HttpHeaderUtil.getMediaType(contentType);
-		ResponseExtractorFactory extractorFactory = factories.get(mimeType);
+		String mediaType = HttpHeaderUtil.getMediaType(contentType);
+		ResponseExtractorFactory extractorFactory = factories.get(mediaType);
 		if (extractorFactory == null) {
-			throw new IllegalArgumentException("Extractor factory not found for " + mimeType);
+			throw new IllegalArgumentException("Extractor factory not found for " + mediaType);
 		}
 		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, clazz);
 		return extractor;

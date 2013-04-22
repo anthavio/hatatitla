@@ -3,12 +3,18 @@ package com.anthavio.httl;
 import java.io.Serializable;
 import java.util.List;
 
+import org.simpleframework.xml.Default;
+import org.simpleframework.xml.DefaultType;
+import org.simpleframework.xml.ElementList;
+
 /**
  * 
  * @author martin.vanek
  *
  */
 //@XmlRootElement(name = "response")
+//@Default(DefaultType.PROPERTY)
+@Default(DefaultType.FIELD)
 public class TestResponse implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -42,12 +48,16 @@ public class TestResponse implements Serializable {
 		this.request = request;
 	}
 
+	@Default(DefaultType.FIELD)
 	public static class Request {
 
+		//@Element
 		private String message;
 
+		@ElementList(entry = "headers", inline = true)
 		private List<NameValue> headers;
 
+		@ElementList(entry = "parameters", inline = true)
 		private List<NameValue> parameters;
 
 		public List<NameValue> getHeaders() {

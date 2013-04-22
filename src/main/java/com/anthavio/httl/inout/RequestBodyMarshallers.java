@@ -10,12 +10,12 @@ import com.anthavio.httl.util.Cutils;
 
 /**
  * Storage for HttpSender's RequestBodyMarshallers. 
- * JAXB marshaller is allways installed fro mime types text/xml and application/xml
- * When Jackson is found in classpath then JSON marshalling is initialized as well for mime type application/json
+ * JAXB marshaller is allways installed for media types text/xml and application/xml
+ * When Jackson is found in classpath then JSON marshalling is initialized as well for media type application/json
  * 
  * If user is unhappy with default marshallers, he can create and configure his own RequestJaxbMarshaller and set it via
- * httpSender.setMarshaller(customJaxbMarshaller, "application/xml");
- * httpSender.setMarshaller(customJaxbMarshaller, "text/xml");
+ * httpSender.setMarshaller(customMarshaller, "application/xml");
+ * httpSender.setMarshaller(customMarshaller, "text/xml");
  * 
  * @author martin.vanek
  *
@@ -31,56 +31,98 @@ public class RequestBodyMarshallers {
 	 */
 	public RequestBodyMarshallers() {
 
+		RequestBodyMarshaller marshaller = null;
+
+		//First try SimpleXml
 		try {
-			Class.forName("javax.xml.bind.JAXBContext");
-			JaxbRequestMarshaller jaxbMarshaller = new JaxbRequestMarshaller();
-			marshallers.put("text/xml", jaxbMarshaller);
-			marshallers.put("application/xml", jaxbMarshaller);
-			logger.debug("Adding RequestJaxbMarshaller for XML requests");
+			Class.forName("org.simpleframework.xml.core.Persister");
+			marshaller = new SimpleXmlRequestMarshaller();
+			setMarshaller(marshaller, "text/xml");
+			setMarshaller(marshaller, "application/xml");
 		} catch (ClassNotFoundException cnfx) {
-			logger.debug("JAXB not found. Built in XML requests support is off");
+			//nothing
 		}
 
-		//Jackson support is optional
+		//Then try JAXB
+		if (marshaller == null) {
+			try {
+				Class.forName("javax.xml.bind.JAXBContext"); //JAXB is not avaliable on Android
+				marshaller = new JaxbRequestMarshaller();
+				setMarshaller(marshaller, "text/xml");
+				setMarshaller(marshaller, "application/xml");
+			} catch (ClassNotFoundException cnfx) {
+				//nothing
+			}
+		}
+
+		if (marshaller == null) {
+			logger.debug("No XML binding library found. XML body requests support is disabled");
+		}
+
+		marshaller = null;
+		//JSON support
+
+		//First try Jackson 2
 		try {
 			Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
-			marshallers.put("application/json", new Jackson2RequestMarshaller());
-			logger.debug("Adding RequestJackson2Marshaller for JSON requests");
-		} catch (ClassNotFoundException cnf) {
+			marshaller = new Jackson2RequestMarshaller();
+			setMarshaller(marshaller, "application/json");
+		} catch (ClassNotFoundException cnfx) {
+			//nothing
+		}
+
+		//Then try Jackson 1
+		if (marshaller == null) {
 			try {
 				Class.forName("org.codehaus.jackson.map.ObjectMapper");
-				marshallers.put("application/json", new Jackson1RequestMarshaller());
-				logger.debug("Adding RequestJackson1Marshaller for JSON requests");
-			} catch (ClassNotFoundException cnf2) {
-				logger.debug("Jackson classes not found. Built in JSON requests support is off");
+				marshaller = new Jackson1RequestMarshaller();
+				setMarshaller(marshaller, "application/json");
+			} catch (ClassNotFoundException cnfx) {
+				//nothing
 			}
+		}
+
+		//Then try Gson
+		if (marshaller == null) {
+			try {
+				Class.forName("com.google.gson.Gson");
+				marshaller = new GsonRequestMarshaller();
+				setMarshaller(marshaller, "application/json");
+			} catch (ClassNotFoundException cnfx) {
+				//nothing
+			}
+		}
+
+		if (marshaller == null) {
+			logger.debug("No JSON binding library found. JSON body requests support is disabled");
 		}
 	}
 
-	public RequestBodyMarshaller getMarshaller(String mimeType) {
-		return marshallers.get(mimeType);
+	public RequestBodyMarshaller getMarshaller(String mediaType) {
+		return marshallers.get(mediaType);
 	}
 
 	/**
-	 * Register request body marshaller with provided mimeType
+	 * Register request body marshaller with provided mediaType
 	 */
-	public void setMarshaller(RequestBodyMarshaller marshaller, String mimeType) {
-		if (Cutils.isBlank(mimeType)) {
-			throw new IllegalArgumentException("mime type is blank");
+	public void setMarshaller(RequestBodyMarshaller marshaller, String mediaType) {
+		if (Cutils.isBlank(mediaType)) {
+			throw new IllegalArgumentException("media type is blank");
 		}
 		if (marshaller == null) {
 			throw new IllegalArgumentException("marshaller is null");
 		}
-		this.marshallers.put(mimeType, marshaller);
+		logger.debug("Adding " + marshaller.getClass().getName() + " for " + mediaType);
+		this.marshallers.put(mediaType, marshaller);
 	}
 
 	/**
 	 * Shortcut to marshall request body
 	
-	public String marshall(Object body, String mimeType) throws IOException {
-		RequestBodyMarshaller marshaller = getMarshaller(mimeType);
+	public String marshall(Object body, String mediaType) throws IOException {
+		RequestBodyMarshaller marshaller = getMarshaller(mediaType);
 		if (marshaller == null) {
-			throw new IllegalArgumentException("Marshaller found for Content-Type '" + mimeType + "'");
+			throw new IllegalArgumentException("Marshaller found for Content-Type '" + mediaType + "'");
 		}
 		return marshaller.marshall(body);
 	}
