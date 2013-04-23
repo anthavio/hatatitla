@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-<title>JaxbResponseExctractor xref</title>
+<title>JaxbResponseExtractor xref</title>
 <link type="text/css" rel="stylesheet" href="../../../../stylesheet.css" />
 </head>
 <body>
-<div id="overview"><a href="../../../../../apidocs/com/anthavio/httl/inout/JaxbResponseExctractor.html">View Javadoc</a></div><pre>
+<div id="overview"><a href="../../../../../apidocs/com/anthavio/httl/inout/JaxbResponseExtractor.html">View Javadoc</a></div><pre>
 
 <a class="jxr_linenumber" name="1" href="#1">1</a>   <strong class="jxr_keyword">package</strong> com.anthavio.httl.inout;
 <a class="jxr_linenumber" name="2" href="#2">2</a>   
@@ -31,7 +31,7 @@
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <em class="jxr_javadoccomment"> * @author martin.vanek</em>
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <em class="jxr_javadoccomment"> *</em>
 <a class="jxr_linenumber" name="23" href="#23">23</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> JaxbResponseExctractor&lt;T&gt; <strong class="jxr_keyword">implements</strong> ResponseBodyExtractor&lt;T&gt; {
+<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> JaxbResponseExtractor&lt;T&gt; <strong class="jxr_keyword">implements</strong> ResponseBodyExtractor&lt;T&gt; {
 <a class="jxr_linenumber" name="25" href="#25">25</a>  
 <a class="jxr_linenumber" name="26" href="#26">26</a>  	<em class="jxr_comment">//primitive cache for JAXBContexts </em>
 <a class="jxr_linenumber" name="27" href="#27">27</a>  	<strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Map&lt;Class&lt;?&gt;, JAXBContext&gt; cache = <strong class="jxr_keyword">new</strong> HashMap&lt;Class&lt;?&gt;, JAXBContext&gt;();
@@ -45,7 +45,7 @@
 <a class="jxr_linenumber" name="35" href="#35">35</a>  	<em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="36" href="#36">36</a>  <em class="jxr_javadoccomment">	 * Creates single class JAXB context</em>
 <a class="jxr_linenumber" name="37" href="#37">37</a>  <em class="jxr_javadoccomment">	 */</em>
-<a class="jxr_linenumber" name="38" href="#38">38</a>  	<strong class="jxr_keyword">public</strong> <a href="../../../../com/anthavio/httl/inout/JaxbResponseExctractor.html">JaxbResponseExctractor</a>(Class&lt;T&gt; resultType) {
+<a class="jxr_linenumber" name="38" href="#38">38</a>  	<strong class="jxr_keyword">public</strong> <a href="../../../../com/anthavio/httl/inout/JaxbResponseExtractor.html">JaxbResponseExtractor</a>(Class&lt;T&gt; resultType) {
 <a class="jxr_linenumber" name="39" href="#39">39</a>  		<strong class="jxr_keyword">if</strong> (resultType == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="40" href="#40">40</a>  			<strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"resultType is null"</span>);
 <a class="jxr_linenumber" name="41" href="#41">41</a>  		}
@@ -68,7 +68,7 @@
 <a class="jxr_linenumber" name="58" href="#58">58</a>  	<em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="59" href="#59">59</a>  <em class="jxr_javadoccomment">	 * If resultType class is part of bigger jaxbContext...</em>
 <a class="jxr_linenumber" name="60" href="#60">60</a>  <em class="jxr_javadoccomment">	 */</em>
-<a class="jxr_linenumber" name="61" href="#61">61</a>  	<strong class="jxr_keyword">public</strong> <a href="../../../../com/anthavio/httl/inout/JaxbResponseExctractor.html">JaxbResponseExctractor</a>(Class&lt;T&gt; resultType, JAXBContext jaxbContext) {
+<a class="jxr_linenumber" name="61" href="#61">61</a>  	<strong class="jxr_keyword">public</strong> <a href="../../../../com/anthavio/httl/inout/JaxbResponseExtractor.html">JaxbResponseExtractor</a>(Class&lt;T&gt; resultType, JAXBContext jaxbContext) {
 <a class="jxr_linenumber" name="62" href="#62">62</a>  		<strong class="jxr_keyword">if</strong> (resultType == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="63" href="#63">63</a>  			<strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"resultType is null"</span>);
 <a class="jxr_linenumber" name="64" href="#64">64</a>  		}
