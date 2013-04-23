@@ -70,7 +70,7 @@ public class UtilTest {
 		}
 
 		CodeGeneratingHandler handler = new CodeGeneratingHandler();
-		SenderResponse response = new FakeResponse(200, "application/xml; charset=utf-8", json);
+		SenderResponse response = new FakeResponse(200, "application/json; charset=utf-8", json);
 		handler.onResponse(response);
 	}
 }

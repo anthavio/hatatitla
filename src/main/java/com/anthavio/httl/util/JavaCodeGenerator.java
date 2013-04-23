@@ -183,7 +183,7 @@ public abstract class JavaCodeGenerator {
 		if (Cutils.isNotEmpty(baseClass)) {
 			w.print(" extends " + baseClass);
 		}
-		if (interfaces.size() != 0) {
+		if (interfaces != null && interfaces.size() != 0) {
 			w.print(" implements ");
 			for (int i = 0; i < interfaces.size(); ++i) {
 				String itf = interfaces.get(i);

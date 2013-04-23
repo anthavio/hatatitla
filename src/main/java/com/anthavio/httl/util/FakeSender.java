@@ -131,6 +131,9 @@ public class FakeSender extends HttpSender {
 		public FakeResponse(int code, String contentType, String body) {
 			this(code, new Multival(), body);
 			super.getHeaders().add("Content-Type", contentType);
+			String[] strings = HttpHeaderUtil.splitContentType(contentType, encoding);
+			super.mediaType = strings[0];
+			super.encoding = strings[1];
 		}
 
 		public FakeResponse(int code, Multival headers, String body) {

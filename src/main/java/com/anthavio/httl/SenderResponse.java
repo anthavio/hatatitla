@@ -95,7 +95,7 @@ public abstract class SenderResponse implements Closeable, Serializable {
 	}
 
 	public Reader getReader() {
-		return new InputStreamReader(stream, getCharset());
+		return new InputStreamReader(getStream(), getCharset());
 	}
 
 	/**
