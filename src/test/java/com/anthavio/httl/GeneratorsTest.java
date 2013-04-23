@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 
-import com.anthavio.httl.util.CodeGeneratingHandler.JsonInputGenerator;
 import com.anthavio.httl.util.JsonBuilder;
+import com.anthavio.httl.util.JsonInputGenerator;
 
 /**
  * 
@@ -24,6 +24,7 @@ public class GeneratorsTest {
 	}
 
 	public void test() throws Exception {
+
 		JsonInputGenerator generator = new JsonInputGenerator();
 		generator.setBaseClass(Object.class);
 		generator.addInterface(Serializable.class);

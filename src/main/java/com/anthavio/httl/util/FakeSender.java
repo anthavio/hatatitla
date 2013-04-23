@@ -10,7 +10,6 @@ import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.HttpURLConfig;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.HttpSender.Multival;
 
 /**
  * Sometimes we need to test what is sent remote server without actualy sending it...
@@ -75,13 +74,9 @@ public class FakeSender extends HttpSender {
 	 * Change Response returned from doExecute
 	 */
 	public void setResponse(int code, String contentType, String body) {
-		try {
-			Multival headers = new Multival();
-			headers.add("Content-Type", contentType);
-			this.response = new FakeResponse(code, headers, body);
-		} catch (IOException iox) {
-			throw new IllegalArgumentException("What the hell?!?", iox);
-		}
+		Multival headers = new Multival();
+		headers.add("Content-Type", contentType);
+		this.response = new FakeResponse(code, headers, body);
 	}
 
 	/**
@@ -133,7 +128,12 @@ public class FakeSender extends HttpSender {
 
 		private boolean closed;
 
-		public FakeResponse(int code, Multival headers, String body) throws IOException {
+		public FakeResponse(int code, String contentType, String body) {
+			this(code, new Multival(), body);
+			super.getHeaders().add("Content-Type", contentType);
+		}
+
+		public FakeResponse(int code, Multival headers, String body) {
 			super(code, "fake " + code + " http response", headers, null);
 			this.bodyBytes = body.getBytes(Charset.forName("utf-8"));
 		}

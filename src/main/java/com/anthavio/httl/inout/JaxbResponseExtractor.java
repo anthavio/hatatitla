@@ -21,7 +21,7 @@ import com.anthavio.httl.SenderResponse;
  * @author martin.vanek
  *
  */
-public class JaxbResponseExctractor<T> implements ResponseBodyExtractor<T> {
+public class JaxbResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	//primitive cache for JAXBContexts 
 	private static Map<Class<?>, JAXBContext> cache = new HashMap<Class<?>, JAXBContext>();
@@ -35,7 +35,7 @@ public class JaxbResponseExctractor<T> implements ResponseBodyExtractor<T> {
 	/**
 	 * Creates single class JAXB context
 	 */
-	public JaxbResponseExctractor(Class<T> resultType) {
+	public JaxbResponseExtractor(Class<T> resultType) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
@@ -58,7 +58,7 @@ public class JaxbResponseExctractor<T> implements ResponseBodyExtractor<T> {
 	/**
 	 * If resultType class is part of bigger jaxbContext...
 	 */
-	public JaxbResponseExctractor(Class<T> resultType, JAXBContext jaxbContext) {
+	public JaxbResponseExtractor(Class<T> resultType, JAXBContext jaxbContext) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}

@@ -38,6 +38,10 @@ public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	}
 
+	public ObjectMapper getObjectMapper() {
+		return mapper;
+	}
+
 	@Override
 	public T extract(SenderResponse response) throws IOException {
 		Object object = null;

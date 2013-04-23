@@ -10,7 +10,7 @@
 
 	<groupId>com.anthavio</groupId>
 	<artifactId>hatatitla</artifactId>
-	<version>1.0.1-SNAPSHOT</version>	
+	<version>1.0.0-SNAPSHOT</version>	
 	
 	<name>hatatitla</name>
 	<inceptionYear>2013</inceptionYear>
@@ -22,16 +22,8 @@
 		<url>https://github.com/anthavio/${project.name}</url>
 		<connection>scm:git:git://github.com/anthavio/${project.name}.git</connection>
 		<developerConnection>scm:git:git@github.com:anthavio/${project.name}.git</developerConnection>
-    <tag>HEAD</tag>
   </scm>
 
-	<distributionManagement>
-		<site>
-			<id>github-project-site</id>
-			<url>gitsite:git@github.com/anthavio/${project.name}.git</url>
-		</site>
-	</distributionManagement>
-	
 	<dependencies>
 
 		<dependency>
@@ -210,30 +202,12 @@
 		
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<configuration>
+					<dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+					<dependencyDetailsEnabled>false</dependencyDetailsEnabled>
+				</configuration>
 			</plugin>
-		
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>attach-javadocs</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -261,7 +235,7 @@
 
 						<plugin>
 							<groupId>de.smartics.maven.plugin</groupId>
-							<artifactId>maven-buildmetadata-plugin</artifactId>
+							<artifactId>buildmetadata-maven-plugin</artifactId>
 							<reports>
 								<report>buildmetadata-report</report>
 							</reports>
@@ -393,8 +367,9 @@
 					</reportPlugins>
 				</configuration>
 			</plugin>
-						
+
 		</plugins>
+
 	</build>
 
 </project>

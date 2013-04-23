@@ -14,7 +14,7 @@ import com.anthavio.httl.SenderResponse;
  */
 public class JaxbExtractorFactory implements ResponseExtractorFactory {
 
-	private final Map<Class<?>, JaxbResponseExctractor<?>> cache = new HashMap<Class<?>, JaxbResponseExctractor<?>>();
+	private final Map<Class<?>, JaxbResponseExtractor<?>> cache = new HashMap<Class<?>, JaxbResponseExtractor<?>>();
 
 	private final JAXBContext jaxbContext;
 
@@ -35,7 +35,7 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 	/**
 	 * @return hackish access to cached extractors
 	 */
-	public Map<Class<?>, JaxbResponseExctractor<?>> getCache() {
+	public Map<Class<?>, JaxbResponseExtractor<?>> getCache() {
 		return cache;
 	}
 
@@ -47,13 +47,13 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 	}
 
 	@Override
-	public <T> JaxbResponseExctractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
-		JaxbResponseExctractor<T> extractor = (JaxbResponseExctractor<T>) cache.get(resultType);
+	public <T> JaxbResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
+		JaxbResponseExtractor<T> extractor = (JaxbResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			if (this.jaxbContext != null) {
-				extractor = new JaxbResponseExctractor<T>(resultType, jaxbContext);
+				extractor = new JaxbResponseExtractor<T>(resultType, jaxbContext);
 			} else {
-				extractor = new JaxbResponseExctractor<T>(resultType); //no shared jaxb context
+				extractor = new JaxbResponseExtractor<T>(resultType); //no shared jaxb context
 			}
 			cache.put(resultType, extractor);
 		}
