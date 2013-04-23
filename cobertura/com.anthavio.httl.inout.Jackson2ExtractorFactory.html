@@ -12,12 +12,13 @@
 <div class="separator">&nbsp;</div>
 <table class="report">
 <thead><tr>  <td class="heading">Classes in this File</td>  <td class="heading"><a class="dfn" href="help.html" onclick="popupwindow('help.html'); return false;">Line Coverage</a></td>  <td class="heading"><a class="dfn" href="help.html" onclick="popupwindow('help.html'); return false;">Branch Coverage</a></td>  <td class="heading"><a class="dfn" href="help.html" onclick="popupwindow('help.html'); return false;">Complexity</a></td></tr></thead>
-  <tr><td><a href="com.anthavio.httl.inout.Jackson2ExtractorFactory.html">Jackson2ExtractorFactory</a></td><td><table cellpadding="0px" cellspacing="0px" class="percentgraph"><tr class="percentgraph"><td align="right" class="percentgraph" width="40">21%</td><td class="percentgraph"><div class="percentgraph"><div class="greenbar" style="width:21px"><span class="text">4/19</span></div></div></td></tr></table></td><td><table cellpadding="0px" cellspacing="0px" class="percentgraph"><tr class="percentgraph"><td align="right" class="percentgraph" width="40">0%</td><td class="percentgraph"><div class="percentgraph"><div class="greenbar" style="width:0px"><span class="text">0/4</span></div></div></td></tr></table></td><td class="value"><span class="hidden">1.5;</span>1.5</td></tr>
+  <tr><td><a href="com.anthavio.httl.inout.Jackson2ExtractorFactory.html">Jackson2ExtractorFactory</a></td><td><table cellpadding="0px" cellspacing="0px" class="percentgraph"><tr class="percentgraph"><td align="right" class="percentgraph" width="40">22%</td><td class="percentgraph"><div class="percentgraph"><div class="greenbar" style="width:22px"><span class="text">4/18</span></div></div></td></tr></table></td><td><table cellpadding="0px" cellspacing="0px" class="percentgraph"><tr class="percentgraph"><td align="right" class="percentgraph" width="40">0%</td><td class="percentgraph"><div class="percentgraph"><div class="greenbar" style="width:0px"><span class="text">0/4</span></div></div></td></tr></table></td><td class="value"><span class="hidden">1.5;</span>1.5</td></tr>
 
 </table>
 <div class="separator">&nbsp;</div>
 <table cellspacing="0" cellpadding="0" class="src">
-<tr>  <td class="numLineCover">&nbsp;1</td>  <td class="nbHitsUncovered">&nbsp;0</td>  <td class="src"><pre class="src"><span class="srcUncovered">&nbsp;<span class="keyword">package</span> com.anthavio.httl.inout;</span></pre></td></tr>
+<tr>  <td class="numLine">&nbsp;1</td>  <td class="nbHits">&nbsp;</td>
+  <td class="src"><pre class="src">&nbsp;<span class="keyword">package</span> com.anthavio.httl.inout;</pre></td></tr>
 <tr>  <td class="numLine">&nbsp;2</td>  <td class="nbHits">&nbsp;</td>
   <td class="src"><pre class="src">&nbsp;</pre></td></tr>
 <tr>  <td class="numLine">&nbsp;3</td>  <td class="nbHits">&nbsp;</td>
@@ -45,7 +46,7 @@
 <tr>  <td class="numLineCover">&nbsp;14</td>  <td class="nbHitsUncovered">&nbsp;0</td>  <td class="src"><pre class="src"><span class="srcUncovered">&nbsp;<span class="keyword">public</span> <span class="keyword">class</span> Jackson2ExtractorFactory <span class="keyword">implements</span> ResponseExtractorFactory {</span></pre></td></tr>
 <tr>  <td class="numLine">&nbsp;15</td>  <td class="nbHits">&nbsp;</td>
   <td class="src"><pre class="src">&nbsp;</pre></td></tr>
-<tr>  <td class="numLineCover">&nbsp;16</td>  <td class="nbHitsCovered">&nbsp;175</td>  <td class="src"><pre class="src">&nbsp;        <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;Class&lt;?&gt;, Jackson2ResponseExtractor&lt;?&gt;&gt; cache = <span class="keyword">new</span> HashMap&lt;Class&lt;?&gt;, Jackson2ResponseExtractor&lt;?&gt;&gt;();</pre></td></tr>
+<tr>  <td class="numLineCover">&nbsp;16</td>  <td class="nbHitsCovered">&nbsp;35</td>  <td class="src"><pre class="src">&nbsp;        <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;Class&lt;?&gt;, Jackson2ResponseExtractor&lt;?&gt;&gt; cache = <span class="keyword">new</span> HashMap&lt;Class&lt;?&gt;, Jackson2ResponseExtractor&lt;?&gt;&gt;();</pre></td></tr>
 <tr>  <td class="numLine">&nbsp;17</td>  <td class="nbHits">&nbsp;</td>
   <td class="src"><pre class="src">&nbsp;</pre></td></tr>
 <tr>  <td class="numLine">&nbsp;18</td>  <td class="nbHits">&nbsp;</td>
@@ -58,9 +59,9 @@
   <td class="src"><pre class="src">&nbsp;<span class="comment">         * Shared Jackson ObjectMapper will be created internally</span></pre></td></tr>
 <tr>  <td class="numLine">&nbsp;22</td>  <td class="nbHits">&nbsp;</td>
   <td class="src"><pre class="src">&nbsp;<span class="comment">         */</span></pre></td></tr>
-<tr>  <td class="numLineCover">&nbsp;23</td>  <td class="nbHitsCovered">&nbsp;175</td>  <td class="src"><pre class="src">&nbsp;        <span class="keyword">public</span> Jackson2ExtractorFactory() {</pre></td></tr>
-<tr>  <td class="numLineCover">&nbsp;24</td>  <td class="nbHitsCovered">&nbsp;175</td>  <td class="src"><pre class="src">&nbsp;                <span class="keyword">this</span>.objectMapper = Jackson2Util.build();</pre></td></tr>
-<tr>  <td class="numLineCover">&nbsp;25</td>  <td class="nbHitsCovered">&nbsp;175</td>  <td class="src"><pre class="src">&nbsp;        }</pre></td></tr>
+<tr>  <td class="numLineCover">&nbsp;23</td>  <td class="nbHitsCovered">&nbsp;35</td>  <td class="src"><pre class="src">&nbsp;        <span class="keyword">public</span> Jackson2ExtractorFactory() {</pre></td></tr>
+<tr>  <td class="numLineCover">&nbsp;24</td>  <td class="nbHitsCovered">&nbsp;35</td>  <td class="src"><pre class="src">&nbsp;                <span class="keyword">this</span>.objectMapper = Jackson2Util.build();</pre></td></tr>
+<tr>  <td class="numLineCover">&nbsp;25</td>  <td class="nbHitsCovered">&nbsp;35</td>  <td class="src"><pre class="src">&nbsp;        }</pre></td></tr>
 <tr>  <td class="numLine">&nbsp;26</td>  <td class="nbHits">&nbsp;</td>
   <td class="src"><pre class="src">&nbsp;</pre></td></tr>
 <tr>  <td class="numLine">&nbsp;27</td>  <td class="nbHits">&nbsp;</td>
@@ -130,6 +131,6 @@
   <td class="src"><pre class="src">&nbsp;}</pre></td></tr>
 </table>
 
-<div class="footer">Report generated by <a href="http://cobertura.sourceforge.net/" target="_top">Cobertura</a> 1.9.4.1 on 4/11/13 1:32 PM.</div>
+<div class="footer">Report generated by <a href="http://cobertura.sourceforge.net/" target="_top">Cobertura</a> 1.9.4.1 on 4/23/13 6:48 PM.</div>
 </body>
 </html>
