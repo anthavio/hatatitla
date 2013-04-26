@@ -13,7 +13,7 @@ import com.anthavio.httl.cache.HeapMapRequestCache;
  * @author martin.vanek
  *
  */
-public class DevelopmentTest {
+public class HttlTestMain {
 
 	public static void main(String[] args) {
 		MarshallingExtractingTest test = new MarshallingExtractingTest();
