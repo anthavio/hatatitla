@@ -51,6 +51,10 @@ public class HttpClient4Config extends HttpSenderConfig {
 		super(url);
 	}
 
+	public HttpClient4Config(URL url) {
+		super(url);
+	}
+
 	@Override
 	public HttpClient4Sender buildSender() {
 		return new HttpClient4Sender(this);

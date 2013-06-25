@@ -457,8 +457,8 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 						sbMxParams.append(urlencode(name.substring(1)));
 						if (value != null) {
 							sbMxParams.append('=');
-							//XXX matrix parameters may contain '/' and it must stay unescaped
-							sbMxParams.append(urlencode(value));
+							sbMxParams.append(urlencode(value)); // ',' character can be unescaped -  increase url readability
+							//sbMxParams.append(value);
 						}
 					}
 				} else { //query parameter

@@ -1,5 +1,7 @@
 package com.anthavio.httl;
 
+import java.net.URL;
+
 /**
  * -Dhttp.keepAlive=true
  * -Dhttp.maxConnections=200
@@ -12,6 +14,10 @@ public class HttpURLConfig extends HttpSenderConfig {
 
 	public HttpURLConfig(String urlString) {
 		super(urlString);
+	}
+
+	public HttpURLConfig(URL url) {
+		super(url);
 	}
 
 	@Override

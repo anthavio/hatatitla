@@ -20,7 +20,7 @@ public class SenderException extends RuntimeException {
 	}
 
 	public SenderException(IOException iox) {
-		super(iox.getMessage());
+		super(iox);
 		this.delegate = iox;
 	}
 

@@ -1,5 +1,7 @@
 package com.anthavio.httl;
 
+import java.net.URL;
+
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -24,6 +26,10 @@ public class HttpClient3Config extends HttpSenderConfig {
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 
 	public HttpClient3Config(String url) {
+		super(url);
+	}
+
+	public HttpClient3Config(URL url) {
 		super(url);
 	}
 

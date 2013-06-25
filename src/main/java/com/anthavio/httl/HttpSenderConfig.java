@@ -43,6 +43,10 @@ public abstract class HttpSenderConfig {
 
 	private ValueStrategy emptyValueStrategy = ValueStrategy.KEEP;
 
+	public HttpSenderConfig(URL url) {
+		this.hostUrl = digHostUrl(url);
+	}
+
 	public HttpSenderConfig(String urlString) {
 		if (Cutils.isBlank(urlString)) {
 			throw new IllegalArgumentException("URL is blank");
@@ -60,10 +64,13 @@ public abstract class HttpSenderConfig {
 		if (Cutils.isBlank(url.getHost())) {
 			throw new IllegalArgumentException("URL has no host " + urlString);
 		}
+		this.hostUrl = digHostUrl(url);
+	}
 
+	private URL digHostUrl(URL url) {
 		String file = url.getFile();
 		if ((file != null && (!file.equals("") && !file.equals("/"))) || !Cutils.isEmpty(url.getQuery())) {
-			logger.warn("Path and query information is discarded from url " + urlString);
+			logger.warn("Path and query information is discarded from url " + url);
 		}
 		//construct URL without the file (path + query) part
 		try {
@@ -71,7 +78,7 @@ public abstract class HttpSenderConfig {
 		} catch (MalformedURLException mux) {
 			throw new IllegalArgumentException(mux);
 		}
-		this.hostUrl = url;
+		return url;
 	}
 
 	public abstract HttpSender buildSender();
