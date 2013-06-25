@@ -1,7 +1,6 @@
 package com.anthavio.httl.inout;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +8,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.stream.StreamSource;
 
 import com.anthavio.httl.SenderResponse;
 
@@ -30,8 +28,6 @@ public class JaxbResponseExtractor<T> implements ResponseBodyExtractor<T> {
 
 	private final JAXBContext jaxbContext;
 
-	private final Unmarshaller unmarshaller;
-
 	/**
 	 * Creates single class JAXB context
 	 */
@@ -49,7 +45,6 @@ public class JaxbResponseExtractor<T> implements ResponseBodyExtractor<T> {
 			}
 			this.jaxbContext = jaxbContext;
 
-			this.unmarshaller = this.jaxbContext.createUnmarshaller();
 		} catch (JAXBException ex) {
 			throw new IllegalArgumentException(ex.getMessage(), ex);
 		}
@@ -69,19 +64,15 @@ public class JaxbResponseExtractor<T> implements ResponseBodyExtractor<T> {
 		}
 		this.jaxbContext = jaxbContext;
 
-		try {
-			this.unmarshaller = this.jaxbContext.createUnmarshaller();
-		} catch (JAXBException ex) {
-			throw new IllegalArgumentException(ex.getMessage(), ex);
-		}
 	}
 
 	@Override
 	public T extract(SenderResponse response) throws IOException {
 		Object object = null;
 		try {
-			StreamSource source = new StreamSource(new InputStreamReader(response.getStream(), response.getCharset()));
-			object = unmarshaller.unmarshal(source, resultType);
+			//StreamSource source = new StreamSource(new InputStreamReader(response.getStream(), response.getCharset()));
+			Unmarshaller unmarshaller = this.jaxbContext.createUnmarshaller();
+			object = unmarshaller.unmarshal(response.getReader());
 			if (object instanceof JAXBElement<?>) {
 				return ((JAXBElement<T>) object).getValue();
 			}
