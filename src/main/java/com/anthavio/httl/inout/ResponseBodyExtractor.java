@@ -47,6 +47,11 @@ public interface ResponseBodyExtractor<T> {
 			return body;
 		}
 
+		@Override
+		public String toString() {
+			return String.valueOf(body);
+		}
+
 	}
 
 }
