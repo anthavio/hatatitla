@@ -23,6 +23,10 @@ public class SenderRequest {
 		SKIP, KEEP
 	}
 
+	public static enum EncodeStrategy {
+		ENCODE, DONOT
+	}
+
 	public static enum Method {
 		GET(false), DELETE(false), HEAD(false), OPTIONS(false), POST(true), PUT(true);
 
@@ -54,6 +58,8 @@ public class SenderRequest {
 	private ValueStrategy nullValueStrategy = null;
 
 	private ValueStrategy emptyValueStrategy = null;
+
+	private EncodeStrategy urlEncodingStrategy = null;
 
 	// Constructors of managed request instance knowing it's Sender
 
@@ -90,7 +96,6 @@ public class SenderRequest {
 		} else {
 			this.headers = new Multival();
 		}
-
 	}
 
 	// Constructors of standalone request instance without reference to it's Sender
@@ -166,6 +171,14 @@ public class SenderRequest {
 
 	public void setEmptyValueStrategy(ValueStrategy emptyValueStrategy) {
 		this.emptyValueStrategy = emptyValueStrategy;
+	}
+
+	public EncodeStrategy getUrlEncodingStrategy() {
+		return urlEncodingStrategy;
+	}
+
+	public void setUrlEncodingStrategy(EncodeStrategy urlEncodingStrategy) {
+		this.urlEncodingStrategy = urlEncodingStrategy;
 	}
 
 	public Multival getHeaders() {
@@ -345,7 +358,7 @@ public class SenderRequest {
 			return URI.create(urlPath);
 		} else {
 			URL url = sender.getConfig().getHostUrl();
-			String[] pathAndQuery = sender.getPathAndQuery(this);
+			String[] pathAndQuery = sender.getPathAndQuery(this); //XXX NOT all parmas are query for POST
 			String path = pathAndQuery[0];
 			String query = pathAndQuery[1];
 			try {

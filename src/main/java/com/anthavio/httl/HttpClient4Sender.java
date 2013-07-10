@@ -29,8 +29,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.params.CoreConnectionPNames;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.anthavio.httl.SenderBodyRequest.FakeStream;
 import com.anthavio.httl.inout.RequestBodyMarshaller;
@@ -42,8 +40,6 @@ import com.anthavio.httl.util.HttpHeaderUtil;
  *
  */
 public class HttpClient4Sender extends HttpSender {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final HttpClient httpClient;
 
@@ -263,7 +259,8 @@ public class HttpClient4Sender extends HttpSender {
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
 			} else if (x instanceof SocketTimeoutException) {
-				int timeout = httpRequest.getParams().getIntParameter(CoreConnectionPNames.SO_TIMEOUT, config.getReadTimeoutMillis());
+				int timeout = httpRequest.getParams().getIntParameter(CoreConnectionPNames.SO_TIMEOUT,
+						config.getReadTimeoutMillis());
 				SocketTimeoutException stx = new SocketTimeoutException("Read timeout " + timeout + " ms");
 				stx.setStackTrace(x.getStackTrace());
 				throw stx;

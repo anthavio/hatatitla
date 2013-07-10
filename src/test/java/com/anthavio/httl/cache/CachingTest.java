@@ -94,7 +94,7 @@ public class CachingTest {
 					ConcurrentLinkedHashMap.EvictionPolicy.FIFO, maxItems, maxBytes);
 			memcached.setCache(new CacheImpl(storage));
 			memcached.setBinary(false);
-			memcached.setAddr(new InetSocketAddress(11211));
+			memcached.setAddr(new InetSocketAddress(11311));
 			memcached.setIdleTime(1000);
 			memcached.setVerbose(true);
 			memcached.start();

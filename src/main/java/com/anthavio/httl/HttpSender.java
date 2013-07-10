@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.httl.SenderRequest.EncodeStrategy;
 import com.anthavio.httl.SenderRequest.ValueStrategy;
 import com.anthavio.httl.SenderRequestBuilders.SenderDeleteRequestBuilder;
 import com.anthavio.httl.SenderRequestBuilders.SenderGetRequestBuilder;
@@ -59,9 +60,9 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 
 	private ExecutorService executor;
 
-	private RequestBodyMarshallers marshallers = new RequestBodyMarshallers();
+	private final RequestBodyMarshallers marshallers = new RequestBodyMarshallers();
 
-	private ResponseBodyExtractors extractors = new ResponseBodyExtractors();
+	private final ResponseBodyExtractors extractors = new ResponseBodyExtractors();
 
 	private ResponseErrorHandler errorResponseHandler;
 
@@ -159,7 +160,7 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 		String query = pathquery[1];
 
 		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(request.getMethod() + " " + path);
+			this.logger.debug(request.getMethod() + " " + getConfig().getHostUrl() + path);
 		}
 		try {
 			return doExecute(request, path, query);
@@ -419,6 +420,8 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 				.getNullValueStrategy();
 		ValueStrategy emptyStrategy = request.getEmptyValueStrategy() != null ? request.getEmptyValueStrategy() : config
 				.getEmptyValueStrategy();
+		EncodeStrategy encodeStrategy = request.getUrlEncodingStrategy() != null ? request.getUrlEncodingStrategy()
+				: config.getUrlEncodingStrategy();
 		StringBuilder sbMxParams = null;
 		StringBuilder sbQuParams = null;
 		boolean bQp = false; //is any query parameter
@@ -454,11 +457,18 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 							}
 						}
 						sbMxParams.append(';');//keep ; unescaped
-						sbMxParams.append(urlencode(name.substring(1)));
+						if (encodeStrategy == EncodeStrategy.ENCODE) {
+							sbMxParams.append(urlencode(name.substring(1)));
+						} else {
+							sbMxParams.append(name.substring(1));
+						}
 						if (value != null) {
 							sbMxParams.append('=');
-							sbMxParams.append(urlencode(value)); // ',' character can be unescaped -  increase url readability
-							//sbMxParams.append(value);
+							if (encodeStrategy == EncodeStrategy.ENCODE) {
+								sbMxParams.append(urlencode(value)); // ',' character can be unescaped -  increase url readability
+							} else {
+								sbMxParams.append(value);
+							}
 						}
 					}
 				} else { //query parameter
@@ -486,10 +496,18 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 								continue;
 							}
 						}
-						sbQuParams.append(urlencode(name));
+						if (encodeStrategy == EncodeStrategy.ENCODE) {
+							sbQuParams.append(urlencode(name));
+						} else {
+							sbQuParams.append(name);
+						}
 						if (value != null) {
 							sbQuParams.append('=');
-							sbQuParams.append(urlencode(value));
+							if (encodeStrategy == EncodeStrategy.ENCODE) {
+								sbQuParams.append(urlencode(value));
+							} else {
+								sbQuParams.append(value);
+							}
 						}
 						sbQuParams.append('&');
 						bQp = true;

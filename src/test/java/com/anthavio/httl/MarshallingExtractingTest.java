@@ -12,6 +12,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.anthavio.httl.SenderRequest.EncodeStrategy;
 import com.anthavio.httl.TestResponse.NameValue;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
@@ -161,7 +162,7 @@ public class MarshallingExtractingTest {
 		//different encoding for request and response
 		PostRequest request = sender.POST("/").param("pmsg", message).param("dostatus", 201).body(body, "application/json")
 				.accept("application/xml").header("Accept-Charset", "Cp1250").build();
-
+		request.setUrlEncodingStrategy(EncodeStrategy.ENCODE);
 		//charset is added from configuration
 		assertThat(request.getFirstHeader("Content-Type").indexOf("charset=ISO-8859-2")).isNotEqualTo(-1);
 		//System.out.println(request.getParameters().getFirst("pmsg"));

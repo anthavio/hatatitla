@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.codec.binary.Base64;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.anthavio.httl.Authentication.Scheme;
 import com.anthavio.httl.SenderBodyRequest.FakeStream;
@@ -31,8 +29,6 @@ import com.anthavio.httl.util.HttpHeaderUtil;
  *
  */
 public class HttpURLSender extends HttpSender {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final HttpSenderConfig config;
 

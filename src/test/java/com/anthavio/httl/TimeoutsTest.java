@@ -12,17 +12,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.anthavio.httl.GetRequest;
-import com.anthavio.httl.HttpClient3Config;
-import com.anthavio.httl.HttpClient3Sender;
-import com.anthavio.httl.HttpClient4Config;
-import com.anthavio.httl.HttpClient4Sender;
-import com.anthavio.httl.HttpSender;
-import com.anthavio.httl.HttpURLConfig;
-import com.anthavio.httl.HttpURLSender;
-import com.anthavio.httl.SenderException;
-import com.anthavio.httl.SenderRequest;
-import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
 
 /**
@@ -95,7 +84,7 @@ public class TimeoutsTest {
 			Assert.fail("Previous statement must throw ConnectException");
 		} catch (SenderException sex) {
 			//cx.printStackTrace();
-			assertThat(sex.getMessage()).isEqualTo("Pool timeout 300 ms");
+			assertThat(sex.getMessage()).isEqualTo("java.net.ConnectException: Pool timeout 300 ms");
 		}
 		//sleep 
 		sender.close();
@@ -108,7 +97,7 @@ public class TimeoutsTest {
 			Assert.fail("Previous statement must throw ConnectException");
 		} catch (SenderException sex) {
 			//cx.printStackTrace();
-			assertThat(sex.getMessage()).isEqualTo("Connect timeout 1100 ms");
+			assertThat(sex.getMessage()).isEqualTo("java.net.ConnectException: Connect timeout 1100 ms");
 		}
 		sender.close();
 	}
@@ -127,7 +116,7 @@ public class TimeoutsTest {
 			Assert.fail("Previous statement must throw SocketTimeoutException");
 		} catch (SenderException sex) {
 			//stx.printStackTrace();
-			assertThat(sex.getMessage()).isEqualTo("Read timeout 1300 ms");
+			assertThat(sex.getMessage()).isEqualTo("java.net.SocketTimeoutException: Read timeout 1300 ms");
 		}
 
 		//override configuration value
@@ -137,7 +126,7 @@ public class TimeoutsTest {
 			Assert.fail("Previous statement must throw SocketTimeoutException");
 		} catch (SenderException sex) {
 			//stx.printStackTrace();
-			assertThat(sex.getMessage()).isEqualTo("Read timeout 900 ms");
+			assertThat(sex.getMessage()).isEqualTo("java.net.SocketTimeoutException: Read timeout 900 ms");
 		}
 
 		sender.close();

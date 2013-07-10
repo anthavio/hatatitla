@@ -3,6 +3,8 @@ package com.anthavio.httl;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 
 /**
  * 
@@ -22,6 +24,13 @@ public class SenderException extends RuntimeException {
 	public SenderException(IOException iox) {
 		super(iox);
 		this.delegate = iox;
+	}
+
+	/**
+	 * If connect refused | connect timeout | read timeout
+	 */
+	public boolean isConnectOrReadTimeout() {
+		return delegate instanceof ConnectException || delegate instanceof SocketTimeoutException;
 	}
 
 	@Override

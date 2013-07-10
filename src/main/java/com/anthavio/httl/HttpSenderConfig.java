@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.httl.SenderRequest.EncodeStrategy;
 import com.anthavio.httl.SenderRequest.ValueStrategy;
 import com.anthavio.httl.util.Cutils;
 
@@ -43,6 +44,8 @@ public abstract class HttpSenderConfig {
 
 	private ValueStrategy emptyValueStrategy = ValueStrategy.KEEP;
 
+	private EncodeStrategy urlEncodingStrategy = EncodeStrategy.ENCODE;
+
 	public HttpSenderConfig(URL url) {
 		this.hostUrl = digHostUrl(url);
 	}
@@ -70,7 +73,7 @@ public abstract class HttpSenderConfig {
 	private URL digHostUrl(URL url) {
 		String file = url.getFile();
 		if ((file != null && (!file.equals("") && !file.equals("/"))) || !Cutils.isEmpty(url.getQuery())) {
-			logger.warn("Path and query information is discarded from url " + url);
+			logger.info("Path and query information is discarded from url " + url);
 		}
 		//construct URL without the file (path + query) part
 		try {
@@ -177,4 +180,11 @@ public abstract class HttpSenderConfig {
 		this.emptyValueStrategy = emptyValueStrategy;
 	}
 
+	public EncodeStrategy getUrlEncodingStrategy() {
+		return urlEncodingStrategy;
+	}
+
+	public void setUrlEncodingStrategy(EncodeStrategy urlEncodingStrategy) {
+		this.urlEncodingStrategy = urlEncodingStrategy;
+	}
 }
