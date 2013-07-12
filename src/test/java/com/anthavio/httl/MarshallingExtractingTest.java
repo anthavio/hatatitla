@@ -195,7 +195,7 @@ public class MarshallingExtractingTest {
 	}
 }
 
-class TestResponseBodyExtractor implements ResponseBodyExtractor<String> {
+class TestResponseBodyExtractor extends ResponseBodyExtractor<String> {
 
 	private RuntimeException extractException; //simulate very bad extractor
 

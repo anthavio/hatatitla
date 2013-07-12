@@ -15,7 +15,7 @@ import com.anthavio.httl.SenderResponse;
  * @author martin.vanek
  *
  */
-public class SimpleXmlResponseExtractor<T> implements ResponseBodyExtractor<T> {
+public class SimpleXmlResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
 	private final Class<T> resultType;
 

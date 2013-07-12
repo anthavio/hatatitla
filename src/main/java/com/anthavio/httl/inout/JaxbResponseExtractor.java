@@ -19,7 +19,7 @@ import com.anthavio.httl.SenderResponse;
  * @author martin.vanek
  *
  */
-public class JaxbResponseExtractor<T> implements ResponseBodyExtractor<T> {
+public class JaxbResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
 	//primitive cache for JAXBContexts 
 	private static Map<Class<?>, JAXBContext> cache = new HashMap<Class<?>, JAXBContext>();

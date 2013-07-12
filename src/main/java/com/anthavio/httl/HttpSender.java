@@ -207,16 +207,16 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 		SenderResponse response = null;
 		try {
 			response = execute(request);
-			if (response.getHttpStatusCode() >= 300) {
-				if (errorResponseHandler != null) {
-					errorResponseHandler.onErrorResponse(response);
-					return new ExtractedBodyResponse<T>(response, null);
-				} else {
-					throw new SenderHttpStatusException(response);
-				}
+			if (extractor.isExtractable(response)) {
+				T extracted = extractor.extract(response);
+				return new ExtractedBodyResponse<T>(response, extracted);
+			} else if (errorResponseHandler != null) {
+				errorResponseHandler.onErrorResponse(response);
+				return new ExtractedBodyResponse<T>(response, null);
+			} else {
+				throw new SenderHttpStatusException(response);
 			}
-			T extracted = extractor.extract(response);
-			return new ExtractedBodyResponse<T>(response, extracted);
+
 		} catch (IOException iox) {
 			throw new SenderException(iox);
 		} finally {

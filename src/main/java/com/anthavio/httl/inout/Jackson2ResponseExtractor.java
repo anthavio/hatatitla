@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author martin.vanek
  *
  */
-public class Jackson2ResponseExtractor<T> implements ResponseBodyExtractor<T> {
+public class Jackson2ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
 	private final Class<T> resultType;
 

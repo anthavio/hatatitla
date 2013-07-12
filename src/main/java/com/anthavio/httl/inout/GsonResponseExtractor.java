@@ -14,7 +14,7 @@ import com.google.gson.Gson;
  * @author martin.vanek
  *
  */
-public class GsonResponseExtractor<T> implements ResponseBodyExtractor<T> {
+public class GsonResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
 	private final Class<T> resultType;
 

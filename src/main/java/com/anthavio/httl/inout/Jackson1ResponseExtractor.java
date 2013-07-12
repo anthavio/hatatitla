@@ -16,7 +16,7 @@ import com.anthavio.httl.SenderResponse;
  * @author martin.vanek
  *
  */
-public class Jackson1ResponseExtractor<T> implements ResponseBodyExtractor<T> {
+public class Jackson1ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
 	private final Class<T> resultType;
 

@@ -9,12 +9,19 @@ import com.anthavio.httl.SenderResponse;
  * @author martin.vanek
  *
  */
-public interface ResponseBodyExtractor<T> {
+public abstract class ResponseBodyExtractor<T> {
+
+	/**
+	 * 
+	 */
+	public boolean isExtractable(SenderResponse response) {
+		return response.getHttpStatusCode() >= 300;
+	}
 
 	/**
 	 * @return extracted body of SenderResponse
 	 */
-	public T extract(SenderResponse response) throws IOException;
+	public abstract T extract(SenderResponse response) throws IOException;
 
 	/**
 	 * Aggregation of reponse and extracted body
