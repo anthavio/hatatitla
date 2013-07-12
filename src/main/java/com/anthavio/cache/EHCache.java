@@ -1,24 +1,20 @@
-package com.anthavio.httl.cache;
+package com.anthavio.cache;
 
 import java.io.Serializable;
 
-import net.sf.ehcache.Element;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.sf.ehcache.Element;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class EHRequestCache<V extends Serializable> extends RequestCache<V> {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+public class EHCache<V extends Serializable> extends CacheBase<V> {
 
 	private final net.sf.ehcache.Cache ehCache;
 
-	public EHRequestCache(String name, net.sf.ehcache.Cache ehCache) {
+	public EHCache(String name, net.sf.ehcache.Cache ehCache) {
 		super(name);
 		if (ehCache == null) {
 			throw new IllegalArgumentException("null ehCache");
@@ -45,12 +41,7 @@ public class EHRequestCache<V extends Serializable> extends RequestCache<V> {
 
 	@Override
 	public Boolean doRemove(String cacheKey) {
-		try {
-			return ehCache.remove(cacheKey);
-		} catch (Exception x) {
-			logger.warn("Failed to remove key " + cacheKey, x);
-			return Boolean.FALSE;
-		}
+		return ehCache.remove(cacheKey);
 	}
 
 	@Override
@@ -61,6 +52,11 @@ public class EHRequestCache<V extends Serializable> extends RequestCache<V> {
 	@Override
 	public void close() {
 		ehCache.dispose();
+	}
+
+	@Override
+	public String getKey(String userKey) {
+		return userKey;
 	}
 
 }

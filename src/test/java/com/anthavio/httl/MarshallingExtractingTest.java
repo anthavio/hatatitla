@@ -12,12 +12,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.SenderRequest.EncodeStrategy;
 import com.anthavio.httl.TestResponse.NameValue;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
-import com.anthavio.httl.cache.HeapMapRequestCache;
-import com.anthavio.httl.cache.RequestCache;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
@@ -178,7 +178,7 @@ public class MarshallingExtractingTest {
 			//System.out.println(nameValue.getName() + " " + nameValue.getValue());
 		}
 
-		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
+		CacheBase<Object> cache = new HeapMapCache<Object>();
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
 		CachingExtractorRequest<String> crequest = cextractor.request(request).softTTL(1, TimeUnit.MINUTES)
 				.hardTTL(2, TimeUnit.MINUTES).build(String.class);

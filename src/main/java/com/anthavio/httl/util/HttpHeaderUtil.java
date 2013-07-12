@@ -10,10 +10,10 @@ import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.Date;
 
+import com.anthavio.cache.CacheEntry;
 import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.cache.CacheEntry;
 import com.anthavio.httl.cache.CachedResponse;
 
 public class HttpHeaderUtil {
@@ -59,10 +59,10 @@ public class HttpHeaderUtil {
 			serverDate = parseDateAsEpoch(headerValue);
 		}
 
-		long serverExpiry = 0;
+		long serverExpires = 0;
 		headerValue = headers.getFirst("Expires");
 		if (headerValue != null) {
-			serverExpiry = parseDateAsEpoch(headerValue);
+			serverExpires = parseDateAsEpoch(headerValue);
 		}
 
 		long lastModified = 0;
@@ -78,9 +78,9 @@ public class HttpHeaderUtil {
 		// even if both exist and Expires is more restrictive.
 		if (hasCacheControl) {
 			softTtl = maxAge;
-		} else if (serverDate > 0 && serverExpiry >= serverDate) {
+		} else if (serverDate > 0 && serverExpires >= serverDate) {
 			// Default semantic for Expire header in HTTP specification is softExpire.
-			softTtl = serverExpiry - serverDate;
+			softTtl = serverExpires - serverDate;
 		}
 
 		//if already expired and we don't have anything to check new version - don't cache at all
@@ -90,7 +90,7 @@ public class HttpHeaderUtil {
 		long hardTtl = softTtl > 0 ? softTtl : 10; //XXX default hardTtl is 10 seconds - should be parametrized
 
 		CachedResponse cachedResponse = new CachedResponse(request, response);
-		return new CacheEntry<CachedResponse>(cachedResponse, hardTtl, softTtl, etag, modified);
+		return new CacheEntry<CachedResponse>(cachedResponse, hardTtl, softTtl);
 
 	}
 

@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.CacheEntry;
 import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
@@ -27,7 +29,7 @@ public class CachingExtractor {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final RequestCache<Object> cache;
+	private final CacheBase<Object> cache;
 
 	private final HttpSender sender;
 
@@ -46,7 +48,7 @@ public class CachingExtractor {
 	 * @param cache underlying cache
 	 * @param executor for asynchronous updates
 	 */
-	public CachingExtractor(HttpSender sender, RequestCache<Object> cache, ExecutorService executor) {
+	public CachingExtractor(HttpSender sender, CacheBase<Object> cache, ExecutorService executor) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -70,7 +72,7 @@ public class CachingExtractor {
 	 * @param sender
 	 * @param cache
 	 */
-	public CachingExtractor(HttpSender sender, RequestCache<Object> cache) {
+	public CachingExtractor(HttpSender sender, CacheBase<Object> cache) {
 		this(sender, cache, null);
 	}
 
@@ -98,7 +100,7 @@ public class CachingExtractor {
 	/**
 	 * @return underlying cache
 	 */
-	public RequestCache<?> getCache() {
+	public CacheBase<?> getCache() {
 		return cache;
 	}
 

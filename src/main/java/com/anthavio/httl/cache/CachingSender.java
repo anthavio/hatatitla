@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.CacheEntry;
 import com.anthavio.httl.ExtractionOperations;
 import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.SenderException;
@@ -24,7 +26,6 @@ import com.anthavio.httl.cache.CachingRequestBuilders.CachingRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.util.Cutils;
-import com.anthavio.httl.util.HttpDateUtil;
 import com.anthavio.httl.util.HttpHeaderUtil;
 
 /**
@@ -46,7 +47,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 
 	private final HttpSender sender;
 
-	private final RequestCache<CachedResponse> cache;
+	private final CacheBase<CachedResponse> cache;
 
 	private Map<String, CachingRequest> updated = new HashMap<String, CachingRequest>();
 
@@ -56,11 +57,11 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 
 	private RefreshSchedulerThread scheduler;
 
-	public CachingSender(HttpSender sender, RequestCache<CachedResponse> cache) {
+	public CachingSender(HttpSender sender, CacheBase<CachedResponse> cache) {
 		this(sender, cache, null);
 	}
 
-	public CachingSender(HttpSender sender, RequestCache<CachedResponse> cache, ExecutorService executor) {
+	public CachingSender(HttpSender sender, CacheBase<CachedResponse> cache, ExecutorService executor) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -96,7 +97,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	/**
 	 * @return underlying cache
 	 */
-	public RequestCache<CachedResponse> getCache() {
+	public CacheBase<CachedResponse> getCache() {
 		return cache;
 	}
 
@@ -295,14 +296,16 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 		if (entry != null) {
 			entry.getValue().setRequest(request);
 			if (!entry.isSoftExpired()) {
-				return entry.getValue(); //cache hit and not soft expired
+				return entry.getValue(); //cache hit and not soft expired - hurray
 			} else {
 				//soft expired - verify freshness
-				if (entry.getServerTag() != null) { //ETag
-					request.setHeader("If-None-Match", entry.getServerTag()); //XXX this modifies request so hashCode will change as well
+				String etag = entry.getValue().getFirstHeader("ETag");
+				if (etag != null) { //ETag
+					request.setHeader("If-None-Match", etag); //XXX this modifies request so hashCode will change as well
 				}
-				if (entry.getServerDate() != null) { //Last-Modified
-					request.setHeader("If-Modified-Since", HttpDateUtil.formatDate(entry.getServerDate()));
+				String lastModified = entry.getValue().getFirstHeader("Last-Modified");
+				if (lastModified != null) { //Last-Modified
+					request.setHeader("If-Modified-Since", lastModified);
 				}
 			}
 		} else if (request.getFirstHeader("If-None-Match") != null) {

@@ -10,6 +10,8 @@ import javax.xml.bind.Marshaller;
 
 import org.testng.Assert;
 
+import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.Authentication;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient3Config;
@@ -27,8 +29,6 @@ import com.anthavio.httl.cache.CachingExtractorRequest;
 import com.anthavio.httl.cache.CachingRequest;
 import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.cache.CachingSender;
-import com.anthavio.httl.cache.HeapMapRequestCache;
-import com.anthavio.httl.cache.RequestCache;
 import com.anthavio.httl.inout.Jackson2ExtractorFactory;
 import com.anthavio.httl.inout.Jackson2RequestMarshaller;
 import com.anthavio.httl.inout.JaxbRequestMarshaller;
@@ -185,7 +185,7 @@ public class ExamplesTest {
 		//Github uses ETag and Cache control headers nicely
 		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
 		//Provide cache instance - Simple Heap Hashmap in this case
-		RequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		//Create caching sender
 		CachingSender csender = new CachingSender(sender, cache);
 
@@ -224,7 +224,7 @@ public class ExamplesTest {
 		//Create normal HttpSender
 		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
 		//Provide cache instance - Simple Heap Hashmap in this case
-		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
+		CacheBase<Object> cache = new HeapMapCache<Object>();
 		//Create Caching Extractor
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
 
@@ -260,7 +260,7 @@ public class ExamplesTest {
 		//Create normal HttpSender
 		HttpSender sender = new HttpClient4Sender("http://httpbin.org");
 		//Provide cache instance - Simple Heap Hashmap in this case
-		RequestCache<Object> cache = new HeapMapRequestCache<Object>();
+		CacheBase<Object> cache = new HeapMapCache<Object>();
 		//Setup asynchronous support
 		ExecutorService executor = ExecutorServiceBuilder.builder().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
 		//Create Caching Extractor

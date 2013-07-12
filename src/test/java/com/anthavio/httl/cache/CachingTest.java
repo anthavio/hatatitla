@@ -23,6 +23,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.CacheEntry;
+import com.anthavio.cache.EHCache;
+import com.anthavio.cache.HeapMapCache;
+import com.anthavio.cache.SpyRequestCache;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
 import com.anthavio.httl.HttpSender;
@@ -73,13 +78,13 @@ public class CachingTest {
 		}
 	}
 
-	private EHRequestCache<CachedResponse> buildEhCache() {
+	private EHCache<CachedResponse> buildEhCache() {
 		if (ehCacheManager == null) {
 			ehCacheManager = CacheManager.create();
 			Cache ehCache = new Cache("EHCache", 5000, false, false, 0, 0);
 			ehCacheManager.addCache(ehCache);
 		}
-		EHRequestCache<CachedResponse> cache = new EHRequestCache<CachedResponse>("EHCache",
+		EHCache<CachedResponse> cache = new EHCache<CachedResponse>("EHCache",
 				ehCacheManager.getCache("EHCache"));
 		return cache;
 	}
@@ -100,7 +105,7 @@ public class CachingTest {
 			memcached.start();
 		}
 
-		MemcachedClient client = new MemcachedClient(AddrUtil.getAddresses("localhost:11211"));
+		MemcachedClient client = new MemcachedClient(AddrUtil.getAddresses("localhost:11311"));
 		SpyRequestCache<CachedResponse> cache = new SpyRequestCache<CachedResponse>("whatever", client, 1, TimeUnit.SECONDS);
 		return cache;
 	}
@@ -109,7 +114,7 @@ public class CachingTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new SimpleHttpSender(url);
 		HttpSender sender = new HttpClient4Sender(url);
-		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		csender.setExecutor(executor);
 		return csender;
@@ -121,7 +126,7 @@ public class CachingTest {
 		HttpSender sender1 = new HttpClient4Sender("127.0.0.1:" + server.getHttpPort());
 		HttpSender sender2 = new HttpClient4Sender("localhost:" + server.getHttpPort());
 		//shared cache for 2 senders
-		RequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender1 = new CachingSender(sender1, cache);
 		CachingSender csender2 = new CachingSender(sender2, cache);
 		SenderRequest request1 = new GetRequest("/").addParameter("docache", 1);
@@ -186,14 +191,14 @@ public class CachingTest {
 
 	@Test
 	public void testSimpleCache() throws Exception {
-		RequestCache<CachedResponse> cache;
-		cache = new HeapMapRequestCache<CachedResponse>();
+		CacheBase<CachedResponse> cache;
+		cache = new HeapMapCache<CachedResponse>();
 		doCacheTest(cache);
 	}
 
 	@Test
 	public void testEhCache() throws Exception {
-		RequestCache<CachedResponse> cache;
+		CacheBase<CachedResponse> cache;
 		cache = buildEhCache();
 		//cache = buildMemcache();
 		doCacheTest(cache);
@@ -201,7 +206,7 @@ public class CachingTest {
 
 	@Test
 	public void testMemcached() throws Exception {
-		RequestCache<CachedResponse> cache;
+		CacheBase<CachedResponse> cache;
 		cache = buildMemcache();
 		doCacheTest(cache);
 	}
@@ -289,7 +294,7 @@ public class CachingTest {
 	/**
 	 * Basic caching operations we expect to work with any cache implementation
 	 */
-	private void doCacheTest(RequestCache<CachedResponse> cache) throws InterruptedException, IOException {
+	private void doCacheTest(CacheBase<CachedResponse> cache) throws InterruptedException, IOException {
 
 		CachedResponse cresponse = new CachedResponse(200, "Choroso", new Multival(), new Date().toString());
 		String cacheKey = String.valueOf(System.currentTimeMillis());
@@ -322,7 +327,7 @@ public class CachingTest {
 		//ETag: "9ea8f5a5b1d659bc8358daad6f2e347f15f6e683"
 		//Expires: Sat, 01 Jan 2000 00:00:00 GMT
 		HttpSender sender = new HttpClient4Sender("https://graph.facebook.com");
-		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 
 		GetRequest request = new GetRequest("/me/friends");
@@ -350,7 +355,7 @@ public class CachingTest {
 		//Date: Tue, 26 Feb 2013 16:11:16 GMT
 		//Expires: Wed, 27 Feb 2013 16:11:16 GMT
 		HttpSender sender = new HttpClient4Sender("http://maps.googleapis.com/maps/api/staticmap");
-		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		GetRequest request = new GetRequest("/");
 		request.addParameter("key", "AIzaSyCgNUVqbYTyIP_f4Ew2wJXSZ9XjIQ8F5w8");
@@ -402,7 +407,7 @@ public class CachingTest {
 		//Expires: -1
 		//Cache-Control: private, max-age=0
 		HttpSender sender = new HttpClient4Sender("http://www.google.co.uk");
-		HeapMapRequestCache<CachedResponse> cache = new HeapMapRequestCache<CachedResponse>();
+		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 
 		SenderResponse response = csender.execute(new GetRequest("/"));

@@ -11,6 +11,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
 import com.anthavio.httl.HttpSender;
@@ -298,7 +299,7 @@ public class ExtractionTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new JavaHttpSender(url);
 		HttpSender sender = new HttpClient4Sender(url);
-		HeapMapRequestCache<Object> cache = new HeapMapRequestCache<Object>();
+		HeapMapCache<Object> cache = new HeapMapCache<Object>();
 		CachingExtractor csender = new CachingExtractor(sender, cache);
 		csender.setExecutor(executor);
 		return csender;

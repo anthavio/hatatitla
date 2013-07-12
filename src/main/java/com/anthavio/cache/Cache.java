@@ -1,6 +1,7 @@
-package com.anthavio.httl.cache;
+package com.anthavio.cache;
 
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * 
@@ -26,6 +27,12 @@ public interface Cache<K, V> {
 
 	public void close();
 
-	//public String getCacheKey(K key) throws Exception;
+	/**
+	 * Cache implementation can change user provided key 
+	 * - add some prefix or namespace 
+	 * - translate it to something else 
+	 * - hash it when it is too long
+	 */
+	public String getKey(K userKey);
 
 }

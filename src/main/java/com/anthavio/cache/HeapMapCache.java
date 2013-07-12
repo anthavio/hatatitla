@@ -1,32 +1,28 @@
-package com.anthavio.httl.cache;
+package com.anthavio.cache;
 
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class HeapMapRequestCache<V> extends RequestCache<V> {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+public class HeapMapCache<V> extends CacheBase<V> {
 
 	private TtlEvictingThread ttlEvictingThread;
 
 	private Map<String, CacheEntry<V>> storage = new ConcurrentHashMap<String, CacheEntry<V>>();
 
-	public HeapMapRequestCache() {
+	public HeapMapCache() {
 		this(0, null);
 	}
 
-	public HeapMapRequestCache(int evictionInterval, TimeUnit evictionUnit) {
-		super("SIMPLE");
+	public HeapMapCache(int evictionInterval, TimeUnit evictionUnit) {
+		super("HeapMapCache"); //We don't care about name
 		if (evictionInterval > 0) {
 			ttlEvictingThread = new TtlEvictingThread(evictionInterval, evictionUnit);
 			ttlEvictingThread.start();
@@ -74,6 +70,11 @@ public class HeapMapRequestCache<V> extends RequestCache<V> {
 		}
 	}
 
+	@Override
+	public String getKey(String userKey) {
+		return userKey;
+	}
+
 	private class TtlEvictingThread extends Thread {
 
 		private final long interval;
@@ -85,7 +86,7 @@ public class HeapMapRequestCache<V> extends RequestCache<V> {
 			if (this.interval < 1000) {
 				throw new IllegalArgumentException("Interval " + this.interval + " must be >= 1000 millis");
 			}
-			this.setName(HeapMapRequestCache.this.getName() + "-reaper");
+			this.setName(HeapMapCache.this.getName() + "-reaper");
 			this.setDaemon(true);
 		}
 
