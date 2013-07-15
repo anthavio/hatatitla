@@ -71,7 +71,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 	}
 
 	@Override
-	public String getKey(String userKey) {
+	public String getCacheKey(String userKey) {
 		return userKey;
 	}
 

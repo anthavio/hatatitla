@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.MemcachedClient;
 import net.spy.memcached.internal.GetFuture;
 import net.spy.memcached.internal.OperationFuture;
+
+import org.apache.commons.codec.digest.DigestUtils;
 
 import com.anthavio.httl.util.Cutils;
 
@@ -111,11 +111,13 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	@Override
-	public String getKey(String userKey) {
-		if (namespaceVersioning) {
-			return getNamespace() + ":" + userKey;
+	public String getCacheKey(String userKey) {
+		String namespace = getNamespace();
+		//use MD5 hash if the key is too long, but keep the namespace
+		if (namespace.length() + userKey.length() > MaxKeyLength) {
+			return namespace + ":" + DigestUtils.md5Hex(userKey);
 		} else {
-			return getName() + ":" + userKey;
+			return namespace + ":" + userKey;
 		}
 	}
 
@@ -128,7 +130,7 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 		if (namespaceVersioning) {
 			String nsVersionKey = getNsVersionKey();
 			long incr = client.incr(nsVersionKey, 1);
-			if (incr == -1) {//does not not exist -> create it
+			if (incr == -1) {//nsVersion entry does not not exist -> create it
 				try {
 					OperationFuture<Boolean> future = client.set(nsVersionKey, DAY, VERSION_IN);
 					future.get(operationTimeout, TimeUnit.MILLISECONDS);
@@ -158,7 +160,7 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	/**
-	 * Namespace is used as prefix for every key to avoid clashes
+	 * Namespace is used as prefix for every key to avoid key clashes with other caches
 	 */
 	public String getNamespace() {
 		if (namespaceVersioning) {
@@ -191,12 +193,6 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 		} catch (Exception x) {
 			throw new IllegalStateException("Failed to obtain namespace version for " + nsVersionKey, x);
 		}
-	}
-
-	private boolean doAdd(String key, int expiry, Serializable value) throws InterruptedException, TimeoutException,
-			ExecutionException {
-		OperationFuture<Boolean> future = client.add(key, expiry, value);
-		return future.get(operationTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	//default Transcoder is SerializingTranscoder

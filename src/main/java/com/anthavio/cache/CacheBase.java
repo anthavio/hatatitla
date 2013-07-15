@@ -32,7 +32,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		if (Cutils.isBlank(userKey)) {
 			throw new IllegalArgumentException("Key must not be blank");
 		}
-		String cacheKey = getKey(userKey);
+		String cacheKey = getCacheKey(userKey);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Cache get: " + userKey + " (" + cacheKey + ")");
 		}
@@ -73,7 +73,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		if (Cutils.isBlank(userKey)) {
 			throw new IllegalArgumentException("Key must not be blank");
 		}
-		String cacheKey = getKey(userKey);
+		String cacheKey = getCacheKey(userKey);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Cache set: " + userKey + " (" + cacheKey + ")");
 		}
@@ -92,7 +92,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		if (Cutils.isBlank(userKey)) {
 			throw new IllegalArgumentException("Key must not be blank");
 		}
-		String cacheKey = getKey(userKey);
+		String cacheKey = getCacheKey(userKey);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Cache rem: " + userKey + " (" + cacheKey + ")");
 		}

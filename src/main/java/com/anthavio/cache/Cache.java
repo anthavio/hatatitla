@@ -2,7 +2,6 @@ package com.anthavio.cache;
 
 import java.util.concurrent.TimeUnit;
 
-
 /**
  * 
  * @author martin.vanek
@@ -28,11 +27,11 @@ public interface Cache<K, V> {
 	public void close();
 
 	/**
-	 * Cache implementation can change user provided key 
-	 * - add some prefix or namespace 
+	 * Cache implementation can use user provided key 
+	 * - add prefix or namespace 
 	 * - translate it to something else 
 	 * - hash it when it is too long
 	 */
-	public String getKey(K userKey);
+	public String getCacheKey(K userKey);
 
 }

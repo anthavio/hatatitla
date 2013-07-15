@@ -55,7 +55,7 @@ public class EHCache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	@Override
-	public String getKey(String userKey) {
+	public String getCacheKey(String userKey) {
 		return userKey;
 	}
 
