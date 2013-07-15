@@ -21,7 +21,7 @@ import com.anthavio.httl.util.Cutils;
  * @author martin.vanek
  *
  */
-public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
+public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 
 	public static final int MINUTE = 60; //seconds
 	public static final int HOUR = 60 * MINUTE;//seconds
@@ -40,7 +40,7 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 
 	private final long operationTimeout; //Memcached call timeout in milliseconds
 
-	public SpyRequestCache(String name, ConnectionFactory connectionFactory, List<InetSocketAddress> addrs,
+	public SpyMemcache(String name, ConnectionFactory connectionFactory, List<InetSocketAddress> addrs,
 			boolean namespaceVersioning) throws IOException {
 		super(name);
 		if (Cutils.isBlank(name)) {
@@ -52,11 +52,11 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 		this.namespaceVersioning = namespaceVersioning;
 	}
 
-	public SpyRequestCache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout) {
+	public SpyMemcache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout) {
 		this(name, client, operationTimeout, unitOfTimeout, false);
 	}
 
-	public SpyRequestCache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout,
+	public SpyMemcache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout,
 			boolean namespaceVersioning) {
 		super(name);
 		if (Cutils.isBlank(name)) {
@@ -171,6 +171,7 @@ public class SpyRequestCache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	private String getNsVersion() {
+		//TODO cache nsVersion localy for X seconds - use read/write lock on last checked timestamp 
 		String nsVersionKey = getNsVersionKey();
 		try {
 			GetFuture<Object> gfuture = client.asyncGet(nsVersionKey);

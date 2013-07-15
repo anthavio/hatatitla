@@ -9,11 +9,11 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.SenderRequest;
-import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.cache.CachingRequestBuilders.CachingExtractorRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
@@ -112,6 +112,18 @@ public class CachingExtractor {
 	}
 
 	/**
+	 * Custom cache key from request (if exist) takes precedence
+	 * Otherwise key derived from request URL is used
+	 */
+	protected String getCacheKey(CachingRequest request) {
+		String cacheKey = request.getCacheKey();
+		if (cacheKey == null) {
+			cacheKey = sender.getCacheKey(request.getSenderRequest());
+		}
+		return cacheKey;
+	}
+
+	/**
 	 * Extracted response version. Response is extracted, then closed and result is returned to caller
 	 * Static caching based on specified amount and unit
 	 */
@@ -119,7 +131,7 @@ public class CachingExtractor {
 		if (request.isAsyncRefresh() && this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
-		String cacheKey = sender.getCacheKey(request.getSenderRequest());
+		String cacheKey = getCacheKey(request);
 		CacheEntry<?> entry = cache.get(cacheKey);
 		if (entry != null) {
 			if (!entry.isSoftExpired()) {
@@ -240,7 +252,7 @@ public class CachingExtractor {
 
 		@Override
 		public void run() {
-			String cacheKey = sender.getCacheKey(request.getSenderRequest());
+			String cacheKey = getCacheKey(request);
 			try {
 				doExtract(request, cacheKey);
 			} catch (Exception x) {
@@ -303,7 +315,7 @@ public class CachingExtractor {
 				try {
 					CachingExtractorRequest<?> request = entry.getValue();
 					if (request.getSoftExpire() < now) {
-						String cacheKey = sender.getCacheKey(request.getSenderRequest());
+						String cacheKey = getCacheKey(request);
 						startRefresh(cacheKey, request);
 					}
 				} catch (Exception x) {

@@ -2,11 +2,12 @@ package com.anthavio.httl.cache;
 
 import java.util.concurrent.TimeUnit;
 
+import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.httl.util.Cutils;
 
 /**
  * Fluent builders for CachingSender Requests
@@ -24,13 +25,15 @@ public class CachingRequestBuilders {
 	 */
 	public static abstract class ExistingRequestBuilder<X extends ExistingRequestBuilder<?>> {
 
+		protected final SenderRequest request;
+
 		protected long hardTtl;
 
 		protected long softTtl;
 
 		protected RefreshMode refreshMode = RefreshMode.REQUEST_SYNC;
 
-		protected final SenderRequest request;
+		protected String customCacheKey;
 
 		public ExistingRequestBuilder(SenderRequest request) {
 			if (request == null) {
@@ -109,6 +112,9 @@ public class CachingRequestBuilders {
 			return getX();
 		}
 
+		/**
+		 * Sets mode of refreshing
+		 */
 		public X refresh(RefreshMode mode) {
 			if (mode == null) {
 				throw new IllegalArgumentException("null mode");
@@ -117,6 +123,20 @@ public class CachingRequestBuilders {
 			return getX();
 		}
 
+		/**
+		 * Sets custom caching key to be used intead of default key derived from url
+		 */
+		public X customCacheKey(String key) {
+			if (Cutils.isBlank(key)) {
+				throw new IllegalArgumentException("Blank key");
+			}
+			this.customCacheKey = key;
+			return getX();
+		}
+
+		/**
+		 * hack 
+		 */
 		protected abstract X getX();
 
 	}
@@ -141,7 +161,7 @@ public class CachingRequestBuilders {
 		}
 
 		public final CachingRequest build() {
-			return new CachingRequest(request, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode);
+			return new CachingRequest(request, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode, customCacheKey);
 		}
 
 		/**
@@ -211,7 +231,8 @@ public class CachingRequestBuilders {
 			if (extractor == null) {
 				throw new IllegalArgumentException("response extractor is null");
 			}
-			return new CachingExtractorRequest<T>(request, extractor, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode);
+			return new CachingExtractorRequest<T>(request, extractor, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode,
+					customCacheKey);
 		}
 
 		/**
@@ -221,7 +242,8 @@ public class CachingRequestBuilders {
 			if (resultType == null) {
 				throw new IllegalArgumentException("response type is null");
 			}
-			return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode);
+			return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.SECONDS, refreshMode,
+					customCacheKey);
 		}
 
 		/**

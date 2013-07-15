@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
-import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 
 import org.apache.commons.codec.binary.Base64;
@@ -23,11 +22,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.EHCache;
 import com.anthavio.cache.HeapMapCache;
-import com.anthavio.cache.SpyRequestCache;
+import com.anthavio.cache.SpyMemcache;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
 import com.anthavio.httl.HttpSender;
@@ -37,7 +37,6 @@ import com.anthavio.httl.PostRequest;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
-import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
@@ -84,12 +83,12 @@ public class CachingTest {
 			Cache ehCache = new Cache("EHCache", 5000, false, false, 0, 0);
 			ehCacheManager.addCache(ehCache);
 		}
-		EHCache<CachedResponse> cache = new EHCache<CachedResponse>("EHCache",
-				ehCacheManager.getCache("EHCache"));
+		EHCache<CachedResponse> cache = new EHCache<CachedResponse>("EHCache", ehCacheManager.getCache("EHCache"));
 		return cache;
 	}
 
-	private SpyRequestCache<CachedResponse> buildMemcache() throws IOException {
+	private SpyMemcache<CachedResponse> buildMemcache() throws IOException {
+		InetSocketAddress address = new InetSocketAddress(11311);
 		if (memcached == null) {
 			memcached = new MemCacheDaemon<LocalCacheElement>();
 
@@ -99,14 +98,14 @@ public class CachingTest {
 					ConcurrentLinkedHashMap.EvictionPolicy.FIFO, maxItems, maxBytes);
 			memcached.setCache(new CacheImpl(storage));
 			memcached.setBinary(false);
-			memcached.setAddr(new InetSocketAddress(11311));
+			memcached.setAddr(address);
 			memcached.setIdleTime(1000);
 			memcached.setVerbose(true);
 			memcached.start();
 		}
 
-		MemcachedClient client = new MemcachedClient(AddrUtil.getAddresses("localhost:11311"));
-		SpyRequestCache<CachedResponse> cache = new SpyRequestCache<CachedResponse>("whatever", client, 1, TimeUnit.SECONDS);
+		MemcachedClient client = new MemcachedClient(address);
+		SpyMemcache<CachedResponse> cache = new SpyMemcache<CachedResponse>("whatever", client, 1, TimeUnit.SECONDS);
 		return cache;
 	}
 

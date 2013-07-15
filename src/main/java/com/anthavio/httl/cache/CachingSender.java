@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.httl.ExtractionOperations;
@@ -21,7 +22,6 @@ import com.anthavio.httl.SenderHttpStatusException;
 import com.anthavio.httl.SenderOperations;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.cache.CachingRequestBuilders.CachingRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
@@ -109,13 +109,25 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	}
 
 	/**
+	 * Custom cache key from request (if exist) takes precedence
+	 * Otherwise key derived from request URL is used
+	 */
+	protected String getCacheKey(CachingRequest request) {
+		String cacheKey = request.getCacheKey();
+		if (cacheKey == null) {
+			cacheKey = sender.getCacheKey(request.getSenderRequest());
+		}
+		return cacheKey;
+	}
+
+	/**
 	 * Static caching based on specified TTL
 	 */
 	public SenderResponse execute(CachingRequest request) {
 		if (request.isAsyncRefresh() && this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
-		String cacheKey = sender.getCacheKey(request.getSenderRequest());
+		String cacheKey = getCacheKey(request);
 		CacheEntry<CachedResponse> entry = cache.get(cacheKey);
 		if (entry != null) {
 			entry.getValue().setRequest(request.getSenderRequest());
@@ -123,7 +135,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 				return entry.getValue(); //nice hit
 			} else {
 				logger.debug("Request soft expired " + cacheKey);
-				//soft expired -  refresh needed
+				//soft expired - refresh needed
 				if (request.isAsyncRefresh()) {
 					//we will return soft expired value, but we will also start asynchronous refresh
 					startRefresh(cacheKey, request);
@@ -369,7 +381,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 
 		@Override
 		public void run() {
-			String cacheKey = sender.getCacheKey(request.getSenderRequest());
+			String cacheKey = getCacheKey(request);
 			try {
 				SenderResponse response = sender.execute(request.getSenderRequest());
 				request.setLastRefresh(System.currentTimeMillis());
@@ -430,7 +442,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 				try {
 					CachingRequest request = entry.getValue();
 					if (request.getSoftExpire() < now) {
-						String cacheKey = sender.getCacheKey(request.getSenderRequest());
+						String cacheKey = getCacheKey(request);
 						startRefresh(cacheKey, request);
 					}
 				} catch (Exception x) {

@@ -2,7 +2,6 @@ package com.anthavio.httl.async;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
@@ -29,7 +28,7 @@ public class ExecutorServiceBuilder {
 	private ThreadFactory threadFactory = new NamedDeamonThreadFactory();
 	private RejectedExecutionHandler rejectionHandler = new RejectingPolicy();
 
-	public ExecutorService build() {
+	public ThreadPoolExecutor build() {
 		BlockingQueue<Runnable> queue;
 		if (maximumQueueSize == 0) {
 			//this is not a queue actually - directly pushing requests to threads

@@ -11,6 +11,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
@@ -20,7 +21,6 @@ import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
-import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
 

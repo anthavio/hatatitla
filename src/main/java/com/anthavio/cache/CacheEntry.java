@@ -20,9 +20,9 @@ public class CacheEntry<T> implements Serializable {
 
 	private final Date sinceDate = new Date(); //when entry was added
 
-	private final long hardTtl; //seconds - after entry will disapear
+	private final long hardTtl; //seconds - entry will disapear after
 
-	private final long softTtl; //seconds - after we must revalidate - static value or server expiry 
+	private final long softTtl; //seconds - we must revalidate after - static value or server expiry 
 
 	/**
 	 * Simplest possible
@@ -34,22 +34,22 @@ public class CacheEntry<T> implements Serializable {
 	/**
 	 * TTLs are in seconds
 	 */
-	public CacheEntry(T value, long hardTtl, long softTtl) {
+	public CacheEntry(T value, long hardTtlSeconds, long softTtlSeconds) {
 		if (value == null) {
 			throw new IllegalArgumentException("cached value is null");
 		}
 		this.value = value;
 
-		if (hardTtl < 1) {
-			throw new IllegalArgumentException("hardTtl " + hardTtl + " must be > 1");
+		if (hardTtlSeconds < 1) {
+			throw new IllegalArgumentException("hardTtl " + hardTtlSeconds + " must be > 1");
 		}
-		this.hardTtl = hardTtl;
+		this.hardTtl = hardTtlSeconds;
 
 		//can be from past
-		this.softTtl = softTtl;
+		this.softTtl = softTtlSeconds;
 
-		if (softTtl > 0 && hardTtl < softTtl) {
-			throw new IllegalArgumentException("hardTtl " + hardTtl + " must be > softTtl " + softTtl);
+		if (softTtlSeconds > 0 && hardTtlSeconds < softTtlSeconds) {
+			throw new IllegalArgumentException("hardTtl " + hardTtlSeconds + " must be > softTtl " + softTtlSeconds);
 		}
 
 	}

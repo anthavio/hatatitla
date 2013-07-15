@@ -9,7 +9,24 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Cache<K, V> {
 
+	public enum RefreshMode {
+		/**
+		 * refresh is request initiated and done using synchronously using request thread
+		 */
+		REQUEST_SYNC,
+		/**
+		 * refresh is request initiated, but done using the background thread
+		 */
+		REQUEST_ASYN,
+		/**
+		 * refresh is scheduled and performed using the background thread
+		 */
+		SCHEDULED;
+	}
+
 	public CacheEntry<V> get(K key);
+
+	public CacheEntry<V> get(CacheRequest<V> request);
 
 	public Boolean set(K key, V value, long duration, TimeUnit unit);
 

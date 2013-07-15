@@ -10,6 +10,7 @@ import javax.xml.bind.Marshaller;
 
 import org.testng.Assert;
 
+import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.Authentication;
@@ -27,7 +28,6 @@ import com.anthavio.httl.cache.CachedResponse;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
 import com.anthavio.httl.cache.CachingRequest;
-import com.anthavio.httl.cache.CachingRequest.RefreshMode;
 import com.anthavio.httl.cache.CachingSender;
 import com.anthavio.httl.inout.Jackson2ExtractorFactory;
 import com.anthavio.httl.inout.Jackson2RequestMarshaller;
@@ -246,8 +246,8 @@ public class ExamplesTest {
 		}
 
 		//Precreated Caching request
-		CachingExtractorRequest<HttpbinOut> crequest2 = new CachingExtractorRequest<HttpbinOut>(get, HttpbinOut.class, 10,
-				5, TimeUnit.SECONDS, RefreshMode.REQUEST_SYNC);
+		CachingExtractorRequest<HttpbinOut> crequest2 = CachingExtractorRequest.Builder(cextractor, get)
+				.ttl(10, 5, TimeUnit.SECONDS).refresh(RefreshMode.REQUEST_SYNC).build(HttpbinOut.class);
 		for (int i = 0; i < 1000; ++i) {
 			HttpbinOut out = cextractor.extract(crequest2);//Cache hit
 		}
