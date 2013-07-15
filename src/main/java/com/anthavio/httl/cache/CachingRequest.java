@@ -26,7 +26,7 @@ public class CachingRequest {
 
 	private final RefreshMode refreshMode;
 
-	private long lastRefresh;
+	private long lastRefresh; //only for RefreshMode.SCHEDULED 
 
 	private final String customCacheKey; //caller takes responsibility for key uniqueness 
 
@@ -94,7 +94,7 @@ public class CachingRequest {
 		return hardTtl;
 	}
 
-	public long getHardExpire() {
+	protected long getHardExpire() {
 		return lastRefresh + (hardTtl * 1000);
 	}
 
@@ -102,7 +102,7 @@ public class CachingRequest {
 		return softTtl;
 	}
 
-	public long getSoftExpire() {
+	protected long getSoftExpire() {
 		return lastRefresh + (softTtl * 1000);
 	}
 
@@ -114,7 +114,7 @@ public class CachingRequest {
 		return customCacheKey;
 	}
 
-	public long getLastRefresh() {
+	protected long getLastRefresh() {
 		return lastRefresh;
 	}
 

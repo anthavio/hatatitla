@@ -23,11 +23,11 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 
 	protected final String name;
 
-	private Map<String, CacheRequest> updated = new HashMap<String, CacheRequest>();
+	private Map<String, CacheRequest<V>> updated = new HashMap<String, CacheRequest<V>>();
 
 	private ExecutorService executor;
 
-	private Map<String, CacheRequest> scheduled = new HashMap<String, CacheRequest>();
+	private Map<String, CacheRequest<V>> scheduled = new HashMap<String, CacheRequest<V>>();
 
 	private RefreshSchedulerThread scheduler;
 
@@ -130,7 +130,6 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		String cacheKey = request.getUserKey();
 		CacheEntry<V> entry = get(cacheKey);
 		if (entry != null) {
-			//entry.getValue().setRequest(request.getSenderRequest());
 			if (!entry.isSoftExpired()) {
 				return entry; //nice hit
 			} else {
@@ -140,7 +139,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 					//we will return soft expired value, but we will also start asynchronous refresh
 					startRefresh(request);
 					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-						doScheduled(request);
+						addScheduled(request);
 					}
 					logger.debug("Request soft expired value returned " + cacheKey);
 					return entry;
@@ -165,7 +164,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			V value = request.getUpdater().fetch(request);
 			request.setLastRefresh(System.currentTimeMillis());
 			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-				doScheduled(request);
+				addScheduled(request);
 			}
 			return doCachePut(request, value);
 		}
@@ -179,7 +178,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			} else {
 				logger.debug("Request async refresh start " + cacheKey);
 				executor.execute(new CacheUpdateRunner<V>(request));
-				updated.put(cacheKey, request);
+				updated.put(cacheKey, request); //only if executor did not refused new task
 			}
 		}
 	}
@@ -199,7 +198,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	 * 
 	 * Also starts scheduler thread if it is not running yet.
 	 */
-	private void doScheduled(CacheRequest<V> request) {
+	private void addScheduled(CacheRequest<V> request) {
 		String cacheKey = request.getUserKey();
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {
@@ -207,10 +206,12 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		} else {
 			scheduled.put(cacheKey, request);
 			logger.debug("Request is now scheduled to be refreshed " + cacheKey);
-			if (scheduler == null) { //XXX race condition here...
-				logger.info("RefreshSchedulerThread started");
-				scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
-				scheduler.start();
+			synchronized (this) {
+				if (scheduler == null) {
+					logger.info("RefreshSchedulerThread started");
+					scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
+					scheduler.start();
+				}
 			}
 		}
 	}
@@ -289,7 +290,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		private void check() {
 			long now = System.currentTimeMillis();
 			logger.debug("check");
-			for (Entry<String, CacheRequest> entry : scheduled.entrySet()) {
+			for (Entry<String, CacheRequest<V>> entry : scheduled.entrySet()) {
 				try {
 					CacheRequest request = entry.getValue();
 					if (request.getSoftExpire() < now) {

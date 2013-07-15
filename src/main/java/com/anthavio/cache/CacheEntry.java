@@ -13,9 +13,6 @@ public class CacheEntry<T> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	//only formatting - never use for parsing
-	protected static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-
 	private final T value;
 
 	private final Date sinceDate = new Date(); //when entry was added
@@ -91,6 +88,9 @@ public class CacheEntry<T> implements Serializable {
 	public long getHardExpire() {
 		return sinceDate.getTime() + (hardTtl * 1000);
 	}
+
+	//only toString() formatting - never use for parsing
+	protected static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
 	@Override
 	public String toString() {

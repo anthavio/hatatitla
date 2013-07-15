@@ -140,7 +140,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 					//we will return soft expired value, but we will also start asynchronous refresh
 					startRefresh(cacheKey, request);
 					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-						doScheduled(request, cacheKey);
+						addScheduled(request, cacheKey);
 					}
 					logger.debug("Request soft expired value returned " + cacheKey);
 					return entry.getValue();
@@ -165,7 +165,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			SenderResponse response = sender.execute(request.getSenderRequest());
 			request.setLastRefresh(System.currentTimeMillis());
 			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-				doScheduled(request, cacheKey);
+				addScheduled(request, cacheKey);
 			}
 			return doCachePut(cacheKey, request, response);
 		}
@@ -192,17 +192,19 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	 * 
 	 * Also starts scheduler thread if it is not running yet.
 	 */
-	private <T> void doScheduled(CachingRequest request, String cacheKey) {
+	private <T> void addScheduled(CachingRequest request, String cacheKey) {
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {
 			logger.debug("Request is already scheduled to refresh" + cacheKey);
 		} else {
 			scheduled.put(cacheKey, request);
 			logger.debug("Request is now scheduled to be refreshed " + cacheKey);
-			if (scheduler == null) {
-				logger.info("RefreshSchedulerThread started");
-				scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
-				scheduler.start();
+			synchronized (this) {
+				if (scheduler == null) {
+					logger.info("RefreshSchedulerThread started");
+					scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
+					scheduler.start();
+				}
 			}
 		}
 	}

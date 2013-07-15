@@ -144,7 +144,7 @@ public class CachingExtractor {
 					startRefresh(cacheKey, request);
 
 					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-						doScheduled(request, cacheKey);
+						addScheduled(request, cacheKey);
 					}
 					logger.debug("Request soft expired value returned " + cacheKey);
 					return (T) entry.getValue();
@@ -167,7 +167,7 @@ public class CachingExtractor {
 		} else { //entry is null -> execute request, extract response and put it into cache
 			ExtractedBodyResponse<T> extracted = doExtract(request, cacheKey);
 			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-				doScheduled(request, cacheKey);
+				addScheduled(request, cacheKey);
 			}
 			return extracted.getBody();
 		}
@@ -192,17 +192,19 @@ public class CachingExtractor {
 	/**
 	 * Schedule new request for automatic refresh
 	 */
-	private <T> void doScheduled(CachingExtractorRequest<T> request, String cacheKey) {
+	private <T> void addScheduled(CachingExtractorRequest<T> request, String cacheKey) {
 		//schedule if not already scheduled
 		if (scheduled.get(cacheKey) != null) {
 			logger.debug("Request is already scheduled to refresh" + cacheKey);
 		} else {
 			scheduled.put(cacheKey, request);
 			logger.debug("Request is now scheduled to be refreshed " + cacheKey);
-			if (scheduler == null) {
-				logger.info("RefreshSchedulerThread started");
-				scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
-				scheduler.start();
+			synchronized (this) {
+				if (scheduler == null) {
+					logger.info("RefreshSchedulerThread started");
+					scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
+					scheduler.start();
+				}
 			}
 		}
 	}
