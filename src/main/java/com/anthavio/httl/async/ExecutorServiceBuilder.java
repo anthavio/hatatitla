@@ -77,15 +77,22 @@ public class ExecutorServiceBuilder {
 		return this;
 	}
 
-	public static class RejectingPolicy implements RejectedExecutionHandler {
+}
 
-		@Override
-		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-			throw new RejectedExecutionException("Cannot start " + r + "  active: " + executor.getActiveCount() + ", pool: "
-					+ executor.getPoolSize() + " of " + executor.getMaximumPoolSize() + " , queue: "
-					+ executor.getQueue().getClass().getSimpleName() + " " + executor.getQueue().size());
+/**
+ * Custom handle with nice explaining message
+ * 
+ * @author martin.vanek
+ *
+ */
+class RejectingPolicy implements RejectedExecutionHandler {
 
-		}
+	@Override
+	public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+		throw new RejectedExecutionException("Cannot start " + r + "  active: " + executor.getActiveCount() + ", pool: "
+				+ executor.getPoolSize() + " of " + executor.getMaximumPoolSize() + " , queue: "
+				+ executor.getQueue().getClass().getSimpleName() + " " + executor.getQueue().size());
 
 	}
+
 }

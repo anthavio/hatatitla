@@ -13,6 +13,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.SenderRequest.EncodeStrategy;
 import com.anthavio.httl.TestResponse.NameValue;
@@ -183,7 +184,7 @@ public class MarshallingExtractingTest {
 		CachingExtractorRequest<String> crequest = cextractor.request(request).softTTL(1, TimeUnit.MINUTES)
 				.hardTTL(2, TimeUnit.MINUTES).build(String.class);
 
-		String extract2 = cextractor.extract(crequest);
+		CacheEntry<String> extract2 = cextractor.extract(crequest);
 		System.out.println(extract2);
 		/*
 		CachingExtractorRequest<String> crequest = new CachingExtractorRequest<String>(request, String.class, 10l, 20l,

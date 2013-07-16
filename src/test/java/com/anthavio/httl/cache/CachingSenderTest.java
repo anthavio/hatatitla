@@ -52,7 +52,7 @@ import com.thimbleware.jmemcached.storage.hash.ConcurrentLinkedHashMap;
  * @author martin.vanek
  *
  */
-public class CachingTest {
+public class CachingSenderTest {
 
 	private ThreadPoolExecutor executor;
 	private CacheManager ehCacheManager;
@@ -109,7 +109,7 @@ public class CachingTest {
 		return cache;
 	}
 
-	private CachingSender newCachedSender(int port) {
+	private CachingSender newCachingSender(int port) {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new SimpleHttpSender(url);
 		HttpSender sender = new HttpClient4Sender(url);
@@ -122,8 +122,8 @@ public class CachingTest {
 	@Test
 	public void testSameRequestDifferentSender() throws IOException {
 		JokerServer server = new JokerServer().start();
-		HttpSender sender1 = new HttpClient4Sender("127.0.0.1:" + server.getHttpPort());
-		HttpSender sender2 = new HttpClient4Sender("localhost:" + server.getHttpPort());
+		HttpSender sender1 = new HttpClient4Sender("127.0.0.1:" + server.getHttpPort());//different host name
+		HttpSender sender2 = new HttpClient4Sender("localhost:" + server.getHttpPort());//different host name
 		//shared cache for 2 senders
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender1 = new CachingSender(sender1, cache);
@@ -152,15 +152,19 @@ public class CachingTest {
 	@Test
 	public void testAutomaticRefresh() throws Exception {
 		JokerServer server = new JokerServer().start();
-		CachingSender csender = newCachedSender(server.getHttpPort());
-		SenderRequest request = new GetRequest("/cs").addParameter("sleep", 1);
+		CachingSender csender = newCachingSender(server.getHttpPort());
+		SenderRequest request = new GetRequest("/cs").addParameter("sleep", 0);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingRequest crequest = new CachingRequest(request, 4, 2, TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
-		SenderResponse response1 = csender.execute(crequest);
+		assertThat(csender.execute(crequest)).isNull();
+
+		Thread.sleep(2000); //server sleep
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
-		response1.close();
+		CacheEntry<CachedResponse> response1 = csender.execute(crequest);
+		assertThat(response1.isSoftExpired() == false);
+		response1.getValue().close();
 
 		Thread.sleep(2000 + 1010); //after soft expiry + server sleep
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); //background refresh
@@ -169,18 +173,29 @@ public class CachingTest {
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //background refresh
 
 		long m1 = System.currentTimeMillis();
-		SenderResponse response2 = csender.execute(crequest);
+		CacheEntry<CachedResponse> response2 = csender.execute(crequest);
 		assertThat(System.currentTimeMillis() - m1).isLessThan(10);//from cache - must be quick!
+		assertThat(response2.isSoftExpired() == false);
 		assertThat(response2).isNotEqualTo(response1); //different
-		response2.close();
+		response2.getValue().close();
 
-		server.setHttpCode(HttpURLConnection.HTTP_INTERNAL_ERROR);
-		Thread.sleep(5010); //after hard expiry + server sleep
+		Thread.sleep(1500); //cache some value
+		CacheEntry<CachedResponse> response3 = csender.execute(crequest);
+		assertThat(response3.isSoftExpired() == false);
 
-		SenderResponse response = csender.execute(crequest);
-		assertThat(response.getHttpStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR);
-		assertThat(response).isNotInstanceOf(CachedResponse.class); //errors are not cached
-		response.close();
+		server.setHttpCode(HttpURLConnection.HTTP_INTERNAL_ERROR); //disable refreshes
+
+		Thread.sleep(2500); //soft expiry 
+		CacheEntry<CachedResponse> response4 = csender.execute(crequest);
+		assertThat(response4.isSoftExpired()); //soft expired
+		assertThat(response4).isEqualTo(response3);
+
+		Thread.sleep(2100); //after hard expiry
+		assertThat(csender.execute(crequest)).isNull(); //nothing since hard expired
+		//CacheEntry<CachedResponse> response = csender.execute(crequest);
+		//assertThat(response.getValue().getHttpStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR);
+		//assertThat(response).isNotInstanceOf(CachedResponse.class); //errors are not cached
+		//response.getValue().close();
 
 		csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
@@ -213,7 +228,7 @@ public class CachingTest {
 	@Test
 	public void testHttpCacheControlCaching() throws Exception {
 		JokerServer server = new JokerServer().start();
-		CachingSender csender = newCachedSender(server.getHttpPort());
+		CachingSender csender = newCachingSender(server.getHttpPort());
 		//http headers will allow to cache reponse for 1 second
 		SenderRequest request = new GetRequest("/").addParameter("docache", 1);
 		//keep original count of request executed on server
@@ -259,7 +274,7 @@ public class CachingTest {
 	@Test
 	public void testHttpETagCaching() throws Exception {
 		JokerServer server = new JokerServer().start();
-		CachingSender csender = newCachedSender(server.getHttpPort());
+		CachingSender csender = newCachingSender(server.getHttpPort());
 
 		//keep original count of request executed on server
 		final int requestCount = server.getRequestCount();

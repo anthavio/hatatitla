@@ -12,15 +12,58 @@ import com.anthavio.httl.util.Cutils;
  */
 public class CacheRequest<V> {
 
-	public static interface CacheEntryUpdater<V> {
+	/**
+	 * 
+	 * @author martin.vanek
+	 *
+	 * @param <V>
+	 */
+	public static interface CacheEntryFetch<V> {
 
-		public V fetch(CacheRequest<V> request);
+		/**
+		 * Implementation should handle differently calls for different RefreshMode
+		 * RefreshMode.BLOCK
+		 * - Exceptions can be thrown as they are passed to the caller
+		 * 
+		 * RefreshMode.ASYNC and RefreshMode.SCHEDULE
+		 * - log / handle Exceptions localy
+		 * - return FetchResult according to the strategy for particular type of Exception
+		 * 
+		 * @param softExpiredEntry is not null only for Soft expired cache entry refresh. Allows to return expired value on failure
+		 */
+		public FetchResult<V> fetch(CacheRequest<V> request, CacheEntry<V> softExpiredEntry);
+
+	}
+
+	/**
+	 * @author martin.vanek
+	 *
+	 * @param <V>
+	 */
+	public static class FetchResult<V> {
+
+		private final V value;
+
+		private final boolean cacheable;
+
+		protected FetchResult(V value, boolean cacheable) {
+			this.value = value;
+			this.cacheable = cacheable;
+		}
+
+		public V getValue() {
+			return value;
+		}
+
+		public boolean isCacheable() {
+			return cacheable;
+		}
 
 	}
 
 	private final String userKey;
 
-	private final CacheEntryUpdater<V> updater;
+	private final CacheEntryFetch<V> fetcher;
 
 	private final long hardTtl; //seconds
 
@@ -41,7 +84,7 @@ public class CacheRequest<V> {
 	 * @param refreshMode - how to refresh stale entry 
 	 * 
 	 */
-	public CacheRequest(String userKey, CacheEntryUpdater<V> updater, long hardTtl, long softTtl, TimeUnit unit,
+	public CacheRequest(String userKey, CacheEntryFetch<V> updater, long hardTtl, long softTtl, TimeUnit unit,
 			RefreshMode refreshMode) {
 
 		if (Cutils.isBlank(userKey)) {
@@ -52,7 +95,7 @@ public class CacheRequest<V> {
 		if (updater == null) {
 			throw new IllegalArgumentException("null updater");
 		}
-		this.updater = updater;
+		this.fetcher = updater;
 
 		hardTtl = unit.toSeconds(hardTtl);
 		if (hardTtl <= 0) {
@@ -77,8 +120,8 @@ public class CacheRequest<V> {
 		return userKey;
 	}
 
-	public CacheEntryUpdater<V> getUpdater() {
-		return updater;
+	public CacheEntryFetch<V> getFetcher() {
+		return fetcher;
 	}
 
 	public long getHardTtl() {
@@ -109,13 +152,10 @@ public class CacheRequest<V> {
 		this.lastRefresh = executed;
 	}
 
-	public boolean isAsyncRefresh() {
-		return refreshMode == RefreshMode.SCHEDULED || refreshMode == RefreshMode.REQUEST_ASYN;
-	}
-
 	@Override
 	public String toString() {
-		return "CacheRequest [hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", refreshMode=" + refreshMode + "]";
+		return "CacheRequest [userKey=" + userKey + ", hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", refreshMode="
+				+ refreshMode + "]";
 	}
 
 }

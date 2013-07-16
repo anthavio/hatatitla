@@ -18,6 +18,8 @@ import com.anthavio.httl.util.Cutils;
 /**
  * SpyMemcached implementation
  * 
+ * TODO constructor is too lenghty - introduce Builder
+ * 
  * @author martin.vanek
  *
  */
@@ -146,6 +148,7 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 
 	@Override
 	public void close() {
+		super.close();
 		//if client instance was given to us (in constructor), we are NOT in charge of shutting it down
 		if (clientCreated) {
 			client.shutdown();

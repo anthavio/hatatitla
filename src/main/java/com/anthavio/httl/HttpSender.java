@@ -135,7 +135,7 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 	 * Extremely important for caching -  generates proper key based on information from request and sender
 	 */
 	public String getCacheKey(SenderRequest request) {
-		return String.valueOf(config.getHostUrl().toString().hashCode() * 31 + request.hashCode());
+		return String.valueOf(config.getHostUrl().toString() + 31 * request.hashCode());
 	}
 
 	/**

@@ -49,7 +49,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 
 	private final CacheBase<CachedResponse> cache;
 
-	private Map<String, CachingRequest> updated = new HashMap<String, CachingRequest>();
+	private Map<String, CachingRequest> refresh = new HashMap<String, CachingRequest>();
 
 	private ExecutorService executor;
 
@@ -123,68 +123,129 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	/**
 	 * Static caching based on specified TTL
 	 */
-	public SenderResponse execute(CachingRequest request) {
-		if (request.isAsyncRefresh() && this.executor == null) {
-			throw new IllegalStateException("Executor for asynchronous requests is not configured");
-		}
+	public CacheEntry<CachedResponse> execute(CachingRequest request) {
 		String cacheKey = getCacheKey(request);
 		CacheEntry<CachedResponse> entry = cache.get(cacheKey);
 		if (entry != null) {
 			entry.getValue().setRequest(request.getSenderRequest());
 			if (!entry.isSoftExpired()) {
-				return entry.getValue(); //nice hit
+				return entry; //fresh hit
 			} else {
-				logger.debug("Request soft expired " + cacheKey);
 				//soft expired - refresh needed
-				if (request.isAsyncRefresh()) {
-					//we will return soft expired value, but we will also start asynchronous refresh
-					startRefresh(cacheKey, request);
+				logger.debug("Soft expired " + cacheKey);
+				RefreshMode mode = request.getRefreshMode();
+				if (mode == RefreshMode.BLOCK) {
+					//logger.debug("Sync refresh start " + cacheKey);
+					return refresh(cacheKey, request);
+				} else if (mode == RefreshMode.ASYNC || mode == RefreshMode.RETURN) {
+					asyncRefresh(cacheKey, request); //start asynchronous refresh
+					logger.debug("Soft expired value returned " + cacheKey);
+					return entry; //return soft expired value
+				} else if (mode == RefreshMode.SCHEDULED) {
+					if (scheduled.get(cacheKey) == null) {
+						asyncRefresh(cacheKey, request); //start asynchronous refresh
+						addScheduled(cacheKey, request); //register as scheduled
+					}
+					logger.debug("Soft expired value returned " + cacheKey);
+					return entry; //return soft expired value
+				} else {
+					throw new IllegalArgumentException("Unknown RefreshMode " + mode);
+				}
+			}
+		} else { //cache miss - we have nothing
+			RefreshMode mode = request.getRefreshMode();
+			if (mode == RefreshMode.BLOCK || mode == RefreshMode.RETURN) {
+				return refresh(cacheKey, request);
+			} else if (mode == RefreshMode.ASYNC) {
+				asyncRefresh(cacheKey, request);
+				return null;
+			} else if (mode == RefreshMode.SCHEDULED) {
+				if (scheduled.get(cacheKey) == null) {
+					asyncRefresh(cacheKey, request);
+					addScheduled(cacheKey, request);
+				}
+				return null;
+			} else {
+				throw new IllegalArgumentException("Unknown RefreshMode " + mode);
+			}
+		}
+		/*
+				if (entry != null) {
+					entry.getValue().setRequest(request.getSenderRequest());
+					if (!entry.isSoftExpired()) {
+						return entry.getValue(); //nice hit
+					} else {
+						logger.debug("Request soft expired " + cacheKey);
+						//soft expired - refresh needed
+						if (request.isAsyncRefresh()) {
+							//we will return soft expired value, but we will also start asynchronous refresh
+							asyncRefresh(cacheKey, request);
+							if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
+								addScheduled(request, cacheKey);
+							}
+							logger.debug("Request soft expired value returned " + cacheKey);
+							return entry.getValue();
+						} else { //sync update
+							logger.debug("Request sync refresh start " + cacheKey);
+							try {
+								refresh.put(cacheKey, request);
+								SenderResponse response = sender.execute(request.getSenderRequest());
+								request.setLastRefresh(System.currentTimeMillis());
+								return doCachePut(cacheKey, request, response);
+							} catch (Exception x) {
+								logger.warn("Request refresh failed for " + request, x);
+								//bugger - but we still have our soft expired value
+								logger.debug("Request soft expired value returned " + cacheKey);
+								return entry.getValue();
+							} finally {
+								refresh.remove(cacheKey);
+							}
+						}
+					}
+				} else { //null entry -> execute request, extract response and put it into cache
+					SenderResponse response = sender.execute(request.getSenderRequest());
+					request.setLastRefresh(System.currentTimeMillis());
 					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
 						addScheduled(request, cacheKey);
 					}
-					logger.debug("Request soft expired value returned " + cacheKey);
-					return entry.getValue();
-				} else { //sync update
-					logger.debug("Request sync refresh start " + cacheKey);
-					try {
-						updated.put(cacheKey, request);
-						SenderResponse response = sender.execute(request.getSenderRequest());
-						request.setLastRefresh(System.currentTimeMillis());
-						return doCachePut(cacheKey, request, response);
-					} catch (Exception x) {
-						logger.warn("Request refresh failed for " + request, x);
-						//bugger - but we still have our soft expired value
-						logger.debug("Request soft expired value returned " + cacheKey);
-						return entry.getValue();
-					} finally {
-						updated.remove(cacheKey);
-					}
+					return doCachePut(cacheKey, request, response);
 				}
-			}
-		} else { //null entry -> execute request, extract response and put it into cache
-			SenderResponse response = sender.execute(request.getSenderRequest());
-			request.setLastRefresh(System.currentTimeMillis());
-			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-				addScheduled(request, cacheKey);
-			}
-			return doCachePut(cacheKey, request, response);
-		}
+				*/
 	}
 
 	public SenderResponse execute(SenderRequest request, int ttl, TimeUnit unit) {
-		return execute(new CachingRequest(request, ttl, unit));
+		return execute(new CachingRequest(request, ttl, unit)).getValue();
 	}
 
-	private void startRefresh(String cacheKey, CachingRequest request) {
-		synchronized (updated) {
-			if (updated.containsKey(cacheKey)) {
-				logger.debug("Request is already being refreshed " + cacheKey);
+	private void asyncRefresh(String cacheKey, CachingRequest request) {
+		if (this.executor == null) {
+			throw new IllegalStateException("Executor for asynchronous refresh is not configured");
+		}
+		synchronized (refresh) {
+			if (refresh.containsKey(cacheKey)) {
+				logger.debug("Async refresh already running " + cacheKey);
 			} else {
-				logger.debug("Request async refresh start " + cacheKey);
-				executor.execute(new CacheUpdateRunner<Serializable>(request));
-				updated.put(cacheKey, request);
+				logger.debug("Async refresh start " + cacheKey);
+				executor.execute(new RefreshRunnable<Serializable>(request));
 			}
 		}
+	}
+
+	private CacheEntry<CachedResponse> refresh(String cacheKey, CachingRequest request) {
+		CacheEntry<CachedResponse> entry;
+		try {
+			refresh.put(cacheKey, request);
+			SenderResponse response = sender.execute(request.getSenderRequest());
+			request.setLastRefresh(System.currentTimeMillis());
+			CachedResponse cached = new CachedResponse(request.getSenderRequest(), response);
+			entry = new CacheEntry<CachedResponse>(cached, request.getHardTtl(), request.getSoftTtl());
+			if (response.getHttpStatusCode() < 300) {
+				cache.set(cacheKey, entry);
+			}
+		} finally {
+			refresh.remove(cacheKey);
+		}
+		return entry;
 	}
 
 	/**
@@ -192,16 +253,17 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	 * 
 	 * Also starts scheduler thread if it is not running yet.
 	 */
-	private <T> void addScheduled(CachingRequest request, String cacheKey) {
-		//schedule if not already scheduled
+	private <T> void addScheduled(String cacheKey, CachingRequest request) {
+		if (this.executor == null) {
+			throw new IllegalStateException("Executor for asynchronous refresh is not configured");
+		}
 		if (scheduled.get(cacheKey) != null) {
-			logger.debug("Request is already scheduled to refresh" + cacheKey);
+			logger.debug("Request is already scheduled to refresh " + cacheKey);
 		} else {
 			scheduled.put(cacheKey, request);
 			logger.debug("Request is now scheduled to be refreshed " + cacheKey);
 			synchronized (this) {
 				if (scheduler == null) {
-					logger.info("RefreshSchedulerThread started");
 					scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
 					scheduler.start();
 				}
@@ -211,7 +273,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 
 	/**
 	 * Puts Response into Cache if http status < 300
-	 */
+	 
 	private SenderResponse doCachePut(String cacheKey, CachingRequest request, SenderResponse response) {
 		if (response.getHttpStatusCode() < 300) {
 			CachedResponse cached = new CachedResponse(request.getSenderRequest(), response);
@@ -224,12 +286,12 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			return response;
 		}
 	}
-
+	*/
 	/**
 	 * Static caching based on specified TTL
 	 */
 	public <T> ExtractedBodyResponse<T> extract(CachingRequest request, Class<T> resultType) {
-		SenderResponse response = execute(request);
+		SenderResponse response = execute(request).getValue();
 		try {
 			T extracted = sender.extract(response, resultType);
 			return new ExtractedBodyResponse<T>(response, extracted);
@@ -242,7 +304,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	 * Static caching based on specified TTL
 	 */
 	public <T> ExtractedBodyResponse<T> extract(CachingRequest request, ResponseBodyExtractor<T> extractor) {
-		SenderResponse response = execute(request);
+		SenderResponse response = execute(request).getValue();
 		try {
 			T extracted = extractor.extract(response);
 			return new ExtractedBodyResponse<T>(response, extracted);
@@ -363,18 +425,18 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	@Override
 	public String toString() {
 		return "CachingSender [url=" + sender.getConfig().getHostUrl() + ", executor=" + executor + ", updating="
-				+ updated.size() + ", scheduled=" + scheduled.size() + "]";
+				+ refresh.size() + ", scheduled=" + scheduled.size() + "]";
 	}
 
 	/**
-	 * Runnable for {@link RefreshMode#REQUEST_ASYN}
+	 * Runnable for {@link RefreshMode#ASYNC}
 	 * 
 	 */
-	private class CacheUpdateRunner<T> implements Runnable {
+	private class RefreshRunnable<T> implements Runnable {
 
 		private final CachingRequest request;
 
-		public CacheUpdateRunner(CachingRequest request) {
+		public RefreshRunnable(CachingRequest request) {
 			if (request == null) {
 				throw new IllegalArgumentException("request is null");
 			}
@@ -385,13 +447,11 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 		public void run() {
 			String cacheKey = getCacheKey(request);
 			try {
-				SenderResponse response = sender.execute(request.getSenderRequest());
-				request.setLastRefresh(System.currentTimeMillis());
-				doCachePut(cacheKey, request, response);
+				refresh(cacheKey, request);
 			} catch (Exception x) {
-				logger.warn("Failed to update request " + cacheKey, x);
+				logger.warn("Failed to refresh " + cacheKey, x);
 			} finally {
-				updated.remove(cacheKey);
+				refresh.remove(cacheKey);
 			}
 		}
 	}
@@ -412,29 +472,28 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 				throw new IllegalArgumentException("Interval " + this.interval + " must be >= 1000 millis");
 			}
 			setDaemon(true);
-			setName("refresh-cs-" + sender.getConfig().getHostUrl());
+			setName("scheduler-cs-" + sender.getConfig().getHostUrl());
 		}
 
 		@Override
 		public void run() {
+			logger.info(getName() + " started");
 			while (keepGoing) {
 				try {
 					Thread.sleep(interval);
 				} catch (InterruptedException ix) {
-					if (keepGoing) {
-						logger.debug("RefreshSchedulerThread stopped from sleep");
-						return;
-					} else {
-						logger.warn("RefreshSchedulerThread interrupted but continue");
+					logger.info(getName() + " interrupted");
+					if (!keepGoing) {
+						break;
 					}
 				}
 				try {
 					check();
 				} catch (Exception x) {
-					logger.warn("Exception during check", x);
+					logger.warn(getName() + " check iteration failed", x);
 				}
 			}
-			logger.debug("RefreshSchedulerThread stopped from work");
+			logger.info(getName() + " stopped");
 		}
 
 		private void check() {
@@ -445,7 +504,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 					CachingRequest request = entry.getValue();
 					if (request.getSoftExpire() < now) {
 						String cacheKey = getCacheKey(request);
-						startRefresh(cacheKey, request);
+						asyncRefresh(cacheKey, request);
 					}
 				} catch (Exception x) {
 					logger.warn("Exception during refresh of " + entry.getValue(), x);

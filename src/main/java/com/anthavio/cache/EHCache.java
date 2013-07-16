@@ -2,7 +2,6 @@ package com.anthavio.cache;
 
 import java.io.Serializable;
 
-
 import net.sf.ehcache.Element;
 
 /**
@@ -51,7 +50,8 @@ public class EHCache<V extends Serializable> extends CacheBase<V> {
 
 	@Override
 	public void close() {
-		ehCache.dispose();
+		super.close();
+		//ehCache.dispose(); //we do not controll lifecycle of EhCache
 	}
 
 	@Override

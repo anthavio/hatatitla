@@ -15,7 +15,7 @@ public abstract class ResponseBodyExtractor<T> {
 	 * 
 	 */
 	public boolean isExtractable(SenderResponse response) {
-		return response.getHttpStatusCode() >= 300;
+		return response.getHttpStatusCode() < 300;
 	}
 
 	/**

@@ -10,16 +10,74 @@ import java.util.concurrent.TimeUnit;
 public interface Cache<K, V> {
 
 	public enum RefreshMode {
+
 		/**
-		 * refresh is request initiated and done using synchronously using request thread
+		 * Always fresh data effort mode (or die trying)
+		 * 
+		 * 1. Miss (No Hit / Hard Expired)
+		 * Caller Thread is used to fetch data (blocking) and Fresh value is returned
+		 * Exceptions are passed to the caller (no return value)
+		 * 
+		 * 2. Hit Soft Expired
+		 * Caller Thread is used to fetch data (blocking)
+		 * Exceptions are logged on WARN level with stacktrace and Soft expired value is returned
+		 * This means that caller can only know check that soft expired entry has been returned but exception will be lost to him 
+		 * 
+		 * 3. Hit Fresh
+		 * Return Fresh value
 		 */
-		REQUEST_SYNC,
+		BLOCK,
+
 		/**
-		 * refresh is request initiated, but done using the background thread
+		 * Always return some data effort mode
+		 * 
+		 * 1. Miss (No Hit / Hard Expired)
+		 * Caller Thread is used to fetch data (blocking) and Fresh value is returned
+		 * Exceptions are passed to the caller (no return value)
+		 * 
+		 * 2. Hit Soft Expired
+		 * Soft expired value is returned to the caller
+		 * Executor Thread is used to fetch data
+		 * Exceptions are logged on WARN level with stacktrace 
+		 * 
+		 * 3. Hit Fresh
+		 * Return Fresh value
 		 */
-		REQUEST_ASYN,
+		RETURN,
+
 		/**
-		 * refresh is scheduled and performed using the background thread
+		 * Asynchronous mode - returns null
+		 * 
+		 * 1. Miss (No Hit / Hard Expired)
+		 * Null is returned to the caller
+		 * Executor Thread is used to fetch data
+		 * Exceptions are logged on WARN level with stacktrace
+		 * 
+		 * 2. Hit Soft Expired
+		 * Soft expired value is returned to the caller
+		 * Executor Thread is used to fetch data
+		 * Exceptions are logged on WARN level with stacktrace
+		 * 
+		 * 3. Hit Fresh
+		 * Return Fresh value
+		 */
+		ASYNC,
+
+		/**
+		 * Scheduled mode - returns null
+		 * 
+		 * 1. Miss (No Hit / Hard Expired)
+		 * Null is returned to the caller
+		 * Scheduler Thread is used to fetch data
+		 * Exceptions are logged on WARN level with stacktrace 
+		 * 
+		 * 2. Hit Soft Expired
+		 * Soft expired value is returned to the caller
+		 * Scheduler Thread is used to fetch data
+		 * Exceptions are logged on WARN level with stacktrace
+		 * 
+		 * 3. Hit Fresh
+		 * Return Fresh value
 		 */
 		SCHEDULED;
 	}

@@ -5,7 +5,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-
 /**
  * 
  * @author martin.vanek
@@ -63,7 +62,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 
 	@Override
 	public void close() {
-		logger.debug("Cache destroy");
+		super.close();
 		if (ttlEvictingThread != null) {
 			ttlEvictingThread.keepGoing = false;
 			ttlEvictingThread.interrupt();

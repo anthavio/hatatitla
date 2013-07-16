@@ -23,7 +23,7 @@ public class CachingExtractorRequest<T> extends CachingRequest {
 	private final Class<T> resultType;
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl, TimeUnit unit) {
-		this(request, extractor, hardTtl, hardTtl, unit, RefreshMode.REQUEST_SYNC, null); //hardTtl = softTtl
+		this(request, extractor, hardTtl, hardTtl, unit, RefreshMode.BLOCK, null); //hardTtl = softTtl
 	}
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl,
@@ -33,7 +33,7 @@ public class CachingExtractorRequest<T> extends CachingRequest {
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl, long softTtl,
 			TimeUnit unit) {
-		this(request, extractor, hardTtl, softTtl, unit, RefreshMode.REQUEST_SYNC, null);
+		this(request, extractor, hardTtl, softTtl, unit, RefreshMode.BLOCK, null);
 	}
 
 	public CachingExtractorRequest(SenderRequest request, ResponseBodyExtractor<T> extractor, long hardTtl, long softTtl,

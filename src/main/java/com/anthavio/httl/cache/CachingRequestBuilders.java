@@ -31,7 +31,7 @@ public class CachingRequestBuilders {
 
 		protected long softTtl;
 
-		protected RefreshMode refreshMode = RefreshMode.REQUEST_SYNC;
+		protected RefreshMode refreshMode = RefreshMode.BLOCK;
 
 		protected String customCacheKey;
 
@@ -170,7 +170,7 @@ public class CachingRequestBuilders {
 		 */
 		public SenderResponse execute() {
 			if (hardTtl != 0) {
-				return csender.execute(build());
+				return csender.execute(build()).getValue();
 			} else {
 				return csender.execute(request);
 			}
@@ -251,7 +251,7 @@ public class CachingRequestBuilders {
 		 */
 		public <T> T extract(Class<T> resultType) {
 			CachingExtractorRequest<T> build = build(resultType);
-			return cextractor.extract(build);
+			return (T) cextractor.extract(build).getValue();
 		}
 
 		/**
@@ -259,7 +259,7 @@ public class CachingRequestBuilders {
 		 */
 		public <T> T extract(ResponseBodyExtractor<T> extractor) {
 			CachingExtractorRequest<T> build = build(extractor);
-			return cextractor.extract(build);
+			return (T) cextractor.extract(build).getValue();
 		}
 
 		@Override

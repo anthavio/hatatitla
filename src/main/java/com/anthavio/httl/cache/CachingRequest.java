@@ -31,7 +31,7 @@ public class CachingRequest {
 	private final String customCacheKey; //caller takes responsibility for key uniqueness 
 
 	public CachingRequest(SenderRequest request, long hardTtl, TimeUnit unit) {
-		this(request, hardTtl, hardTtl, unit, RefreshMode.REQUEST_SYNC, null); //hardTtl = softTtl
+		this(request, hardTtl, hardTtl, unit, RefreshMode.BLOCK, null); //hardTtl = softTtl
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, TimeUnit unit, RefreshMode refreshMode) {
@@ -39,7 +39,7 @@ public class CachingRequest {
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, long softTtl, TimeUnit unit) {
-		this(request, hardTtl, softTtl, unit, RefreshMode.REQUEST_SYNC, null);
+		this(request, hardTtl, softTtl, unit, RefreshMode.BLOCK, null);
 	}
 
 	public CachingRequest(SenderRequest request, long hardTtl, long softTtl, TimeUnit unit, RefreshMode refreshMode) {
@@ -122,14 +122,9 @@ public class CachingRequest {
 		this.lastRefresh = executed;
 	}
 
-	public boolean isAsyncRefresh() {
-		return refreshMode == RefreshMode.SCHEDULED || refreshMode == RefreshMode.REQUEST_ASYN;
-	}
-
 	@Override
 	public String toString() {
-		return "CachingRequest [" + super.toString() + ", hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", refreshMode="
-				+ refreshMode + "]";
+		return "CachingRequest [hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", refreshMode=" + refreshMode + "]";
 	}
 
 }

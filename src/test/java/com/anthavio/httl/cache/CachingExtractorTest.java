@@ -12,6 +12,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.anthavio.cache.Cache.RefreshMode;
+import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
@@ -29,7 +30,7 @@ import com.anthavio.httl.inout.ResponseBodyExtractors;
  * @author martin.vanek
  *
  */
-public class ExtractionTest {
+public class CachingExtractorTest {
 
 	private ThreadPoolExecutor executor;
 
@@ -58,18 +59,18 @@ public class ExtractionTest {
 		final int initialCount = server.getRequestCount();
 
 		//first request goes to the server
-		String extract1 = cextractor.extract(cerequest);
+		CacheEntry<String> extract1 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		Thread.sleep(501);
 		//taken from cache
-		String extract2 = cextractor.extract(cerequest);
+		CacheEntry<String> extract2 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1); //same
 		assertThat(extract2).isEqualTo(extract1); //same
 
 		Thread.sleep(501); //after soft expiration
 		//taken from server because ve have synchronous updates
-		String extract3 = cextractor.extract(cerequest);
+		CacheEntry<String> extract3 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); //new
 		assertThat(extract3).isNotEqualTo(extract1); //different
 
@@ -80,9 +81,15 @@ public class ExtractionTest {
 
 		Thread.sleep(1010); //after soft expiration
 
-		String extract4 = cextractor.extract(cerequest); //sync refresh will fail
-		assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //new
-		assertThat(extract4).isEqualTo(extract3); //same expired from cache
+		try {
+			cextractor.extract(cerequest); //sync refresh will fail
+			Assert.fail("Preceding line must throw SenderHttpException");
+			//CacheEntry<String> extract4 = cextractor.extract(cerequest); //sync refresh will fail
+			//assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //new
+			//assertThat(extract4).isEqualTo(extract3); //same expired from cache
+		} catch (SenderHttpStatusException srx) {
+			//this is what we expect
+		}
 
 		Thread.sleep(1010); //after hard expiration
 		try {
@@ -98,16 +105,24 @@ public class ExtractionTest {
 		server.setHttpCode(HttpURLConnection.HTTP_OK);
 
 		//make successful request again
-		String extract5 = cextractor.extract(cerequest);
+		CacheEntry<String> extract5 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //new
-		assertThat(extract5).isNotEqualTo(extract4); //different
+		assertThat(extract5).isNotEqualTo(extract3); //different
 
 		server.stop(); //stop server - simulate server outage
 
 		Thread.sleep(1001); //after soft expiration
-		String extract6 = cextractor.extract(cerequest);
-		assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //same
-		assertThat(extract6).isEqualTo(extract5); //same from cache
+		try {
+			cextractor.extract(cerequest);
+			Assert.fail("Preceding line must throw ConnectException");
+		} catch (SenderException sex) {
+			//this is what we expect
+			assertThat(sex.getMessage()).contains("Connection refused"); //same
+		}
+
+		//CacheEntry<String> extract6 = cextractor.extract(cerequest);
+		//assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //same
+		//assertThat(extract6).isEqualTo(extract5); //same from cache
 
 		Thread.sleep(1001); //after hard expiration
 		try {
@@ -133,7 +148,7 @@ public class ExtractionTest {
 				TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
-		String extract1 = cextractor.extract(cerequest);
+		CacheEntry<String> extract1 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		Thread.sleep(2000 + 1010); //after soft expiry + server sleep
@@ -142,7 +157,7 @@ public class ExtractionTest {
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //background refresh server hit
 
 		long m1 = System.currentTimeMillis();
-		String extract2 = cextractor.extract(cerequest);
+		CacheEntry<String> extract2 = cextractor.extract(cerequest);
 		assertThat(System.currentTimeMillis() - m1).isLessThan(10);//from cache - must be quick!
 		assertThat(extract2).isNotEqualTo(extract1); //different
 
@@ -168,17 +183,17 @@ public class ExtractionTest {
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.REQUEST_ASYN); //asynchronous updates!
+				TimeUnit.SECONDS, RefreshMode.ASYNC); //asynchronous updates!
 
 		final int initialCount = server.getRequestCount();
 
-		String extract1 = cextractor.extract(cerequest);
+		CacheEntry<String> extract1 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		Thread.sleep(1001); //after soft expiration
 
 		//taken from cache
-		String extract2 = cextractor.extract(cerequest);
+		CacheEntry<String> extract2 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1); //same
 		assertThat(extract2).isEqualTo(extract1); //same
 
@@ -186,7 +201,7 @@ public class ExtractionTest {
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); //plus 1
 
 		//from cache again - but different value
-		String extract3 = cextractor.extract(cerequest);
+		CacheEntry<String> extract3 = cextractor.extract(cerequest);
 		Thread.sleep(100); //wait for async thread NOT to hit the server 
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2);//same
 		assertThat(extract3).isNotEqualTo(extract2); //updated in cache asyncronously
@@ -198,7 +213,7 @@ public class ExtractionTest {
 
 		Thread.sleep(1010); //after soft expiration
 
-		String extract4 = cextractor.extract(cerequest); //async refresh will fail
+		CacheEntry<String> extract4 = cextractor.extract(cerequest); //async refresh will fail
 		Thread.sleep(100); //wait for async thread to update from server
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //new
 		assertThat(extract4).isEqualTo(extract3); //same expired from cache
@@ -217,7 +232,7 @@ public class ExtractionTest {
 		server.setHttpCode(HttpURLConnection.HTTP_OK);
 
 		//make successful request again
-		String extract5 = cextractor.extract(cerequest);
+		CacheEntry<String> extract5 = cextractor.extract(cerequest);
 		Thread.sleep(100); //wait for async thread to update from server
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //new
 		assertThat(extract5).isNotEqualTo(extract4); //different
@@ -225,7 +240,7 @@ public class ExtractionTest {
 		server.stop(); //stop server - simulate server outage
 
 		Thread.sleep(1001); //after soft expiration
-		String extract6 = cextractor.extract(cerequest);
+		CacheEntry<String> extract6 = cextractor.extract(cerequest);
 		Thread.sleep(100); //wait for async thread NOT to hit the server 
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //same
 		assertThat(extract6).isEqualTo(extract5); //same from cache
@@ -252,19 +267,20 @@ public class ExtractionTest {
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.REQUEST_ASYN); //asynchronous updates!
+				TimeUnit.SECONDS, RefreshMode.ASYNC); //asynchronous updates!
 
 		//request must spent some time in server
 		cerequest.getSenderRequest().addParameter("sleep", 1);
 
 		final int initialCount = server.getRequestCount();
 
-		String extract1 = cextractor.extract(cerequest);
+		CacheEntry<String> extract1 = cextractor.extract(cerequest);
+		Thread.sleep(100); //async refresh
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 		Thread.sleep(1001); //after soft expiry
 
 		assertThat(executor.getActiveCount()).isEqualTo(0);
-		String extract2 = cextractor.extract(cerequest); //this request should start async update
+		CacheEntry<String> extract2 = cextractor.extract(cerequest); //this request should start async update
 		assertThat(extract2).isEqualTo(extract1); //soft expired response is returned immediately
 
 		Thread.sleep(100); //let async refresh hit the server
@@ -276,7 +292,7 @@ public class ExtractionTest {
 		assertThat(executor.getActiveCount()).isEqualTo(1);
 		assertThat(executor.getQueue().size()).isEqualTo(0);
 
-		String extract3 = cextractor.extract(cerequest); //discarded request 
+		CacheEntry<String> extract3 = cextractor.extract(cerequest); //discarded request 
 		assertThat(extract3).isEqualTo(extract1);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); // same as before
 		assertThat(executor.getActiveCount()).isEqualTo(1); //refresh is still there
@@ -287,7 +303,7 @@ public class ExtractionTest {
 		assertThat(executor.getActiveCount()).isEqualTo(0);
 		assertThat(executor.getQueue().size()).isEqualTo(0);
 
-		String extract4 = cextractor.extract(cerequest); //from cache 
+		CacheEntry<String> extract4 = cextractor.extract(cerequest); //from cache 
 		assertThat(extract4).isNotEqualTo(extract3);
 
 		cextractor.close();

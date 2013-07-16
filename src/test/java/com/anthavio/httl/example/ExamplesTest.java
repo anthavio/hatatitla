@@ -12,6 +12,7 @@ import org.testng.Assert;
 
 import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.CacheBase;
+import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.Authentication;
 import com.anthavio.httl.GetRequest;
@@ -242,14 +243,14 @@ public class ExamplesTest {
 		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(10, 5, TimeUnit.SECONDS)
 				.build(HttpbinOut.class);
 		for (int i = 0; i < 1000; ++i) {
-			HttpbinOut out = cextractor.extract(crequest); //Cache hit
+			CacheEntry<HttpbinOut> out = cextractor.extract(crequest); //Cache hit
 		}
 
 		//Precreated Caching request
 		CachingExtractorRequest<HttpbinOut> crequest2 = CachingExtractorRequest.Builder(cextractor, get)
-				.ttl(10, 5, TimeUnit.SECONDS).refresh(RefreshMode.REQUEST_SYNC).build(HttpbinOut.class);
+				.ttl(10, 5, TimeUnit.SECONDS).refresh(RefreshMode.BLOCK).build(HttpbinOut.class);
 		for (int i = 0; i < 1000; ++i) {
-			HttpbinOut out = cextractor.extract(crequest2);//Cache hit
+			CacheEntry<HttpbinOut> out = cextractor.extract(crequest2);//Cache hit
 		}
 
 		cache.close();
@@ -273,8 +274,8 @@ public class ExamplesTest {
 		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(60, 3, TimeUnit.SECONDS)
 				.refresh(RefreshMode.SCHEDULED).build(HttpbinOut.class);
 
-		HttpbinOut out1 = cextractor.extract(crequest); //cache put
-		HttpbinOut out2 = cextractor.extract(crequest); //cache hit
+		CacheEntry<HttpbinOut> out1 = cextractor.extract(crequest); //cache put
+		CacheEntry<HttpbinOut> out2 = cextractor.extract(crequest); //cache hit
 		Assert.assertTrue(out1 == out2); //same instance from cache
 
 		//sleep until background refresh is performed
@@ -284,7 +285,7 @@ public class ExamplesTest {
 			ix.printStackTrace();
 		}
 
-		HttpbinOut out3 = cextractor.extract(crequest);
+		CacheEntry<HttpbinOut> out3 = cextractor.extract(crequest);
 		Assert.assertTrue(out1 != out3); //different instance now
 
 		sender.close();

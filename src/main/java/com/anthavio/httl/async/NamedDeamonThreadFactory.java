@@ -19,7 +19,7 @@ class NamedDeamonThreadFactory implements ThreadFactory {
 	final AtomicInteger threadNumber = new AtomicInteger(1);
 
 	public NamedDeamonThreadFactory() {
-		this("hc-" + poolNumber.getAndIncrement() + "-t-", true);
+		this("P:" + poolNumber.getAndIncrement() + "-T:", true);
 	}
 
 	public NamedDeamonThreadFactory(String namePrefix) {

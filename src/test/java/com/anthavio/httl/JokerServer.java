@@ -155,18 +155,21 @@ public class JokerServer {
 			requestCount.incrementAndGet();
 			Date now = new Date();
 
+			int httpc = httpCode; //save before sleep
+
 			//request.setCharacterEncoding("utf-8");
 			String hsleep = request.getHeader("sleep");
 			if (hsleep != null) {
 				sleep(hsleep, request);
 			}
+
 			String psleep = request.getParameter("sleep");
 			if (psleep != null) {
 				sleep(psleep, request);
 			}
 
-			if (httpCode != HttpURLConnection.HTTP_OK) {
-				response.sendError(httpCode);
+			if (httpc != HttpURLConnection.HTTP_OK) {
+				response.sendError(httpc);
 				((Request) request).setHandled(true);
 				return;
 			}
@@ -325,11 +328,14 @@ public class JokerServer {
 
 		private void sleep(String value, HttpServletRequest request) {
 			int seconds = Integer.parseInt(value);
-			logger.info("server sleep " + seconds + " seconds");
-			try {
-				Thread.sleep(seconds * 1000);
-			} catch (InterruptedException ix) {
-				//nothing
+			if (seconds != 0) {
+				logger.info("server sleep for " + seconds + " seconds");
+				try {
+					Thread.sleep(seconds * 1000);
+				} catch (InterruptedException ix) {
+					//nothing
+				}
+				logger.info("server waked after " + seconds + " seconds");
 			}
 		}
 	}
