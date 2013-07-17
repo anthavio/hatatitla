@@ -10,11 +10,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
 import net.spy.memcached.MemcachedClient;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.anthavio.cache.Cache.RefreshMode;
@@ -39,51 +42,80 @@ public class CacheTest {
 
 	private MemCacheDaemon<LocalCacheElement> memcached;
 
-	private static class Fetcher implements CacheEntryFetch<String> {
+	private CacheManager ehCacheManager;
 
-		private AtomicInteger rCounter = new AtomicInteger(0);
-
-		private String lastValue = null;
-
-		private boolean throwException = false;
-
-		public void setThrowException(boolean throwException) {
-			this.throwException = throwException;
-		}
-
-		@Override
-		public FetchResult<String> fetch(CacheRequest<String> request, CacheEntry<String> softExpiredEntry) {
-			rCounter.incrementAndGet();
-			lastValue = new SimpleDateFormat("dd.MM.yyyy'T'HH:mm:ss.SSS").format(new Date());
-			if (throwException) {
-				throw new IllegalStateException("I'm baaad. I'm baaad.");
-			}
-			return new FetchResult<String>(lastValue, true);
-		}
-
-		public String getLastValue() {
-			return lastValue;
-		}
-
-		public int getRequestCount() {
-			return rCounter.get();
-		}
-
-	};
-
-	@BeforeClass
-	public void setup() throws Exception {
+	@BeforeMethod
+	public void beforeMethod() throws Exception {
 		this.executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0).setMaximumPoolSize(1)
 				.setMaximumQueueSize(0).build();
 	}
 
-	@AfterClass
-	public void destroy() throws Exception {
+	@AfterMethod
+	public void afterMathod() throws Exception {
 		this.executor.shutdown();
+	}
+
+	@AfterClass
+	public void shutdown() throws Exception {
 
 		if (memcached != null && memcached.isRunning()) {
 			memcached.stop();
 		}
+
+		if (ehCacheManager != null) {
+			ehCacheManager.shutdown();
+		}
+	}
+
+	@Test
+	public void testSimpleCache() throws Exception {
+		CacheBase<String> cache = new HeapMapCache<String>();
+		doCacheTest(cache);
+	}
+
+	@Test
+	public void testEhCache() throws Exception {
+		CacheBase<String> cache;
+		cache = buildEhCache();
+		//cache = buildMemcache();
+		doCacheTest(cache);
+	}
+
+	@Test
+	public void testMemcached() throws Exception {
+		CacheBase<String> cache;
+		cache = buildMemcache();
+		doCacheTest(cache);
+	}
+
+	/**
+	 * Basic caching operations we expect to work with any cache implementation
+	 */
+	private void doCacheTest(CacheBase<String> cache) throws InterruptedException, IOException {
+
+		String cacheKey = String.valueOf(System.currentTimeMillis());
+		//hard ttl is 2 seconds
+		CacheEntry<String> centry = new CacheEntry<String>("CachedValue", 2, 1);
+		Boolean added = cache.set(cacheKey, new CacheEntry<String>("CachedValue", 2, 1));
+		assertThat(added).isTrue();
+
+		CacheEntry<String> entry = cache.get(cacheKey);
+		assertThat(entry.getValue()).isEqualTo(centry.getValue());
+		assertThat(entry.isSoftExpired()).isFalse();
+		assertThat(entry.isHardExpired()).isFalse();
+
+		Thread.sleep(1010); //after soft ttl
+
+		entry = cache.get(cacheKey);
+		assertThat(entry.getValue()).isEqualTo(centry.getValue());
+		assertThat(entry.isSoftExpired()).isTrue();
+		assertThat(entry.isHardExpired()).isFalse();
+
+		Thread.sleep(2010); //after hard ttl + 1 second (memcached has this whole second precision)
+
+		entry = cache.get(cacheKey);
+		assertThat(entry).isNull();
+		cache.close();
 	}
 
 	@Test
@@ -157,6 +189,7 @@ public class CacheTest {
 		assertThat(entry7.isSoftExpired() == false);
 		assertThat(entry7.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+		cache.close();
 	}
 
 	/**
@@ -241,6 +274,7 @@ public class CacheTest {
 		assertThat(entry8.getValue()).isNotEqualTo(entry5.getValue()); //new value fetched
 		assertThat(entry8.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
+		cache.close();
 	}
 
 	/**
@@ -315,6 +349,7 @@ public class CacheTest {
 		CacheEntry<String> entry6 = cache.get(req);//cache is refreshed
 		assertThat(entry6.isSoftExpired() == false);
 		assertThat(entry6.getValue()).isNotEqualTo(entry4.getValue());
+		cache.close();
 	}
 
 	/**
@@ -353,7 +388,7 @@ public class CacheTest {
 		assertThat(entry1.getValue()).isEqualTo(fetch.getLastValue());
 
 		assertThat(cache.getScheduled().size()).isEqualTo(1); //resubmitted but still only one
-		//cache.close();
+		cache.close();
 	}
 
 	private SpyMemcache<String> buildMemcache() throws IOException {
@@ -374,8 +409,49 @@ public class CacheTest {
 		}
 
 		MemcachedClient client = new MemcachedClient(address);
-		SpyMemcache<String> cache = new SpyMemcache<String>("whatever", client, 1, TimeUnit.SECONDS);
+		SpyMemcache<String> cache = new SpyMemcache<String>("CacheTest", client, 1, TimeUnit.SECONDS);
 		return cache;
 	}
 
+	private EHCache<String> buildEhCache() {
+		if (ehCacheManager == null) {
+			ehCacheManager = CacheManager.create();
+			Cache ehCache = new Cache("EHCache", 5000, false, false, 0, 0);
+			ehCacheManager.addCache(ehCache);
+		}
+		EHCache<String> cache = new EHCache<String>("EHCache", ehCacheManager.getCache("EHCache"));
+		return cache;
+	}
+
+	private static class Fetcher implements CacheEntryFetch<String> {
+
+		private AtomicInteger rCounter = new AtomicInteger(0);
+
+		private String lastValue = null;
+
+		private boolean throwException = false;
+
+		public void setThrowException(boolean throwException) {
+			this.throwException = throwException;
+		}
+
+		@Override
+		public FetchResult<String> fetch(CacheRequest<String> request, CacheEntry<String> softExpiredEntry) {
+			rCounter.incrementAndGet();
+			lastValue = new SimpleDateFormat("dd.MM.yyyy'T'HH:mm:ss.SSS").format(new Date());
+			if (throwException) {
+				throw new IllegalStateException("I'm baaad. I'm baaad.");
+			}
+			return new FetchResult<String>(lastValue, true);
+		}
+
+		public String getLastValue() {
+			return lastValue;
+		}
+
+		public int getRequestCount() {
+			return rCounter.get();
+		}
+
+	};
 }

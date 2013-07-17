@@ -5,33 +5,24 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Signature;
-import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.spy.memcached.MemcachedClient;
-
 import org.apache.commons.codec.binary.Base64;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.anthavio.cache.Cache.RefreshMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
-import com.anthavio.cache.EHCache;
 import com.anthavio.cache.HeapMapCache;
-import com.anthavio.cache.SpyMemcache;
 import com.anthavio.httl.GetRequest;
 import com.anthavio.httl.HttpClient4Sender;
 import com.anthavio.httl.HttpSender;
-import com.anthavio.httl.HttpSender.Multival;
 import com.anthavio.httl.JokerServer;
 import com.anthavio.httl.PostRequest;
 import com.anthavio.httl.SenderRequest;
@@ -40,12 +31,6 @@ import com.anthavio.httl.async.ExecutorServiceBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import com.anthavio.httl.inout.ResponseBodyExtractors;
-import com.thimbleware.jmemcached.CacheImpl;
-import com.thimbleware.jmemcached.Key;
-import com.thimbleware.jmemcached.LocalCacheElement;
-import com.thimbleware.jmemcached.MemCacheDaemon;
-import com.thimbleware.jmemcached.storage.CacheStorage;
-import com.thimbleware.jmemcached.storage.hash.ConcurrentLinkedHashMap;
 
 /**
  * 
@@ -54,59 +39,20 @@ import com.thimbleware.jmemcached.storage.hash.ConcurrentLinkedHashMap;
  */
 public class CachingSenderTest {
 
+	private JokerServer server;
 	private ThreadPoolExecutor executor;
-	private CacheManager ehCacheManager;
 
-	private MemCacheDaemon<LocalCacheElement> memcached;
-
-	@BeforeClass
+	@BeforeMethod
 	public void setup() throws Exception {
+		this.server = new JokerServer().start();
 		this.executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0).setMaximumPoolSize(1)
 				.setMaximumQueueSize(0).build();
 	}
 
-	@AfterClass
-	public void destroy() throws Exception {
+	@AfterMethod
+	public void shutdown() throws Exception {
 		this.executor.shutdown();
-
-		if (ehCacheManager != null) {
-			ehCacheManager.shutdown();
-		}
-		if (memcached != null && memcached.isRunning()) {
-			memcached.stop();
-		}
-	}
-
-	private EHCache<CachedResponse> buildEhCache() {
-		if (ehCacheManager == null) {
-			ehCacheManager = CacheManager.create();
-			Cache ehCache = new Cache("EHCache", 5000, false, false, 0, 0);
-			ehCacheManager.addCache(ehCache);
-		}
-		EHCache<CachedResponse> cache = new EHCache<CachedResponse>("EHCache", ehCacheManager.getCache("EHCache"));
-		return cache;
-	}
-
-	private SpyMemcache<CachedResponse> buildMemcache() throws IOException {
-		InetSocketAddress address = new InetSocketAddress(11311);
-		if (memcached == null) {
-			memcached = new MemCacheDaemon<LocalCacheElement>();
-
-			int maxItems = 5000;
-			long maxBytes = 10 * 1024 * 1024;
-			CacheStorage<Key, LocalCacheElement> storage = ConcurrentLinkedHashMap.create(
-					ConcurrentLinkedHashMap.EvictionPolicy.FIFO, maxItems, maxBytes);
-			memcached.setCache(new CacheImpl(storage));
-			memcached.setBinary(false);
-			memcached.setAddr(address);
-			memcached.setIdleTime(1000);
-			memcached.setVerbose(true);
-			memcached.start();
-		}
-
-		MemcachedClient client = new MemcachedClient(address);
-		SpyMemcache<CachedResponse> cache = new SpyMemcache<CachedResponse>("whatever", client, 1, TimeUnit.SECONDS);
-		return cache;
+		this.server.stop();
 	}
 
 	private CachingSender newCachingSender(int port) {
@@ -121,7 +67,7 @@ public class CachingSenderTest {
 
 	@Test
 	public void testSameRequestDifferentSender() throws IOException {
-		JokerServer server = new JokerServer().start();
+
 		HttpSender sender1 = new HttpClient4Sender("127.0.0.1:" + server.getHttpPort());//different host name
 		HttpSender sender2 = new HttpClient4Sender("localhost:" + server.getHttpPort());//different host name
 		//shared cache for 2 senders
@@ -146,12 +92,10 @@ public class CachingSenderTest {
 
 		sender1.close();
 		sender2.close();
-		server.stop();
 	}
 
 	@Test
 	public void testAutomaticRefresh() throws Exception {
-		JokerServer server = new JokerServer().start();
 		CachingSender csender = newCachingSender(server.getHttpPort());
 		SenderRequest request = new GetRequest("/cs").addParameter("sleep", 0);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
@@ -199,35 +143,10 @@ public class CachingSenderTest {
 
 		csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-
-		server.stop();
-	}
-
-	@Test
-	public void testSimpleCache() throws Exception {
-		CacheBase<CachedResponse> cache;
-		cache = new HeapMapCache<CachedResponse>();
-		doCacheTest(cache);
-	}
-
-	@Test
-	public void testEhCache() throws Exception {
-		CacheBase<CachedResponse> cache;
-		cache = buildEhCache();
-		//cache = buildMemcache();
-		doCacheTest(cache);
-	}
-
-	@Test
-	public void testMemcached() throws Exception {
-		CacheBase<CachedResponse> cache;
-		cache = buildMemcache();
-		doCacheTest(cache);
 	}
 
 	@Test
 	public void testHttpCacheControlCaching() throws Exception {
-		JokerServer server = new JokerServer().start();
 		CachingSender csender = newCachingSender(server.getHttpPort());
 		//http headers will allow to cache reponse for 1 second
 		SenderRequest request = new GetRequest("/").addParameter("docache", 1);
@@ -268,12 +187,10 @@ public class CachingSenderTest {
 
 		csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-		server.stop();
 	}
 
 	@Test
 	public void testHttpETagCaching() throws Exception {
-		JokerServer server = new JokerServer().start();
 		CachingSender csender = newCachingSender(server.getHttpPort());
 
 		//keep original count of request executed on server
@@ -302,36 +219,6 @@ public class CachingSenderTest {
 
 		csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-		server.stop();
-	}
-
-	/**
-	 * Basic caching operations we expect to work with any cache implementation
-	 */
-	private void doCacheTest(CacheBase<CachedResponse> cache) throws InterruptedException, IOException {
-
-		CachedResponse cresponse = new CachedResponse(200, "Choroso", new Multival(), new Date().toString());
-		String cacheKey = String.valueOf(System.currentTimeMillis());
-		//hard ttl is 2 seconds
-		Boolean added = cache.set(cacheKey, new CacheEntry<CachedResponse>(cresponse, 2, 1));
-		assertThat(added).isTrue();
-
-		CacheEntry<CachedResponse> entry = cache.get(cacheKey);
-		assertThat(entry.getValue().getAsString()).isEqualTo(cresponse.getAsString());
-		assertThat(entry.isSoftExpired()).isFalse();
-		assertThat(entry.isHardExpired()).isFalse();
-
-		Thread.sleep(1010); //after soft ttl
-
-		entry = cache.get(cacheKey);
-		assertThat(entry.getValue().getAsString()).isEqualTo(cresponse.getAsString());
-		assertThat(entry.isSoftExpired()).isTrue();
-		assertThat(entry.isHardExpired()).isFalse();
-
-		Thread.sleep(2010); //after hard ttl + 1 second (memcached has this whole second precision)
-
-		entry = cache.get(cacheKey);
-		assertThat(entry).isNull();
 	}
 
 	//@Test

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -214,8 +215,14 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			if (refresh.containsKey(cacheKey)) {
 				logger.debug("Async refresh already running " + cacheKey);
 			} else {
-				logger.debug("Async refresh start " + cacheKey);
-				executor.execute(new RefreshRunnable<V>(request, softExpiredEntry)); //throws Exception...
+				logger.debug("Async refresh starting " + cacheKey);
+				try {
+					executor.execute(new RefreshRunnable<V>(request, softExpiredEntry)); //throws Exception...
+				} catch (RejectedExecutionException rx) {
+					logger.warn("Async refresh rejected " + rx.getMessage());
+				} catch (Exception x) {
+					logger.error("Async refresh start failed " + cacheKey, x);
+				}
 			}
 		}
 	}

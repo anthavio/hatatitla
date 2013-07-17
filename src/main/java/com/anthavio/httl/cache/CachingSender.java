@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -120,6 +121,10 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 		return cacheKey;
 	}
 
+	public SenderResponse execute(SenderRequest request, int ttl, TimeUnit unit) {
+		return execute(new CachingRequest(request, ttl, unit)).getValue();
+	}
+
 	/**
 	 * Static caching based on specified TTL
 	 */
@@ -169,52 +174,6 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 				throw new IllegalArgumentException("Unknown RefreshMode " + mode);
 			}
 		}
-		/*
-				if (entry != null) {
-					entry.getValue().setRequest(request.getSenderRequest());
-					if (!entry.isSoftExpired()) {
-						return entry.getValue(); //nice hit
-					} else {
-						logger.debug("Request soft expired " + cacheKey);
-						//soft expired - refresh needed
-						if (request.isAsyncRefresh()) {
-							//we will return soft expired value, but we will also start asynchronous refresh
-							asyncRefresh(cacheKey, request);
-							if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-								addScheduled(request, cacheKey);
-							}
-							logger.debug("Request soft expired value returned " + cacheKey);
-							return entry.getValue();
-						} else { //sync update
-							logger.debug("Request sync refresh start " + cacheKey);
-							try {
-								refresh.put(cacheKey, request);
-								SenderResponse response = sender.execute(request.getSenderRequest());
-								request.setLastRefresh(System.currentTimeMillis());
-								return doCachePut(cacheKey, request, response);
-							} catch (Exception x) {
-								logger.warn("Request refresh failed for " + request, x);
-								//bugger - but we still have our soft expired value
-								logger.debug("Request soft expired value returned " + cacheKey);
-								return entry.getValue();
-							} finally {
-								refresh.remove(cacheKey);
-							}
-						}
-					}
-				} else { //null entry -> execute request, extract response and put it into cache
-					SenderResponse response = sender.execute(request.getSenderRequest());
-					request.setLastRefresh(System.currentTimeMillis());
-					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-						addScheduled(request, cacheKey);
-					}
-					return doCachePut(cacheKey, request, response);
-				}
-				*/
-	}
-
-	public SenderResponse execute(SenderRequest request, int ttl, TimeUnit unit) {
-		return execute(new CachingRequest(request, ttl, unit)).getValue();
 	}
 
 	private void asyncRefresh(String cacheKey, CachingRequest request) {
@@ -225,8 +184,14 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			if (refresh.containsKey(cacheKey)) {
 				logger.debug("Async refresh already running " + cacheKey);
 			} else {
-				logger.debug("Async refresh start " + cacheKey);
-				executor.execute(new RefreshRunnable<Serializable>(request));
+				logger.debug("Async refresh starting " + cacheKey);
+				try {
+					executor.execute(new RefreshRunnable<Serializable>(request));
+				} catch (RejectedExecutionException rx) {
+					logger.warn("Async refresh rejected " + rx.getMessage());
+				} catch (Exception x) {
+					logger.error("Async refresh start failed " + cacheKey, x);
+				}
 			}
 		}
 	}
@@ -239,6 +204,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			request.setLastRefresh(System.currentTimeMillis());
 			CachedResponse cached = new CachedResponse(request.getSenderRequest(), response);
 			entry = new CacheEntry<CachedResponse>(cached, request.getHardTtl(), request.getSoftTtl());
+			//cache only 20x responses 
 			if (response.getHttpStatusCode() < 300) {
 				cache.set(cacheKey, entry);
 			}
@@ -271,22 +237,6 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 		}
 	}
 
-	/**
-	 * Puts Response into Cache if http status < 300
-	 
-	private SenderResponse doCachePut(String cacheKey, CachingRequest request, SenderResponse response) {
-		if (response.getHttpStatusCode() < 300) {
-			CachedResponse cached = new CachedResponse(request.getSenderRequest(), response);
-			CacheEntry<CachedResponse> entry = new CacheEntry<CachedResponse>(cached, request.getHardTtl(),
-					request.getSoftTtl());
-			cache.set(cacheKey, entry);
-			return cached;
-		} else {
-			//logger.info("Not putting non http 200 request to cache");
-			return response;
-		}
-	}
-	*/
 	/**
 	 * Static caching based on specified TTL
 	 */

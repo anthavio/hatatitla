@@ -20,9 +20,8 @@ import com.anthavio.httl.SenderException;
 import com.anthavio.httl.SenderHttpStatusException;
 import com.anthavio.httl.SenderRequest;
 import com.anthavio.httl.SenderResponse;
-import com.anthavio.httl.async.ExecutorServiceBuilder;
-import com.anthavio.httl.inout.ResponseBodyExtractors;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import com.anthavio.httl.inout.ResponseBodyExtractors;
 
 /**
  * 
@@ -55,7 +54,7 @@ public class AsyncTest {
 			} catch (ExecutionException ex) {
 				assertThat(ex.getCause()).isInstanceOf(SenderException.class);
 				assertThat(ex.getCause().getMessage()).contains("Connection refused");
-				ex.printStackTrace();
+				//ex.printStackTrace();
 			}
 			assertThat(conman.getTotalStats().getLeased()).isEqualTo(0);
 

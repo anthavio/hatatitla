@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -191,48 +192,6 @@ public class CachingExtractor {
 				throw new IllegalArgumentException("Unknown RefreshMode " + mode);
 			}
 		}
-		/*
-		String cacheKey = getCacheKey(request);
-		CacheEntry<?> entry = cache.get(cacheKey);
-		if (entry != null) {
-			if (!entry.isSoftExpired()) {
-				return (T) entry.getValue(); //nice nonexpired hit
-			} else {
-				//soft expired -  refresh needed
-				logger.debug("Request soft expired " + cacheKey);
-				if (request.isAsyncRefresh()) {
-					//we will return soft expired value, but we will also start asynchronous refresh
-					asyncRefresh(cacheKey, request);
-
-					if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-						addScheduled(request, cacheKey);
-					}
-					logger.debug("Request soft expired value returned " + cacheKey);
-					return (T) entry.getValue();
-				} else { //sync update
-					logger.debug("Request sync refresh start " + cacheKey);
-					try {
-						refresh.put(cacheKey, request); //unsafe, but I don't want to lock around sender.extract() method
-						ExtractedBodyResponse<T> extract = doExtract(request, cacheKey);
-						return extract.getBody();
-					} catch (Exception x) {
-						logger.warn("Request refresh failed for " + request, x);
-						//bugger - but we still have our soft expired value
-						logger.debug("Request soft expired value returned " + cacheKey);
-						return (T) entry.getValue();
-					} finally {
-						refresh.remove(cacheKey);
-					}
-				}
-			}
-		} else { //entry is null -> execute request, extract response and put it into cache
-			ExtractedBodyResponse<T> extracted = doExtract(request, cacheKey);
-			if (request.getRefreshMode() == RefreshMode.SCHEDULED) {
-				addScheduled(request, cacheKey);
-			}
-			return extracted.getBody();
-		}
-		*/
 	}
 
 	/**
@@ -257,8 +216,14 @@ public class CachingExtractor {
 			if (refresh.containsKey(cacheKey)) {
 				logger.debug("Async refresh already running " + cacheKey);
 			} else {
-				logger.debug("Async refresh start " + cacheKey);
-				executor.execute(new RefreshRunnable<T>(request));
+				logger.debug("Async refresh starting " + cacheKey);
+				try {
+					executor.execute(new RefreshRunnable<T>(request));
+				} catch (RejectedExecutionException rx) {
+					logger.warn("Async refresh rejected " + rx.getMessage());
+				} catch (Exception x) {
+					logger.error("Async refresh start failed " + cacheKey, x);
+				}
 			}
 		}
 	}

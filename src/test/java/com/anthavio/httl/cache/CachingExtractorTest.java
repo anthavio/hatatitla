@@ -7,8 +7,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.anthavio.cache.Cache.RefreshMode;
@@ -32,22 +32,24 @@ import com.anthavio.httl.inout.ResponseBodyExtractors;
  */
 public class CachingExtractorTest {
 
+	private JokerServer server;
 	private ThreadPoolExecutor executor;
 
-	@BeforeClass
+	@BeforeMethod
 	public void setup() throws Exception {
+		this.server = new JokerServer().start();
 		this.executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0).setMaximumPoolSize(1)
 				.setMaximumQueueSize(0).build();
 	}
 
-	@AfterClass
+	@AfterMethod
 	public void destroy() throws Exception {
 		this.executor.shutdown();
+		this.server.stop();
 	}
 
 	@Test
 	public void syncRefreshExtraction() throws Exception {
-		JokerServer server = new JokerServer().start();
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
 		SenderRequest request = new GetRequest("/");
@@ -134,12 +136,10 @@ public class CachingExtractorTest {
 		}
 		cextractor.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-		server.stop();
 	}
 
 	@Test
 	public void backgroundRefreshExtraction() throws Exception {
-		JokerServer server = new JokerServer().start();
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
 		SenderRequest request = new GetRequest("/").addParameter("sleep", 1);
@@ -148,8 +148,12 @@ public class CachingExtractorTest {
 				TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
-		CacheEntry<String> extract1 = cextractor.extract(cerequest);
+		assertThat(cextractor.extract(cerequest)).isNull(); //scheduled is null returer
+		Thread.sleep(1200);//async refresh
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
+
+		CacheEntry<String> extract1 = cextractor.extract(cerequest);
+		assertThat(extract1.isSoftExpired() == false);
 
 		Thread.sleep(2000 + 1010); //after soft expiry + server sleep
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); //background refresh server hit
@@ -158,27 +162,21 @@ public class CachingExtractorTest {
 
 		long m1 = System.currentTimeMillis();
 		CacheEntry<String> extract2 = cextractor.extract(cerequest);
+		assertThat(extract2.isSoftExpired() == false);
 		assertThat(System.currentTimeMillis() - m1).isLessThan(10);//from cache - must be quick!
-		assertThat(extract2).isNotEqualTo(extract1); //different
+		assertThat(extract2.getValue()).isNotEqualTo(extract1.getValue()); //different
 
 		server.setHttpCode(HttpURLConnection.HTTP_INTERNAL_ERROR);
 		Thread.sleep(5010); //after hard expiry + server sleep
 
-		try {
-			cextractor.extract(cerequest);
-			Assert.fail("Previous statement must throw SenderHttpException");
-		} catch (SenderHttpStatusException srx) {
-			//this is what we expect
-		}
-
+		assertThat(cextractor.extract(cerequest)).isNull(); //scheduled is null returer
 		cextractor.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-		server.stop();
 	}
 
 	@Test
 	public void asyncRefreshExtraction() throws Exception {
-		JokerServer server = new JokerServer().start();
+
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
@@ -187,7 +185,10 @@ public class CachingExtractorTest {
 
 		final int initialCount = server.getRequestCount();
 
-		CacheEntry<String> extract1 = cextractor.extract(cerequest);
+		assertThat(cextractor.extract(cerequest)).isNull(); //async is null returer
+		Thread.sleep(200); //async http refresh
+		CacheEntry<String> extract1 = cextractor.extract(cerequest); //cached now
+		assertThat(extract1.isSoftExpired() == false);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		Thread.sleep(1001); //after soft expiration
@@ -195,7 +196,8 @@ public class CachingExtractorTest {
 		//taken from cache
 		CacheEntry<String> extract2 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1); //same
-		assertThat(extract2).isEqualTo(extract1); //same
+		assertThat(extract2.isSoftExpired());
+		assertThat(extract2.getValue()).isEqualTo(extract1.getValue()); //same
 
 		Thread.sleep(100); //wait for async thread to update from server
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); //plus 1
@@ -204,7 +206,7 @@ public class CachingExtractorTest {
 		CacheEntry<String> extract3 = cextractor.extract(cerequest);
 		Thread.sleep(100); //wait for async thread NOT to hit the server 
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2);//same
-		assertThat(extract3).isNotEqualTo(extract2); //updated in cache asyncronously
+		assertThat(extract3.getValue()).isNotEqualTo(extract2.getValue()); //updated in cache asyncronously
 
 		//now with errors - soft expired response is returned even if server refresh call fails
 
@@ -216,26 +218,23 @@ public class CachingExtractorTest {
 		CacheEntry<String> extract4 = cextractor.extract(cerequest); //async refresh will fail
 		Thread.sleep(100); //wait for async thread to update from server
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //new
-		assertThat(extract4).isEqualTo(extract3); //same expired from cache
+		assertThat(extract4.getValue()).isEqualTo(extract3.getValue()); //same expired from cache
 
 		Thread.sleep(1010); //after hard expiration
-		try {
-			cextractor.extract(cerequest);
-			Assert.fail("Preceding line must throw SenderHttpException");
-		} catch (SenderHttpStatusException srx) {
-			//this is what we expect
-		}
+		assertThat(cextractor.extract(cerequest)).isNull(); //async is null returer
+		Thread.sleep(200); //async refresh
 		//error returned but request was made 
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 4); //new
 
 		//set server to return ok again
 		server.setHttpCode(HttpURLConnection.HTTP_OK);
+		assertThat(cextractor.extract(cerequest)).isNull(); //async is null returer
+		Thread.sleep(200);
+		assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //new
 
 		//make successful request again
 		CacheEntry<String> extract5 = cextractor.extract(cerequest);
-		Thread.sleep(100); //wait for async thread to update from server
-		assertThat(server.getRequestCount()).isEqualTo(initialCount + 5); //new
-		assertThat(extract5).isNotEqualTo(extract4); //different
+		assertThat(extract5.getValue()).isNotEqualTo(extract4.getValue()); //different
 
 		server.stop(); //stop server - simulate server outage
 
@@ -246,23 +245,15 @@ public class CachingExtractorTest {
 		assertThat(extract6).isEqualTo(extract5); //same from cache
 
 		Thread.sleep(1001); //after hard expiration
-		try {
-			cextractor.extract(cerequest);
-			Assert.fail("Preceding line must throw ConnectException");
-		} catch (SenderException sex) {
-			//this is what we expect
-			assertThat(sex.getMessage()).contains("Connection refused"); //same
-		}
+		assertThat(cextractor.extract(cerequest)).isNull(); //async is null returer
 
 		cextractor.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-		server.stop();
 	}
 
 	@Test
 	public void asyncNonDuplicateRefreshOnSameResourceExtraction() throws Exception {
 
-		JokerServer server = new JokerServer().start();
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
@@ -274,14 +265,18 @@ public class CachingExtractorTest {
 
 		final int initialCount = server.getRequestCount();
 
-		CacheEntry<String> extract1 = cextractor.extract(cerequest);
-		Thread.sleep(100); //async refresh
+		assertThat(cextractor.extract(cerequest)).isNull(); //null returner
+		Thread.sleep(1200); //async refresh with server sleep
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
+
+		CacheEntry<String> extract1 = cextractor.extract(cerequest);
+		assertThat(extract1.isSoftExpired() == false);
+
 		Thread.sleep(1001); //after soft expiry
 
 		assertThat(executor.getActiveCount()).isEqualTo(0);
 		CacheEntry<String> extract2 = cextractor.extract(cerequest); //this request should start async update
-		assertThat(extract2).isEqualTo(extract1); //soft expired response is returned immediately
+		assertThat(extract2.getValue()).isEqualTo(extract1.getValue()); //soft expired response is returned immediately
 
 		Thread.sleep(100); //let async refresh hit the server
 
@@ -308,7 +303,6 @@ public class CachingExtractorTest {
 
 		cextractor.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-		server.stop();
 	}
 
 	private CachingExtractor newExtractorSender(int port) {
