@@ -117,7 +117,7 @@ public class ResponseBodyExtractors {
 	 */
 	public <T> T extract(SenderResponse response, Class<T> resultType) throws IOException {
 		String contentType = response.getFirstHeader("Content-Type");
-		ResponseBodyExtractor<?> extractor = getExtractor(contentType, response, resultType);
+		ResponseBodyExtractor<?> extractor = getExtractor(response, resultType);
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor not found for class " + resultType.getName() + " and Content-Type "
 					+ contentType);
@@ -125,7 +125,7 @@ public class ResponseBodyExtractors {
 		return (T) extractor.extract(response);
 	}
 
-	public <T> ResponseBodyExtractor<T> getExtractor(String contentType, SenderResponse response, Class<T> clazz) {
+	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Class<T> clazz) {
 		// Ignore Content-Type for String or Byte Array result
 		if (clazz.equals(String.class)) {
 			return (ResponseBodyExtractor<T>) ResponseBodyExtractors.STRING;
@@ -133,16 +133,19 @@ public class ResponseBodyExtractors {
 			return (ResponseBodyExtractor<T>) ResponseBodyExtractors.BYTES;
 		}
 
+		String contentType = response.getFirstHeader("Content-Type");
 		if (Cutils.isEmpty(contentType)) {
 			throw new IllegalArgumentException("Content-Type header not found");
 		}
-
 		String mediaType = HttpHeaderUtil.getMediaType(contentType);
 		ResponseExtractorFactory extractorFactory = factories.get(mediaType);
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("Extractor factory not found for " + mediaType);
 		}
 		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, clazz);
+		if (extractor == null) {
+			throw new IllegalStateException("ResponseExtractorFactory " + extractorFactory + " returned null");
+		}
 		return extractor;
 	}
 
