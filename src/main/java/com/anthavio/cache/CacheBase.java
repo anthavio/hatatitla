@@ -31,6 +31,8 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 
 	private Map<String, CacheRequest<V>> scheduled = new HashMap<String, CacheRequest<V>>();
 
+	private long schedulerInterval = 1; //SECONDS
+
 	private RefreshSchedulerThread scheduler;
 
 	public CacheBase(String name) {
@@ -58,6 +60,20 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	 */
 	public CacheRequest<V> getScheduled(String userKey) {
 		return scheduled.get(userKey);
+	}
+
+	/**
+	 * @return scheduler thread sleep time  
+	 */
+	public long getSchedulerInterval() {
+		return schedulerInterval;
+	}
+
+	public void setSchedulerInterval(int interval, TimeUnit unit) {
+		this.schedulerInterval = unit.toSeconds(interval);
+		if (this.schedulerInterval < 1) {
+			throw new IllegalArgumentException("Scheduler interval " + schedulerInterval + " must be >= 1 second");
+		}
 	}
 
 	/**
@@ -281,7 +297,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 				}
 				synchronized (this) {
 					if (scheduler == null) {
-						scheduler = new RefreshSchedulerThread(1, TimeUnit.SECONDS);
+						scheduler = new RefreshSchedulerThread(schedulerInterval, TimeUnit.SECONDS);
 						scheduler.start();
 					}
 				}
