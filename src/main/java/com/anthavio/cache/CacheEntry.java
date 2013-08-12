@@ -3,6 +3,7 @@ package com.anthavio.cache;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -22,33 +23,46 @@ public class CacheEntry<T> implements Serializable {
 	private final long softTtl; //seconds - we must revalidate after - static value or server expiry 
 
 	/**
-	 * Simplest possible
+	 * Simplest possible: hardTTL is equal to softTTL in seconds
 	 */
 	public CacheEntry(T value, long ttlSeconds) {
 		this(value, ttlSeconds, ttlSeconds);
 	}
 
 	/**
-	 * TTLs are in seconds
+	 * Simplest possible -  hardTTL is equal to softTTL
+	 */
+	public CacheEntry(T value, long ttl, TimeUnit unit) {
+		this(value, ttl, ttl, unit);
+	}
+
+	/**
+	 * TTLs unit is seconds
 	 */
 	public CacheEntry(T value, long hardTtlSeconds, long softTtlSeconds) {
+		this(value, hardTtlSeconds, softTtlSeconds, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * TTLs unit is parameter
+	 */
+	public CacheEntry(T value, long hardTtl, long softTtl, TimeUnit unit) {
 		if (value == null) {
 			throw new IllegalArgumentException("cached value is null");
 		}
 		this.value = value;
 
-		if (hardTtlSeconds < 1) {
-			throw new IllegalArgumentException("hardTtl " + hardTtlSeconds + " must be > 1");
-		}
-		this.hardTtl = hardTtlSeconds;
-
-		//can be from past
-		this.softTtl = softTtlSeconds;
-
-		if (softTtlSeconds > 0 && hardTtlSeconds < softTtlSeconds) {
-			throw new IllegalArgumentException("hardTtl " + hardTtlSeconds + " must be > softTtl " + softTtlSeconds);
+		this.hardTtl = unit.toSeconds(hardTtl);
+		if (this.hardTtl < 1) {
+			throw new IllegalArgumentException("hardTtl " + this.hardTtl + " must be >= 1 second");
 		}
 
+		// softTtl can be from past
+		this.softTtl = unit.toSeconds(softTtl);
+
+		if (this.softTtl > 0 && this.hardTtl < this.softTtl) {
+			throw new IllegalArgumentException("hardTtl " + this.hardTtl + " must be > softTtl " + this.softTtl);
+		}
 	}
 
 	public boolean isSoftExpired() {
