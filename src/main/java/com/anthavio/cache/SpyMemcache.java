@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.MemcachedClient;
-import net.spy.memcached.internal.GetFuture;
-import net.spy.memcached.internal.OperationFuture;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -85,30 +84,30 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	@Override
-	public CacheEntry<V> doGet(String key) throws Exception {
-		if (key.length() > MaxKeyLength) {
+	protected CacheEntry<V> doGet(String cacheKey) throws Exception {
+		if (cacheKey.length() > MaxKeyLength) {
 			throw new IllegalArgumentException("Key length exceded maximum " + MaxKeyLength);
 		}
-		GetFuture<Object> future = client.asyncGet(key);
+		Future<Object> future = client.asyncGet(cacheKey);
 		return (CacheEntry<V>) future.get(operationTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public Boolean doSet(String key, CacheEntry<V> entry) throws Exception {
-		if (key.length() > MaxKeyLength) {
+	protected Boolean doSet(String cacheKey, CacheEntry<V> entry) throws Exception {
+		if (cacheKey.length() > MaxKeyLength) {
 			throw new IllegalArgumentException("Key length exceded maximum " + MaxKeyLength);
 		}
 		int ttlMillis = (int) entry.getHardTtl();
-		OperationFuture<Boolean> future = client.set(key, ttlMillis, entry);
+		Future<Boolean> future = client.set(cacheKey, ttlMillis, entry);
 		return future.get(operationTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public Boolean doRemove(String key) throws Exception {
-		if (key.length() > MaxKeyLength) {
+	protected Boolean doRemove(String cacheKey) throws Exception {
+		if (cacheKey.length() > MaxKeyLength) {
 			throw new IllegalArgumentException("Key length exceded maximum " + MaxKeyLength);
 		}
-		OperationFuture<Boolean> future = client.delete(key);
+		Future<Boolean> future = client.delete(cacheKey);
 		return future.get(operationTimeout, TimeUnit.MILLISECONDS);
 	}
 
@@ -128,13 +127,13 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 	 * because namespace is part of key - all keys became invalid
 	 */
 	@Override
-	public void removeAll() {
+	public void removeAll() throws IllegalStateException {
 		if (namespaceVersioning) {
 			String nsVersionKey = getNsVersionKey();
 			long incr = client.incr(nsVersionKey, 1);
 			if (incr == -1) {//nsVersion entry does not not exist -> create it
 				try {
-					OperationFuture<Boolean> future = client.set(nsVersionKey, DAY, VERSION_IN);
+					Future<Boolean> future = client.set(nsVersionKey, DAY, VERSION_IN);
 					future.get(operationTimeout, TimeUnit.MILLISECONDS);
 				} catch (Exception x) {
 					logger.warn("Failed to removeAll", x);
@@ -177,11 +176,11 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 		//TODO cache nsVersion localy for X seconds - use read/write lock on last checked timestamp 
 		String nsVersionKey = getNsVersionKey();
 		try {
-			GetFuture<Object> gfuture = client.asyncGet(nsVersionKey);
+			Future<Object> gfuture = client.asyncGet(nsVersionKey);
 			String nsVersion = (String) gfuture.get(operationTimeout, TimeUnit.MILLISECONDS);
 			int icnt = 0;
 			while (nsVersion == null && ++icnt < 5) {
-				OperationFuture<Boolean> afuture = client.add(nsVersionKey, DAY, VERSION_IN);
+				Future<Boolean> afuture = client.add(nsVersionKey, DAY, VERSION_IN);
 				boolean added = afuture.get(operationTimeout, TimeUnit.MILLISECONDS);
 				if (!added) { //somebody else was faster...so get what's there
 					gfuture = client.asyncGet(nsVersionKey);

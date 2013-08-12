@@ -39,7 +39,7 @@ public class EHCache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	@Override
-	public Boolean doRemove(String cacheKey) {
+	protected Boolean doRemove(String cacheKey) {
 		return ehCache.remove(cacheKey);
 	}
 

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExecutorServiceBuilder {
 
-	public static ExecutorServiceBuilder builder() {
+	public static ExecutorServiceBuilder begin() {
 		return new ExecutorServiceBuilder();
 	}
 
@@ -52,12 +52,8 @@ public class ExecutorServiceBuilder {
 		return this;
 	}
 
-	public ExecutorServiceBuilder setKeepAliveTime(long keepAliveTime) {
+	public ExecutorServiceBuilder setKeepAliveTime(long keepAliveTime, TimeUnit unit) {
 		this.keepAliveTime = keepAliveTime;
-		return this;
-	}
-
-	public ExecutorServiceBuilder setTimeUnit(TimeUnit unit) {
 		this.timeUnit = unit;
 		return this;
 	}

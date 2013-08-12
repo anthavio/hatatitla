@@ -14,6 +14,8 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.spy.memcached.MemcachedClient;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -21,8 +23,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.anthavio.cache.Cache.RefreshMode;
-import com.anthavio.cache.CacheRequest.CacheEntryFetch;
-import com.anthavio.cache.CacheRequest.FetchResult;
+import com.anthavio.cache.CacheEntryLoader.BaseCacheLoader;
+import com.anthavio.cache.CacheEntryLoader.CacheLoaderException;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
 import com.thimbleware.jmemcached.CacheImpl;
 import com.thimbleware.jmemcached.Key;
@@ -115,6 +117,17 @@ public class CacheTest {
 
 		entry = cache.get(cacheKey);
 		assertThat(entry).isNull();
+
+		//add & remove & get
+		added = cache.set(cacheKey, new CacheEntry<String>("CachedValue", 2, 1));
+		assertThat(added).isTrue();
+
+		Boolean removed = cache.remove(cacheKey);
+		assertThat(removed).isTrue();
+
+		entry = cache.get(cacheKey);
+		assertThat(entry).isNull();
+
 		cache.close();
 	}
 
@@ -123,16 +136,17 @@ public class CacheTest {
 		SpyMemcache<String> cache = buildMemcache();
 		//no need for executor in blocking mode
 
-		Fetcher fetch = new Fetcher();
+		TestLoader fetch = new TestLoader();
 		CacheRequest<String> req = new CacheRequest<String>("Block", fetch, 2, 1, TimeUnit.SECONDS, RefreshMode.BLOCK);
 
 		int rCounter = 0;
 		fetch.setThrowException(true); // break it from the start
 		try {
 			cache.get(req);
-			Assert.fail("IllegalStateException must be thrown by previous statement");
-		} catch (IllegalStateException isx) {
+			Assert.fail("CacheLoaderException must be thrown by previous statement");
+		} catch (CacheLoaderException clx) {
 			//we want this
+			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
 		}
 		assertThat(fetch.getRequestCount()).isEqualTo(++rCounter);
 
@@ -153,18 +167,20 @@ public class CacheTest {
 		Thread.sleep(1000); //entry soft expired
 		try {
 			cache.get(req);
-			Assert.fail("IllegalStateException must be thrown by previous statement");
-		} catch (IllegalStateException isx) {
+			Assert.fail("CacheLoaderException must be thrown by previous statement");
+		} catch (CacheLoaderException clx) {
 			//we want this
+			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
 		}
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
 		Thread.sleep(2000); //entry hard expired
 		try {
 			cache.get(req);
-			Assert.fail("IllegalStateException must be thrown by previous statement");
-		} catch (IllegalStateException isx) {
+			Assert.fail("CacheLoaderException must be thrown by previous statement");
+		} catch (CacheLoaderException clx) {
 			//we want this
+			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
 		}
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
@@ -193,23 +209,24 @@ public class CacheTest {
 	}
 
 	/**
-	 * Return mode throws Eception only when cache miss and fetcher error
+	 * Return mode throws Exception only when cache miss and fetcher error
 	 */
 	@Test
 	public void testReturnMode() throws Exception {
 		SpyMemcache<String> cache = buildMemcache();
 		cache.setExecutor(executor);
 
-		Fetcher fetch = new Fetcher();
+		TestLoader fetch = new TestLoader();
 		CacheRequest<String> req = new CacheRequest<String>("Return", fetch, 2, 1, TimeUnit.SECONDS, RefreshMode.RETURN);
 
 		int rCounter = 0;
 		fetch.setThrowException(true); // break it from the start
 		try {
 			cache.get(req);
-			Assert.fail("IllegalStateException must be thrown by previous statement");
-		} catch (IllegalStateException isx) {
+			Assert.fail("CacheLoaderException must be thrown by previous statement");
+		} catch (CacheLoaderException clx) {
 			//we want this
+			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
 		}
 		assertThat(fetch.getRequestCount()).isEqualTo(++rCounter);
 
@@ -238,9 +255,10 @@ public class CacheTest {
 		Thread.sleep(2000); //entry hard expired
 		try {
 			cache.get(req);
-			Assert.fail("IllegalStateException must be thrown by previous statement");
-		} catch (IllegalStateException isx) {
+			Assert.fail("CacheLoaderException must be thrown by previous statement");
+		} catch (CacheLoaderException clx) {
 			//we want this
+			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
 		}
 		assertThat(fetch.getRequestCount()).isEqualTo(++rCounter);
 
@@ -285,7 +303,7 @@ public class CacheTest {
 		SpyMemcache<String> cache = buildMemcache();
 		cache.setExecutor(executor);
 
-		Fetcher fetch = new Fetcher();
+		TestLoader fetch = new TestLoader();
 		CacheRequest<String> req = new CacheRequest<String>("Async", fetch, 2, 1, TimeUnit.SECONDS, RefreshMode.ASYNC);
 
 		int rCounter = 0;
@@ -360,7 +378,7 @@ public class CacheTest {
 		SpyMemcache<String> cache = buildMemcache();
 		cache.setExecutor(executor);
 
-		Fetcher fetch = new Fetcher();
+		TestLoader fetch = new TestLoader();
 		CacheRequest<String> req = new CacheRequest<String>("Scheduled", fetch, 2, 1, TimeUnit.SECONDS,
 				RefreshMode.SCHEDULED);
 
@@ -390,6 +408,32 @@ public class CacheTest {
 		assertThat(cache.getScheduled().size()).isEqualTo(1); //resubmitted but still only one
 		cache.close();
 	}
+
+	/**
+	 * 
+	 
+	@Test
+	public void testLoaderContract() {
+
+		final Logger logger = LoggerFactory.getLogger(getClass());
+
+		BaseCacheLoader<String> loader = new BaseCacheLoader<String>() {
+
+			public String result;
+
+			@Override
+			protected Logger getLogger() {
+				return logger;
+			}
+
+			@Override
+			protected String doLoad(CacheRequest<String> request, CacheEntry<String> softExpired) throws Exception {
+				return request.getUserKey();
+			}
+		};
+		loader.l
+	}
+	*/
 
 	private SpyMemcache<String> buildMemcache() throws IOException {
 		InetSocketAddress address = new InetSocketAddress(11311);
@@ -423,7 +467,9 @@ public class CacheTest {
 		return cache;
 	}
 
-	private static class Fetcher implements CacheEntryFetch<String> {
+	private static class TestLoader extends BaseCacheLoader<String> {
+
+		private Logger logger = LoggerFactory.getLogger(getClass());
 
 		private AtomicInteger rCounter = new AtomicInteger(0);
 
@@ -436,13 +482,13 @@ public class CacheTest {
 		}
 
 		@Override
-		public FetchResult<String> fetch(CacheRequest<String> request, CacheEntry<String> softExpiredEntry) {
+		public String doLoad(CacheRequest<String> request, CacheEntry<String> softExpiredEntry) {
 			rCounter.incrementAndGet();
 			lastValue = new SimpleDateFormat("dd.MM.yyyy'T'HH:mm:ss.SSS").format(new Date());
 			if (throwException) {
 				throw new IllegalStateException("I'm baaad. I'm baaad.");
 			}
-			return new FetchResult<String>(lastValue, true);
+			return lastValue;
 		}
 
 		public String getLastValue() {
@@ -451,6 +497,11 @@ public class CacheTest {
 
 		public int getRequestCount() {
 			return rCounter.get();
+		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
 		}
 
 	};

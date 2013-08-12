@@ -263,7 +263,7 @@ public class ExamplesTest {
 		//Provide cache instance - Simple Heap Hashmap in this case
 		CacheBase<Object> cache = new HeapMapCache<Object>();
 		//Setup asynchronous support
-		ExecutorService executor = ExecutorServiceBuilder.builder().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
+		ExecutorService executor = ExecutorServiceBuilder.begin().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
 		//Create Caching Extractor
 		CachingExtractor cextractor = new CachingExtractor(sender, cache, executor);
 		//Create normal request

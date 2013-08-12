@@ -49,7 +49,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 	}
 
 	@Override
-	public Boolean doRemove(String key) {
+	protected Boolean doRemove(String key) {
 		CacheEntry<V> entry = this.storage.remove(key);
 		return entry != null ? Boolean.TRUE : Boolean.FALSE;
 	}
