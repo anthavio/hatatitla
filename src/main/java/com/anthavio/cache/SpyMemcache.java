@@ -39,7 +39,7 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 
 	private final boolean namespaceVersioning;
 
-	private final long operationTimeout; //Memcached call timeout in milliseconds
+	private long operationTimeout = 5000; //Memcached call timeout in milliseconds
 
 	public SpyMemcache(String name, ConnectionFactory connectionFactory, List<InetSocketAddress> addrs,
 			boolean namespaceVersioning) throws IOException {
@@ -55,6 +55,14 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 
 	public SpyMemcache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout) {
 		this(name, client, operationTimeout, unitOfTimeout, false);
+	}
+
+	public SpyMemcache(String name, MemcachedClient client) {
+		this(name, client, 5, TimeUnit.SECONDS, false);
+	}
+
+	public SpyMemcache(String name, MemcachedClient client, boolean namespaceVersioning) {
+		this(name, client, 5, TimeUnit.SECONDS, namespaceVersioning);
 	}
 
 	public SpyMemcache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout,
@@ -81,6 +89,13 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 	 */
 	public long getOperationTimeout() {
 		return operationTimeout;
+	}
+
+	public void setOperationTimeout(long timeout, TimeUnit unit) {
+		this.operationTimeout = unit.toMillis(timeout);
+		if (this.operationTimeout < 1000) {
+			throw new IllegalArgumentException("Operation timeout " + operationTimeout + " must be >= 1 second");
+		}
 	}
 
 	@Override

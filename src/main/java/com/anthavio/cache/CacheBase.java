@@ -69,7 +69,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		return schedulerInterval;
 	}
 
-	public void setSchedulerInterval(int interval, TimeUnit unit) {
+	public void setSchedulerInterval(long interval, TimeUnit unit) {
 		this.schedulerInterval = unit.toSeconds(interval);
 		if (this.schedulerInterval < 1) {
 			throw new IllegalArgumentException("Scheduler interval " + schedulerInterval + " must be >= 1 second");
@@ -185,33 +185,35 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	public CacheEntry<V> get(CacheRequest<V> request) {
 		String userKey = request.getUserKey();
 		CacheEntry<V> entry = get(userKey);
+		RefreshMode mode = request.getRefreshMode();
 		if (entry != null) {
 			if (!entry.isSoftExpired()) {
+				if (mode == RefreshMode.SCHEDULED && scheduled.get(userKey) == null) {
+					schedule(request); // Entry found in cache but not scheduled (happens when service is restarted and persistent cache is used)
+				}
 				return entry; //fresh hit
 			} else {
 				//soft expired - refresh needed
 				logger.debug("Soft expired: " + userKey);
-				RefreshMode mode = request.getRefreshMode();
 				if (mode == RefreshMode.BLOCK) {
 					//logger.debug("Sync refresh start " + cacheKey);
 					return syncRefresh(request, entry);
 				} else if (mode == RefreshMode.ASYNC || mode == RefreshMode.RETURN) {
 					asyncRefresh(request, entry); //start asynchronous refresh
-					logger.debug("Soft expired value returned: " + userKey);
+					//logger.debug("Soft expired value returned: " + userKey);
 					return entry; //return soft expired value
 				} else if (mode == RefreshMode.SCHEDULED) {
 					if (scheduled.get(userKey) == null) {
 						asyncRefresh(request, entry); //start asynchronous refresh
-						addScheduled(request); //register as scheduled
+						schedule(request); //register as scheduled
 					}
-					logger.debug("Soft expired value returned: " + userKey);
+					//logger.debug("Soft expired value returned: " + userKey);
 					return entry; //return soft expired value
 				} else {
 					throw new IllegalArgumentException("Unknown RefreshMode " + mode);
 				}
 			}
 		} else { //cache miss - we have nothing
-			RefreshMode mode = request.getRefreshMode();
 			if (mode == RefreshMode.BLOCK || mode == RefreshMode.RETURN) {
 				return syncRefresh(request, null);
 			} else if (mode == RefreshMode.ASYNC) {
@@ -220,7 +222,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			} else if (mode == RefreshMode.SCHEDULED) {
 				if (scheduled.get(userKey) == null) {
 					asyncRefresh(request, null);
-					addScheduled(request);
+					schedule(request);
 				}
 				return null;
 			} else {
@@ -282,18 +284,18 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	 * 
 	 * Also starts scheduler thread if it is not running yet.
 	 */
-	private void addScheduled(CacheRequest<V> request) {
+	public void schedule(CacheRequest<V> request) {
 		if (this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous refresh is not configured");
 		}
 		String userKey = request.getUserKey();
 		synchronized (scheduled) {
 			if (scheduled.get(userKey) != null) {
-				logger.debug("Request is already scheduled for refresh: " + userKey);
+				logger.debug("Request already scheduled for refresh: " + userKey);
 			} else {
 				scheduled.put(userKey, request);
 				if (logger.isDebugEnabled()) {
-					logger.debug("Request is now scheduled for refresh: " + userKey);
+					logger.debug("Request became scheduled for refresh: " + userKey);
 				}
 				synchronized (this) {
 					if (scheduler == null) {
