@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.internal.CheckedOperationTimeoutException;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -104,7 +105,13 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 			throw new IllegalArgumentException("Key length exceded maximum " + MaxKeyLength);
 		}
 		Future<Object> future = client.asyncGet(cacheKey);
-		return (CacheEntry<V>) future.get(operationTimeout, TimeUnit.MILLISECONDS);
+		try {
+			return (CacheEntry<V>) future.get(operationTimeout, TimeUnit.MILLISECONDS);
+		} catch (CheckedOperationTimeoutException cotx) {
+			logger.warn("GET operation timeout: " + operationTimeout + " millis, Key: " + cacheKey);
+			return null;
+		}
+
 	}
 
 	@Override
@@ -114,7 +121,12 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 		}
 		int ttlMillis = (int) entry.getHardTtl();
 		Future<Boolean> future = client.set(cacheKey, ttlMillis, entry);
-		return future.get(operationTimeout, TimeUnit.MILLISECONDS);
+		try {
+			return future.get(operationTimeout, TimeUnit.MILLISECONDS);
+		} catch (CheckedOperationTimeoutException cotx) {
+			logger.warn("SET operation timeout: " + operationTimeout + " millis, Key: " + cacheKey);
+			return false;
+		}
 	}
 
 	@Override
@@ -123,7 +135,12 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 			throw new IllegalArgumentException("Key length exceded maximum " + MaxKeyLength);
 		}
 		Future<Boolean> future = client.delete(cacheKey);
-		return future.get(operationTimeout, TimeUnit.MILLISECONDS);
+		try {
+			return future.get(operationTimeout, TimeUnit.MILLISECONDS);
+		} catch (CheckedOperationTimeoutException cotx) {
+			logger.warn("DELETE operation timeout: " + operationTimeout + " millis, Key: " + cacheKey);
+			return null;
+		}
 	}
 
 	@Override
@@ -238,4 +255,5 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 		}
 	}
 	*/
+
 }
