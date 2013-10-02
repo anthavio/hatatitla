@@ -291,12 +291,15 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		String userKey = request.getUserKey();
 		synchronized (scheduled) {
 			if (scheduled.get(userKey) != null) {
-				logger.debug("Request already scheduled for refresh: " + userKey);
-			} else {
 				scheduled.put(userKey, request);
 				if (logger.isDebugEnabled()) {
-					logger.debug("Request became scheduled for refresh: " + userKey);
+					logger.debug("Schedule replaced to refresh: " + userKey);
 				}
+			} else {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Schedule created to refresh: " + userKey);
+				}
+				scheduled.put(userKey, request);
 				synchronized (this) {
 					if (scheduler == null) {
 						scheduler = new RefreshSchedulerThread(schedulerInterval, TimeUnit.SECONDS);
