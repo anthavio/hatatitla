@@ -9,39 +9,35 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Cache<K, V> {
 
-	public enum RefreshMode {
+	public enum RefreshMode { //LoadMode is better name maybe
 
 		/**
-		 * Always fresh data effort mode (or die trying)
+		 * Always return fresh data not null
 		 * 
 		 * 1. Miss (No Hit / Hard Expired)
 		 * Caller Thread is used to fetch data (blocking) and Fresh value is returned
-		 * Exceptions are passed to the caller (no return value)
+		 * Exceptions are passed to the caller wraped into 
 		 * 
-		 * 2. Hit Soft Expired
+		 * 2. Soft Expired Hit
 		 * Caller Thread is used to fetch data (blocking)
 		 * Exceptions are logged on WARN level with stacktrace and Soft expired value is returned
-		 * This means that caller can only know check that soft expired entry has been returned but exception will be lost to him 
-		 * 
-		 * 3. Hit Fresh
-		 * Return Fresh value
+		 * This means that caller can only know check that soft expired entry has been returned but exception will be lost to him
+		 *  
 		 */
 		BLOCK,
 
 		/**
-		 * Always return some data effort mode
+		 * Always return fresh or soft expired data but not null
 		 * 
 		 * 1. Miss (No Hit / Hard Expired)
 		 * Caller Thread is used to fetch data (blocking) and Fresh value is returned
 		 * Exceptions are passed to the caller (no return value)
 		 * 
-		 * 2. Hit Soft Expired
+		 * 2. Soft Expired Hit
 		 * Soft expired value is returned to the caller
-		 * Executor Thread is used to fetch data
+		 * Background Thread is used to fetch data
 		 * Exceptions are logged on WARN level with stacktrace 
 		 * 
-		 * 3. Hit Fresh
-		 * Return Fresh value
 		 */
 		RETURN,
 
@@ -53,13 +49,11 @@ public interface Cache<K, V> {
 		 * Executor Thread is used to fetch data
 		 * Exceptions are logged on WARN level with stacktrace
 		 * 
-		 * 2. Hit Soft Expired
+		 * 2. Soft Expired Hit
 		 * Soft expired value is returned to the caller
-		 * Executor Thread is used to fetch data
+		 * Background Thread is used to fetch data
 		 * Exceptions are logged on WARN level with stacktrace
 		 * 
-		 * 3. Hit Fresh
-		 * Return Fresh value
 		 */
 		ASYNC,
 
@@ -71,13 +65,11 @@ public interface Cache<K, V> {
 		 * Scheduler Thread is used to fetch data
 		 * Exceptions are logged on WARN level with stacktrace 
 		 * 
-		 * 2. Hit Soft Expired
+		 * 2. Soft Expired Hit
 		 * Soft expired value is returned to the caller
 		 * Scheduler Thread is used to fetch data
 		 * Exceptions are logged on WARN level with stacktrace
 		 * 
-		 * 3. Hit Fresh
-		 * Return Fresh value
 		 */
 		SCHEDULED;
 	}
