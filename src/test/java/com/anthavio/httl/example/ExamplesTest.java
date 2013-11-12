@@ -1,5 +1,7 @@
 package com.anthavio.httl.example;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -10,7 +12,7 @@ import javax.xml.bind.Marshaller;
 
 import org.testng.Assert;
 
-import com.anthavio.cache.Cache.RefreshMode;
+import com.anthavio.cache.Cache.LoadMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.HeapMapCache;
@@ -28,7 +30,7 @@ import com.anthavio.httl.async.ExecutorServiceBuilder;
 import com.anthavio.httl.cache.CachedResponse;
 import com.anthavio.httl.cache.CachingExtractor;
 import com.anthavio.httl.cache.CachingExtractorRequest;
-import com.anthavio.httl.cache.CachingRequest;
+import com.anthavio.httl.cache.CachingSenderRequest;
 import com.anthavio.httl.cache.CachingSender;
 import com.anthavio.httl.inout.Jackson2ExtractorFactory;
 import com.anthavio.httl.inout.Jackson2RequestMarshaller;
@@ -42,6 +44,21 @@ import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
  *
  */
 public class ExamplesTest {
+	
+	interface Something<X extends Exception> {
+		
+		public abstract void doIt() throws X;
+		
+	}
+	
+	class SomethingImpl implements Something<FileNotFoundException> {
+		
+		public void doIt() throws FileNotFoundException {
+			throw new FileNotFoundException("Yeah! Not found!");
+		}
+	}
+	
+	
 
 	public static void main(String[] args) {
 		cachingScheduled();
@@ -198,20 +215,20 @@ public class ExamplesTest {
 
 		//2a Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
-			ExtractedBodyResponse<String> extract = csender.request(getusers).hardTTL(1, TimeUnit.MINUTES)
+			ExtractedBodyResponse<String> extract = csender.from(getusers).hardTtl(1, TimeUnit.MINUTES)
 					.extract(String.class);
 			extract.getBody();//Cache hit
 		}
 
 		//2b Create CachingRequest - classic
-		CachingRequest crequest1 = new CachingRequest(getusers, 1, TimeUnit.MINUTES);
+		CachingSenderRequest crequest1 = new CachingSenderRequest(getusers, 1, TimeUnit.MINUTES);
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedBodyResponse<String> response = csender.extract(crequest1, String.class);
 			response.getBody();//Cache hit
 		}
 
 		//2c Create CachingRequest - fluent
-		CachingRequest crequest2 = csender.request(getusers).hardTTL(1, TimeUnit.MINUTES).build();
+		CachingSenderRequest crequest2 = csender.from(getusers).hardTtl(1, TimeUnit.MINUTES).build();
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedBodyResponse<String> response = csender.extract(crequest2, String.class);
 			response.getBody();//Cache hit
@@ -236,11 +253,11 @@ public class ExamplesTest {
 
 		//Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
-			HttpbinOut out = cextractor.request(get).ttl(10, 5, TimeUnit.SECONDS).extract(HttpbinOut.class);//Cache hit
+			HttpbinOut out = cextractor.from(get).cacheFor(10, 5, TimeUnit.SECONDS).extract(HttpbinOut.class);//Cache hit
 		}
 
 		//Precreated Caching request
-		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(10, 5, TimeUnit.SECONDS)
+		CachingExtractorRequest<HttpbinOut> crequest = cextractor.from(get).cacheFor(10, 5, TimeUnit.SECONDS)
 				.build(HttpbinOut.class);
 		for (int i = 0; i < 1000; ++i) {
 			CacheEntry<HttpbinOut> out = cextractor.extract(crequest); //Cache hit
@@ -248,7 +265,7 @@ public class ExamplesTest {
 
 		//Precreated Caching request
 		CachingExtractorRequest<HttpbinOut> crequest2 = CachingExtractorRequest.Builder(cextractor, get)
-				.ttl(10, 5, TimeUnit.SECONDS).refresh(RefreshMode.BLOCK).build(HttpbinOut.class);
+				.cacheFor(10, 5, TimeUnit.SECONDS).mode(LoadMode.STRICT).build(HttpbinOut.class);
 		for (int i = 0; i < 1000; ++i) {
 			CacheEntry<HttpbinOut> out = cextractor.extract(crequest2);//Cache hit
 		}
@@ -271,8 +288,8 @@ public class ExamplesTest {
 
 		//Response will kept in cache for 60 seconds (hatr TTL) and will be refreshed every 3 seconds (soft TTL) using background thread. 
 		//Unavailability could happen only when remote service became unaccessible for more than 60-3 seconds
-		CachingExtractorRequest<HttpbinOut> crequest = cextractor.request(get).ttl(60, 3, TimeUnit.SECONDS)
-				.refresh(RefreshMode.SCHEDULED).build(HttpbinOut.class);
+		CachingExtractorRequest<HttpbinOut> crequest = cextractor.from(get).cacheFor(60, 3, TimeUnit.SECONDS)
+				.mode(LoadMode.SCHEDULED).build(HttpbinOut.class);
 
 		CacheEntry<HttpbinOut> out1 = cextractor.extract(crequest); //cache put
 		CacheEntry<HttpbinOut> out2 = cextractor.extract(crequest); //cache hit

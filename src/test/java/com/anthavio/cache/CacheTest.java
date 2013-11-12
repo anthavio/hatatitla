@@ -4,6 +4,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.rmi.ServerException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -22,9 +23,10 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.anthavio.cache.Cache.RefreshMode;
-import com.anthavio.cache.CacheEntryLoader.BaseCacheLoader;
 import com.anthavio.cache.CacheEntryLoader.CacheLoaderException;
+import com.anthavio.cache.ConfiguredCacheLoader.ExpiredExceptionSettings;
+import com.anthavio.cache.ConfiguredCacheLoader.MissingExceptionSettings;
+import com.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import com.anthavio.httl.async.ExecutorServiceBuilder;
 import com.thimbleware.jmemcached.CacheImpl;
 import com.thimbleware.jmemcached.Key;
@@ -45,6 +47,8 @@ public class CacheTest {
 	private MemCacheDaemon<LocalCacheElement> memcached;
 
 	private CacheManager ehCacheManager;
+
+	private static Exception exception = new ServerException("I'm baaad! I'm very intentionaly baaad!");
 
 	@BeforeMethod
 	public void beforeMethod() throws Exception {
@@ -131,36 +135,48 @@ public class CacheTest {
 		cache.close();
 	}
 
+	/**
+	 * synchronous - rethrows exceptions when missing or expired load happens 
+	 * 
+	 * @throws Exception
+	 */
 	@Test
-	public void testBlockingMode() throws Exception {
+	public void testDefaultSyncMode() throws Exception {
 		SpyMemcache<String> cache = buildMemcache();
-		//no need for executor in blocking mode
 
-		TestLoader fetch = new TestLoader();
-		CacheRequest<String> req = new CacheRequest<String>("Block", fetch, 2, 1, TimeUnit.SECONDS, RefreshMode.BLOCK);
+		TestSimpleLoader fetch = new TestSimpleLoader();
+		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch);
+		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Block").cacheFor(2, 1, TimeUnit.SECONDS)
+				.build();
 
 		int rCounter = 0;
-		fetch.setThrowException(true); // break it from the start
+		fetch.setException(exception); //break updates
 		try {
 			cache.get(req);
 			Assert.fail("CacheLoaderException must be thrown by previous statement");
 		} catch (CacheLoaderException clx) {
 			//we want this
-			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
+			assertThat(clx.getCause()).isEqualTo(exception);
 		}
 		assertThat(fetch.getRequestCount()).isEqualTo(++rCounter);
 
-		fetch.setThrowException(false); //let updater fetch entry into cache
-		CacheEntry<String> entry1 = cache.get(req);
+		fetch.setException(null); //allow updates
+
+		CacheEntry<String> entry1 = cache.get(req); //fresh new entry
 		assertThat(entry1.getValue()).isEqualTo(fetch.getLastValue());
-		assertThat(entry1.isSoftExpired() == false);
+		assertThat(entry1.isSoftExpired()).isFalse();
+		assertThat(entry1.isHardExpired()).isFalse();
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
+		fetch.setException(exception); //break updates
+
 		Thread.sleep(500);//entry still fresh
-		fetch.setThrowException(true); //broke updater again
-		CacheEntry<String> entry2 = cache.get(req);
-		assertThat(entry2.getValue()).isEqualTo(entry1.getValue()); //get from cache
-		assertThat(entry2.isSoftExpired() == false);
+
+		CacheEntry<String> entry2 = cache.get(req); //fresh from cache
+		assertThat(entry2).isEqualTo(entry1);
+		assertThat(entry2.getValue()).isEqualTo(entry1.getValue());
+		assertThat(entry2.isSoftExpired()).isFalse();
+		assertThat(entry2.isHardExpired()).isFalse();
 		assertThat(entry2.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
 
@@ -170,7 +186,7 @@ public class CacheTest {
 			Assert.fail("CacheLoaderException must be thrown by previous statement");
 		} catch (CacheLoaderException clx) {
 			//we want this
-			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
+			assertThat(clx.getCause()).isEqualTo(exception);
 		}
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
@@ -180,118 +196,132 @@ public class CacheTest {
 			Assert.fail("CacheLoaderException must be thrown by previous statement");
 		} catch (CacheLoaderException clx) {
 			//we want this
-			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
+			assertThat(clx.getCause()).isEqualTo(exception);
 		}
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
-		fetch.setThrowException(false); //ok be nice again
+		fetch.setException(null); //allow updates
 
-		CacheEntry<String> entry5 = cache.get(req);
+		CacheEntry<String> entry5 = cache.get(req); //fresh new value
 		assertThat(entry5.getValue()).isNotNull();
-		assertThat(entry5.isSoftExpired() == false);
+		assertThat(entry5.isSoftExpired()).isFalse();
+		assertThat(entry5.isHardExpired()).isFalse();
 		assertThat(entry5.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
 		Thread.sleep(500); //entry still fresh
+
 		CacheEntry<String> entry6 = cache.get(req);
-		assertThat(entry6.getValue()).isEqualTo(entry5.getValue()); //same value from cache
-		assertThat(entry6.isSoftExpired());
+		assertThat(entry6).isEqualTo(entry5); //fresh from cache
+		assertThat(entry6.getValue()).isEqualTo(entry5.getValue());
+		assertThat(entry6.isSoftExpired()).isFalse();
+		assertThat(entry6.isHardExpired()).isFalse();
 		assertThat(entry6.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
 
-		Thread.sleep(1000); //entry soft expired now
+		Thread.sleep(1000); //entry soft expired
+
 		CacheEntry<String> entry7 = cache.get(req);
 		assertThat(entry7.getValue()).isNotEqualTo(entry6.getValue()); //new value is fetched
-		assertThat(entry7.isSoftExpired() == false);
+		assertThat(entry7.isSoftExpired()).isFalse();
+		assertThat(entry7.isHardExpired()).isFalse();
 		assertThat(entry7.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+
 		cache.close();
 	}
 
 	/**
-	 * Return mode throws Exception only when cache miss and fetcher error
+	 * Sychronous that never throws expcetion but returns expired or null value entry
 	 */
 	@Test
-	public void testReturnMode() throws Exception {
+	public void testSafeSyncMode() throws Exception {
 		SpyMemcache<String> cache = buildMemcache();
-		cache.setExecutor(executor);
 
-		TestLoader fetch = new TestLoader();
-		CacheRequest<String> req = new CacheRequest<String>("Return", fetch, 2, 1, TimeUnit.SECONDS, RefreshMode.RETURN);
+		TestSimpleLoader fetch = new TestSimpleLoader();
+
+		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, MissingExceptionSettings.SYNC_NULL,
+				ExpiredExceptionSettings.SYNC_RETURN, MissingExceptionSettings.ASYN_STRICT,
+				ExpiredExceptionSettings.ASYN_STRICT);
+
+		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Return").cacheFor(2, 1, TimeUnit.SECONDS)
+				.build();
 
 		int rCounter = 0;
-		fetch.setThrowException(true); // break it from the start
-		try {
-			cache.get(req);
-			Assert.fail("CacheLoaderException must be thrown by previous statement");
-		} catch (CacheLoaderException clx) {
-			//we want this
-			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
-		}
+		fetch.setException(exception); // break cache entry updates
+
+		CacheEntry<String> entry = cache.get(req);
+		assertThat(entry).isNotNull(); //cache miss with exception - expired null value
+		assertThat(entry.getValue()).isNull();
+		assertThat(entry.isSoftExpired()).isTrue();
+		assertThat(entry.isHardExpired()).isTrue();
 		assertThat(fetch.getRequestCount()).isEqualTo(++rCounter);
 
-		fetch.setThrowException(false); //let updater fetch entry into cache
-		CacheEntry<String> entry1 = cache.get(req);
+		fetch.setException(null); //allow cache entry updates
+
+		CacheEntry<String> entry1 = cache.get(req); // fresh new value
 		assertThat(entry1.getValue()).isEqualTo(fetch.getLastValue());
-		assertThat(entry1.isSoftExpired() == false);
+		assertThat(entry1.isSoftExpired()).isFalse();
+		assertThat(entry1.isHardExpired()).isFalse();
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
+		fetch.setException(exception); //break cache entry updates again
+
 		Thread.sleep(500);//entry still fresh
-		fetch.setThrowException(true); //broke updater again
-		CacheEntry<String> entry2 = cache.get(req);
-		assertThat(entry2.getValue()).isEqualTo(entry1.getValue()); //get from cache
-		assertThat(entry2.isSoftExpired() == false);
-		assertThat(entry2.getValue()).isEqualTo(fetch.getLastValue());
-		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
+
+		CacheEntry<String> entry2 = cache.get(req); //fresh from cache
+		assertThat(entry2).isEqualTo(entry1);
+		assertThat(entry2.getValue()).isEqualTo(entry1.getValue());
+		assertThat(entry2.isSoftExpired()).isFalse();
+		assertThat(entry2.isHardExpired()).isFalse();
+		assertThat(rCounter).isEqualTo(fetch.getRequestCount()); //not new request
+		assertThat(entry2.getValue()).isEqualTo(fetch.getLastValue()); //loaded value
 
 		Thread.sleep(1000); //entry soft expired
+
 		CacheEntry<String> entry3 = cache.get(req);
-		Thread.sleep(50); //complete async fetch
+		assertThat(entry3).isEqualTo(entry2);
 		assertThat(entry3.getValue()).isEqualTo(entry1.getValue()); //get soft expired from cache and log error //XXX how to check error log?
-		assertThat(entry3.isSoftExpired());
+		assertThat(entry3.isSoftExpired()).isTrue();
+		assertThat(entry3.isHardExpired()).isFalse();
 		assertThat(entry3.getValue()).isNotEqualTo(fetch.getLastValue());
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
 		Thread.sleep(2000); //entry hard expired
-		try {
-			cache.get(req);
-			Assert.fail("CacheLoaderException must be thrown by previous statement");
-		} catch (CacheLoaderException clx) {
-			//we want this
-			assertThat(clx.getCause()).isInstanceOf(IllegalStateException.class);
-		}
+
+		CacheEntry<String> entry4 = cache.get(req);
+		assertThat(entry4).isNotNull(); //cache miss with exception - expired null value
+		assertThat(entry4.getValue()).isNull();
+		assertThat(entry4.isSoftExpired()).isTrue();
+		assertThat(entry4.isHardExpired()).isTrue();
 		assertThat(fetch.getRequestCount()).isEqualTo(++rCounter);
 
-		fetch.setThrowException(false); //ok be nice again
+		fetch.setException(null); //allow cache entry updates again
 
-		CacheEntry<String> entry5 = cache.get(req);
+		CacheEntry<String> entry5 = cache.get(req); //reloaded fresh entry
 		assertThat(entry5.getValue()).isNotNull();
-		assertThat(entry5.isSoftExpired() == false);
+		assertThat(entry5.isSoftExpired()).isFalse();
+		assertThat(entry5.isHardExpired()).isFalse();
 		assertThat(entry5.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 
 		Thread.sleep(500); //entry still fresh
-		CacheEntry<String> entry6 = cache.get(req);
-		assertThat(entry6.getValue()).isEqualTo(entry5.getValue()); //same value from cache
-		assertThat(entry6.isSoftExpired() == false);
+
+		CacheEntry<String> entry6 = cache.get(req); //refsh from cache
+		assertThat(entry6.getValue()).isEqualTo(entry5.getValue());
+		assertThat(entry6.isSoftExpired()).isFalse();
+		assertThat(entry6.isHardExpired()).isFalse();
 		assertThat(entry6.getValue()).isEqualTo(fetch.getLastValue());
 		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
 
-		Thread.sleep(1000); //entry soft expired now
+		Thread.sleep(1000); //entry soft expired - will be reloaded 
 		CacheEntry<String> entry7 = cache.get(req);
-		assertThat(entry7.isSoftExpired());
-		assertThat(entry7.getValue()).isEqualTo(entry5.getValue()); //same value from cache
+		assertThat(entry7.isSoftExpired()).isFalse();
+		assertThat(entry7.isHardExpired()).isFalse();
+		assertThat(entry7.getValue()).isNotEqualTo(entry5.getValue()); //not previous from cache
 		assertThat(entry7.getValue()).isEqualTo(fetch.getLastValue());
-
-		Thread.sleep(50); //complete async fetch
-		assertThat(entry7.getValue()).isNotEqualTo(fetch.getLastValue());
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
-		//entry is fresh again
-		CacheEntry<String> entry8 = cache.get(req);
-		assertThat(entry8.isSoftExpired() == false);
-		assertThat(entry8.getValue()).isNotEqualTo(entry5.getValue()); //new value fetched
-		assertThat(entry8.getValue()).isEqualTo(fetch.getLastValue());
-		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
+
 		cache.close();
 	}
 
@@ -299,74 +329,92 @@ public class CacheTest {
 	 * Async never throws Exceptions but returns null
 	 */
 	@Test
-	public void testAsyncRefresh() throws Exception {
+	public void testDefaultAsyncRefresh() throws Exception {
 		SpyMemcache<String> cache = buildMemcache();
-		cache.setExecutor(executor);
+		Scheduler<String> scheduler = new Scheduler<String>(cache, executor);
+		cache.setScheduler(scheduler);
 
-		TestLoader fetch = new TestLoader();
-		CacheRequest<String> req = new CacheRequest<String>("Async", fetch, 2, 1, TimeUnit.SECONDS, RefreshMode.ASYNC);
+		TestSimpleLoader fetch = new TestSimpleLoader();
+		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch);
+		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Async").cacheFor(2, 1, TimeUnit.SECONDS)
+				.async(true, true).build();
 
 		int rCounter = 0;
-		fetch.setThrowException(true); // break it from the start
+		fetch.setException(exception); // break updates
 
-		assertThat(cache.get(req)).isNull(); //async is null returner
+		assertThat(cache.get(req)).isNull(); //null is returned and async update is started
 		Thread.sleep(50); //complete async refresh
-		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+		assertThat(++rCounter).isEqualTo(fetch.getRequestCount()); //request should be made
 
-		fetch.setThrowException(false); //let updater fetch entry into cache
+		fetch.setException(null); //allow updates
 
 		assertThat(cache.get(req)).isNull(); //still null
 		Thread.sleep(50); //complete async refresh
-		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
-		CacheEntry<String> entry1 = cache.get(req);
-		assertThat(entry1.isSoftExpired() == false);
-		assertThat(entry1.getValue()).isEqualTo(fetch.getLastValue());
 
-		fetch.setThrowException(true); //broke updater again
+		CacheEntry<String> entry1 = cache.get(req); //new cache value is asynchronously update
+		assertThat(entry1.isSoftExpired()).isFalse();
+		assertThat(entry1.isHardExpired()).isFalse();
+		assertThat(entry1.getValue()).isEqualTo(fetch.getLastValue());
+		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+
+		fetch.setException(exception); //broke updates
 
 		Thread.sleep(500);//entry still fresh
-		CacheEntry<String> entry2 = cache.get(req);
-		assertThat(entry2.isSoftExpired() == false);
-		assertThat(entry2.getValue()).isEqualTo(entry1.getValue()); //get from cache
+
+		CacheEntry<String> entry2 = cache.get(req); //fresh from cache
+		assertThat(entry2).isEqualTo(entry1);
+		assertThat(entry2.isSoftExpired()).isFalse();
+		assertThat(entry2.isHardExpired()).isFalse();
+		assertThat(entry2.getValue()).isEqualTo(entry1.getValue());
 		assertThat(entry2.getValue()).isEqualTo(fetch.getLastValue());
-		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
+		assertThat(rCounter).isEqualTo(fetch.getRequestCount()); // no new request
 
-		Thread.sleep(1000); //entry soft expired now
-		CacheEntry<String> entry3 = cache.get(req);
-		assertThat(entry3.isSoftExpired());//return soft expired - refresh is asynchronous
+		Thread.sleep(1000); //entry soft expired
+
+		CacheEntry<String> entry3 = cache.get(req); //soft expired cahce value & asynchronous update is started
+		assertThat(entry3).isEqualTo(entry1);
 		assertThat(entry3.getValue()).isEqualTo(entry1.getValue());
+		assertThat(entry3.isSoftExpired());
+		assertThat(entry3.isHardExpired());
 
-		Thread.sleep(50); //complete async refresh
-		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+		Thread.sleep(50); //complete async update
+		assertThat(++rCounter).isEqualTo(fetch.getRequestCount()); //failed update 
 
 		Thread.sleep(2000); //entry hard expired
 
-		assertThat(cache.get(req)).isNull(); //async is null returner
+		assertThat(cache.get(req)).isNull(); //async returns null & asynchronous update is started
 		Thread.sleep(50); //complete async refresh
-		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+		assertThat(++rCounter).isEqualTo(fetch.getRequestCount()); //failed update 
 
-		fetch.setThrowException(false); //be nice again
+		fetch.setException(null); //allow updates
 
-		assertThat(cache.get(req)).isNull(); //async is null returner
+		assertThat(cache.get(req)).isNull(); //async returns null & asynchronous update is started
 		Thread.sleep(50); //complete async refresh
-		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+		assertThat(++rCounter).isEqualTo(fetch.getRequestCount()); //succesful update
 
 		CacheEntry<String> entry4 = cache.get(req);
-		assertThat(entry4.isSoftExpired() == false);
+		assertThat(entry4.isSoftExpired()).isFalse();
+		assertThat(entry4.isHardExpired()).isFalse();
 		assertThat(entry4.getValue()).isEqualTo(fetch.getLastValue()); // new value in cache
-		assertThat(rCounter).isEqualTo(fetch.getRequestCount());
+		assertThat(rCounter).isEqualTo(fetch.getRequestCount()); // no new request because of fresh cache hit
 
-		Thread.sleep(1000); //entry soft expired now
-		CacheEntry<String> entry5 = cache.get(req);
-		assertThat(entry5.isSoftExpired());//return soft expired - refresh is asynchronous
+		Thread.sleep(1000); //entry soft expired
+
+		CacheEntry<String> entry5 = cache.get(req); //soft expired cache value & asynchronous update is started
 		assertThat(entry5.getValue()).isEqualTo(entry4.getValue());
+		assertThat(entry5).isEqualTo(entry4);
+		assertThat(entry5.isSoftExpired()).isTrue();
+		assertThat(entry5.isHardExpired()).isFalse();
 
 		Thread.sleep(50); //complete async refresh
-		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
+		assertThat(++rCounter).isEqualTo(fetch.getRequestCount()); //succesful update
 
 		CacheEntry<String> entry6 = cache.get(req);//cache is refreshed
-		assertThat(entry6.isSoftExpired() == false);
+		assertThat(entry6.isSoftExpired()).isFalse();
+		assertThat(entry6.isHardExpired()).isFalse();
+		assertThat(entry6.getValue()).isNotEqualTo(fetch.getLastValue());
 		assertThat(entry6.getValue()).isNotEqualTo(entry4.getValue());
+
 		cache.close();
 	}
 
@@ -376,17 +424,28 @@ public class CacheTest {
 	@Test
 	public void testScheduled() throws Exception {
 		SpyMemcache<String> cache = buildMemcache();
-		cache.setExecutor(executor);
+		Scheduler<String> scheduler = new Scheduler<String>(cache, executor);
+		cache.setScheduler(scheduler);
 
-		TestLoader fetch = new TestLoader();
-		CacheRequest<String> req = new CacheRequest<String>("Scheduled", fetch, 2, 1, TimeUnit.SECONDS,
-				RefreshMode.SCHEDULED);
+		TestSimpleLoader fetch = new TestSimpleLoader();
+		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch);
+
+		String key = "Scheduled";
+		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey(key).cacheFor(2, 1, TimeUnit.SECONDS)
+				.async(true, true).build();
+
+		assertThat(cache.getScheduler().getScheduled().size()).isEqualTo(0);
+		assertThat(cache.getScheduler().getScheduled(key)).isNull();
 
 		int rCounter = 0;
-		fetch.setThrowException(true); // break it from the start
+		fetch.setException(exception); // break updates
+
+		cache.schedule(req);
+
+		assertThat(cache.getScheduler().getScheduled().size()).isEqualTo(1);
+		assertThat(cache.getScheduler().getScheduled(key).getUserKey()).isEqualTo(req.getUserKey());
 
 		assertThat(cache.get(req)).isNull(); //null returner
-		assertThat(cache.getScheduled().size()).isEqualTo(1);
 
 		Thread.sleep(50); //scheduled refresh done (fail)
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
@@ -396,7 +455,7 @@ public class CacheTest {
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
 		assertThat(cache.get(req)).isNull(); //null returner
 
-		fetch.setThrowException(false); // be nice now
+		fetch.setException(null); // allow updates
 
 		Thread.sleep(1000);//scheduled refresh done (pass)
 		assertThat(++rCounter).isEqualTo(fetch.getRequestCount());
@@ -405,7 +464,7 @@ public class CacheTest {
 		assertThat(entry1.isSoftExpired() == false);
 		assertThat(entry1.getValue()).isEqualTo(fetch.getLastValue());
 
-		assertThat(cache.getScheduled().size()).isEqualTo(1); //resubmitted but still only one
+		assertThat(cache.getScheduler().getScheduled().size()).isEqualTo(1); //resubmitted but still only one
 		cache.close();
 	}
 
@@ -467,7 +526,7 @@ public class CacheTest {
 		return cache;
 	}
 
-	private static class TestLoader extends BaseCacheLoader<String> {
+	private static class TestSimpleLoader implements SimpleLoader<String> {
 
 		private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -475,18 +534,22 @@ public class CacheTest {
 
 		private String lastValue = null;
 
-		private boolean throwException = false;
+		private Exception exception = null;
 
-		public void setThrowException(boolean throwException) {
-			this.throwException = throwException;
+		public void setException(Exception exception) {
+			this.exception = exception;
+		}
+
+		public TestSimpleLoader() {
+
 		}
 
 		@Override
-		public String doLoad(CacheRequest<String> request, CacheEntry<String> softExpiredEntry) {
+		public String load() throws Exception {
 			rCounter.incrementAndGet();
 			lastValue = new SimpleDateFormat("dd.MM.yyyy'T'HH:mm:ss.SSS").format(new Date());
-			if (throwException) {
-				throw new IllegalStateException("I'm baaad. I'm baaad.");
+			if (exception != null) {
+				throw exception;
 			}
 			return lastValue;
 		}
@@ -497,11 +560,6 @@ public class CacheTest {
 
 		public int getRequestCount() {
 			return rCounter.get();
-		}
-
-		@Override
-		protected Logger getLogger() {
-			return logger;
 		}
 
 	};

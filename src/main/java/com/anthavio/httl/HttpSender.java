@@ -50,10 +50,6 @@ import com.anthavio.httl.util.Cutils;
  */
 public abstract class HttpSender implements SenderOperations, Closeable {
 
-	public static enum NullValueHandling {
-		SKIP_IGNORE, EMPTY_STRING;
-	}
-
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final HttpSenderConfig config;

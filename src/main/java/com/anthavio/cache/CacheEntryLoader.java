@@ -1,28 +1,51 @@
 package com.anthavio.cache;
 
-import org.slf4j.Logger;
-
-import com.anthavio.cache.Cache.RefreshMode;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public interface CacheEntryLoader<V> {
+public abstract class CacheEntryLoader<V> {
 
 	/**
-	 * Implementation should handle differently calls for different RefreshMode
-	 * RefreshMode.BLOCK
-	 * - Exceptions can be thrown as they are passed to the caller
+	 * To be implemented by subclass
 	 * 
-	 * RefreshMode.ASYNC and RefreshMode.SCHEDULE
-	 * - handle Exceptions as required
-	 * - return null or soft expired value
-	 * 
-	 * @param softExpired is NOT null only for Soft expired cache entry refresh. Allows to return expired value on failure
+	 * @param request
+	 * @param async - flag of asynchronous execution
+	 * @param expiredEntry - null on missing entry load
+	 * @return
+	 * @throws Exception
 	 */
-	public LoadResult<V> load(CacheRequest<V> request, CacheEntry<V> softExpired);
+	protected abstract CacheEntryLoadResult<V> load(CacheLoadRequest<V> request, boolean async, CacheEntry<V> expiredEntry)
+			throws Exception;
+
+	public static class CacheEntryLoadResult<V> extends CacheEntry<V> {
+
+		private static final long serialVersionUID = 1L;
+
+		private final boolean cached;
+
+		public CacheEntryLoadResult(V value, Date since, long hardTtl, long softTtl, TimeUnit unit, boolean cached) {
+			super(value, since, hardTtl, softTtl, unit);
+			this.cached = cached;
+		}
+
+		public CacheEntryLoadResult(V value, CacheLoadRequest<V> request, boolean cached) {
+			this(value, new Date(), request.getHardTtl(), request.getSoftTtl(), TimeUnit.SECONDS, cached);
+		}
+
+		public CacheEntryLoadResult(V value, CacheEntry<V> expiredEntry, boolean cached) {
+			this(value, expiredEntry.getCreated(), expiredEntry.getHardTtl(), expiredEntry.getSoftTtl(), TimeUnit.SECONDS,
+					cached);
+		}
+
+		public boolean getCached() {
+			return cached;
+		}
+	}
 
 	/**
 	 * @author martin.vanek
@@ -31,114 +54,96 @@ public interface CacheEntryLoader<V> {
 	 */
 	public static class LoadResult<V> {
 
-		private final V value;
+		/**
+		 * Return null value and also store it in cache 
+		 */
+		public static final LoadResult<?> NULL_CACHED = new LoadResult(null, true);
 
-		//true if value should be put into cache
-		private final boolean cacheable;
+		/**
+		 * Return null value but do not cache it
+		 */
+		public static final LoadResult<?> NULL_RETURN = new LoadResult(null, false);
 
-		public LoadResult(V value, boolean cacheable) {
-			this.value = value;
-			this.cacheable = cacheable;
+		private final CacheEntry<V> value;
+
+		private final boolean cache; //value is to be cached
+
+		public static <V> LoadResult<V> Cache(CacheEntry<V> value, boolean cached) {
+			return new LoadResult<V>(value, cached);
 		}
 
-		public V getValue() {
+		/**
+		 * @param value to be returned
+		 * @param cache true - value should be cached, false - value is returned but not cached 
+		 */
+		public LoadResult(CacheEntry<V> value, boolean cache) {
+			this.value = value;
+			this.cache = cache;
+		}
+
+		public CacheEntry<V> getValue() {
 			return value;
 		}
 
-		public boolean isCacheable() {
-			return cacheable;
-		}
-
-	}
-
-	public static enum ExceptionMode {
-		RETHROW, //Throw CacheLoaderException exception
-		LOG_STACK, //Exception logged with full stack trace (WARN level)
-		LOG_MESSAGE; //Exception logged as single line message (WARN level) 
-	}
-
-	/**
-	 * Easy to use CacheEntryLoader base implementation. Just provide getLogger() and doLoad() methods... 
-	 * 
-	 * @author martin.vanek
-	 *
-	 * @param <V>
-	 */
-	public static abstract class BaseCacheLoader<V> implements CacheEntryLoader<V> {
-
-		private boolean returnExpiredOnError = true;
-
-		private boolean cacheExpiredOnError = false;
-
-		private ExceptionMode syncExceptionMode = ExceptionMode.RETHROW;
-
-		private ExceptionMode asyncExceptionMode = ExceptionMode.LOG_STACK;
-
-		public BaseCacheLoader() {
-			//defaults...
-		}
-
-		public BaseCacheLoader(ExceptionMode syncExceptionMode, ExceptionMode asyncExceptionMode) {
-			this(true, false, syncExceptionMode, asyncExceptionMode);
-		}
-
-		public BaseCacheLoader(boolean returnExpiredOnError, boolean cacheExpiredOnError, ExceptionMode syncExceptionMode,
-				ExceptionMode asyncExceptionMode) {
-			this.returnExpiredOnError = returnExpiredOnError;
-			this.cacheExpiredOnError = cacheExpiredOnError;
-			this.syncExceptionMode = syncExceptionMode;
-			this.asyncExceptionMode = asyncExceptionMode;
+		public boolean isCache() {
+			return cache;
 		}
 
 		@Override
-		public LoadResult<V> load(CacheRequest<V> request, CacheEntry<V> softExpired) throws CacheLoaderException {
-			LoadResult<V> result;
-			try {
-				V value = doLoad(request, softExpired);
-				return new LoadResult<V>(value, true);
-			} catch (Exception x) {
-				ExceptionMode xMode;
-				if (request.getRefreshMode() == RefreshMode.BLOCK || request.getRefreshMode() == RefreshMode.RETURN) {
-					xMode = syncExceptionMode;
-				} else { //ASYNC & SCHEDULED
-					xMode = asyncExceptionMode;
-				}
-
-				if (xMode == ExceptionMode.RETHROW) {
-					throw new CacheLoaderException(x, request);
-				} else {
-					log(xMode, x, request);
-					if (returnExpiredOnError && softExpired != null) {
-						result = new LoadResult<V>(softExpired.getValue(), cacheExpiredOnError);
-					} else {
-						result = null;
-					}
-				}
-
-			}
-			return result;
+		public String toString() {
+			return "LoadResult [value=" + value + ", cached=" + cache + "]";
 		}
 
-		protected void log(ExceptionMode mode, Exception x, CacheRequest<V> request) {
-			if (asyncExceptionMode == ExceptionMode.LOG_MESSAGE) {
-				getLogger().warn("Request: " + request + " failed: " + x);
-			} else if (asyncExceptionMode == ExceptionMode.LOG_STACK) {
-				getLogger().warn("Request " + request + " failed", x);
-			}
+	}
 
-		}
+	public static interface LoadMissingExceptionHandler {
 
 		/**
-		 * @return Logger for errors
-		 */
-		protected abstract Logger getLogger();
-
-		/**
-		 * Meant to be implemented by subclass...
+		 * Callback method - executed when Exception happends when Loading expired cache entry
 		 * 
-		 * returned null is treated as regular value and will be cached
+		 * @param exception - To be handled. Thrown from CacheEntryLoader load method
+		 * @param async - flag indicating synchronous/asynchronous execution of load method
+		 * @param cache - background cache
+		 * @throws Exception
 		 */
-		protected abstract V doLoad(CacheRequest<V> request, CacheEntry<V> softExpired) throws Exception;
+		public void handle(Exception exception, boolean async, CacheBase<?> cache) throws Exception;
+
+	}
+
+	public static interface LoadExpiredExceptionHandler {
+
+		/**
+		 * Callback method - executed when Exception happends when Loading expired cache entry
+		 * 
+		 * @param exception - To be handled. Thrown from CacheEntryLoader load method
+		 * @param async - flag indicating synchronous/asynchronous execution of load method
+		 * @param cache - background cache
+		 * @param expired - previous expired cache entry 
+		 * @throws Exception
+		 */
+		public void handle(Exception exception, boolean async, CacheBase<?> cache, CacheEntry<?> expired) throws Exception;
+
+	}
+
+	public static class DefaultLoadExceptionHandler implements LoadExpiredExceptionHandler, LoadMissingExceptionHandler {
+
+		@Override
+		public void handle(Exception exception, boolean async, CacheBase<?> cache, CacheEntry<?> expired) throws Exception {
+			if (async) {
+				throw exception;
+			} else {
+				throw exception;
+			}
+		}
+
+		public void handle(Exception exception, boolean async, CacheBase<?> cache) throws Exception {
+			if (async) {
+				throw exception;
+			} else {
+				throw exception;
+			}
+		}
+
 	}
 
 	/**
@@ -147,18 +152,18 @@ public interface CacheEntryLoader<V> {
 	 * @author martin.vanek
 	 *
 	 */
-	public class CacheLoaderException extends RuntimeException {
+	public static class CacheLoaderException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
 
-		private final CacheRequest<?> request;
+		private final CacheLoadRequest<?> request;
 
-		public CacheLoaderException(Exception x, CacheRequest<?> request) {
+		public CacheLoaderException(Exception x, CacheLoadRequest<?> request) {
 			super(x);
 			this.request = request;
 		}
 
-		public CacheRequest<?> getRequest() {
+		public CacheLoadRequest<?> getRequest() {
 			return request;
 		}
 

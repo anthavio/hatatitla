@@ -181,8 +181,8 @@ public class MarshallingExtractingTest {
 
 		CacheBase<Object> cache = new HeapMapCache<Object>();
 		CachingExtractor cextractor = new CachingExtractor(sender, cache);
-		CachingExtractorRequest<String> crequest = cextractor.request(request).softTTL(1, TimeUnit.MINUTES)
-				.hardTTL(2, TimeUnit.MINUTES).build(String.class);
+		CachingExtractorRequest<String> crequest = cextractor.from(request).hardTtl(2, TimeUnit.MINUTES).softTtl(1, TimeUnit.MINUTES)
+				.build(String.class);
 
 		CacheEntry<String> extract2 = cextractor.extract(crequest);
 		System.out.println(extract2);

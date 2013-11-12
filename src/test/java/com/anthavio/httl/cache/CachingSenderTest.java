@@ -16,7 +16,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.anthavio.cache.Cache.RefreshMode;
+import com.anthavio.cache.Cache.LoadMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.HeapMapCache;
@@ -99,7 +99,7 @@ public class CachingSenderTest {
 		CachingSender csender = newCachingSender(server.getHttpPort());
 		SenderRequest request = new GetRequest("/cs").addParameter("sleep", 0);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
-		CachingRequest crequest = new CachingRequest(request, 4, 2, TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
+		CachingSenderRequest crequest = new CachingSenderRequest(request, 4, 2, TimeUnit.SECONDS, LoadMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
 		assertThat(csender.execute(crequest)).isNull();

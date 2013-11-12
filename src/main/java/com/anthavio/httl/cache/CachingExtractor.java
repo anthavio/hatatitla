@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.anthavio.cache.Cache.RefreshMode;
+import com.anthavio.cache.Cache.LoadMode;
 import com.anthavio.cache.CacheBase;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.httl.HttpSender;
 import com.anthavio.httl.SenderRequest;
-import com.anthavio.httl.cache.CachingRequestBuilders.CachingExtractorRequestBuilder;
+import com.anthavio.httl.cache.Builders.CachingExtractorRequestBuilder;
 import com.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 /**
@@ -127,7 +127,7 @@ public class CachingExtractor {
 	/**
 	 * Start fluent builder
 	 */
-	public <T> CachingExtractorRequestBuilder request(SenderRequest request) {
+	public CachingExtractorRequestBuilder from(SenderRequest request) {
 		return new CachingExtractorRequestBuilder(this, request);
 	}
 
@@ -135,7 +135,7 @@ public class CachingExtractor {
 	 * Custom cache key from request (if exist) takes precedence
 	 * Otherwise key derived from request URL is used
 	 */
-	protected String getCacheKey(CachingRequest request) {
+	protected String getCacheKey(CachingSenderRequest request) {
 		String cacheKey = request.getCacheKey();
 		if (cacheKey == null) {
 			cacheKey = sender.getCacheKey(request.getSenderRequest());
@@ -156,15 +156,15 @@ public class CachingExtractor {
 			} else {
 				//soft expired - refresh needed
 				logger.debug("Soft expired " + cacheKey);
-				RefreshMode mode = request.getRefreshMode();
-				if (mode == RefreshMode.BLOCK) {
+				LoadMode mode = request.getRefreshMode();
+				if (mode == LoadMode.STRICT) {
 					//logger.debug("Sync refresh start " + cacheKey);
 					return refresh(cacheKey, request);
-				} else if (mode == RefreshMode.ASYNC || mode == RefreshMode.RETURN) {
+				} else if (mode == LoadMode.ASYNC || mode == LoadMode.RETURN) {
 					asyncRefresh(cacheKey, request); //start asynchronous refresh
 					logger.debug("Soft expired value returned " + cacheKey);
 					return entry; //return soft expired value
-				} else if (mode == RefreshMode.SCHEDULED) {
+				} else if (mode == LoadMode.SCHEDULED) {
 					if (scheduled.get(cacheKey) == null) {
 						asyncRefresh(cacheKey, request);
 						addScheduled(cacheKey, request);
@@ -176,13 +176,13 @@ public class CachingExtractor {
 				}
 			}
 		} else { //cache miss - we have nothing
-			RefreshMode mode = request.getRefreshMode();
-			if (mode == RefreshMode.BLOCK || mode == RefreshMode.RETURN) {
+			LoadMode mode = request.getRefreshMode();
+			if (mode == LoadMode.STRICT || mode == LoadMode.RETURN) {
 				return refresh(cacheKey, request);
-			} else if (mode == RefreshMode.ASYNC) {
+			} else if (mode == LoadMode.ASYNC) {
 				asyncRefresh(cacheKey, request);
 				return null;
-			} else if (mode == RefreshMode.SCHEDULED) {
+			} else if (mode == LoadMode.SCHEDULED) {
 				if (scheduled.get(cacheKey) == null) {
 					asyncRefresh(cacheKey, request);
 					addScheduled(cacheKey, request);
@@ -248,7 +248,7 @@ public class CachingExtractor {
 	}
 
 	/**
-	 * Runnable for {@link RefreshMode#ASYNC}
+	 * Runnable for {@link LoadMode#ASYNC}
 	 * 
 	 */
 	private class RefreshRunnable<T> implements Runnable {
@@ -277,7 +277,7 @@ public class CachingExtractor {
 	}
 
 	/**
-	 * Thread for {@link RefreshMode#SCHEDULED}
+	 * Thread for {@link LoadMode#SCHEDULED}
 	 * 
 	 * @author martin.vanek
 	 *

@@ -11,7 +11,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.anthavio.cache.Cache.RefreshMode;
+import com.anthavio.cache.Cache.LoadMode;
 import com.anthavio.cache.CacheEntry;
 import com.anthavio.cache.HeapMapCache;
 import com.anthavio.httl.GetRequest;
@@ -145,7 +145,7 @@ public class CachingExtractorTest {
 		SenderRequest request = new GetRequest("/").addParameter("sleep", 1);
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.SCHEDULED); //automatic updates!
+				TimeUnit.SECONDS, LoadMode.SCHEDULED); //automatic updates!
 
 		final int initialCount = server.getRequestCount();
 		assertThat(cextractor.extract(cerequest)).isNull(); //scheduled is null returer
@@ -181,7 +181,7 @@ public class CachingExtractorTest {
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.ASYNC); //asynchronous updates!
+				TimeUnit.SECONDS, LoadMode.ASYNC); //asynchronous updates!
 
 		final int initialCount = server.getRequestCount();
 
@@ -258,7 +258,7 @@ public class CachingExtractorTest {
 		SenderRequest request = new GetRequest("/");
 		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(request, extractor, 2, 1,
-				TimeUnit.SECONDS, RefreshMode.ASYNC); //asynchronous updates!
+				TimeUnit.SECONDS, LoadMode.ASYNC); //asynchronous updates!
 
 		//request must spent some time in server
 		cerequest.getSenderRequest().addParameter("sleep", 1);
