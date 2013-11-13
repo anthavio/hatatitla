@@ -1,8 +1,5 @@
 package com.anthavio.cache;
 
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,8 +57,8 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 */
 	public static enum CacheValue {
 		DONT, // do not cache 
-		EXPIRED, // cache as expired entry
-		FRESH; // cache as fresh entry
+		EXPIRED, // cache as soft expired entry
+		REQUEST; // cache as fresh entry from request TTLs
 	}
 
 	public static class MissingExceptionSettings {
@@ -217,7 +214,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 			} else {
 				value = loadExpired(request, async, expiredEntry);
 			}
-			return new CacheEntryLoadResult<V>(value, request, true);
+			return new CacheEntryLoadResult<V>(true, value, request.getHardTtl(), request.getSoftTtl());
 		} catch (Exception x) {
 			if (expiredEntry == null) {
 				MissingExceptionSettings msettings = async ? asynMissing : syncMissing;
@@ -269,14 +266,13 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		CacheEntryLoadResult<V> entry;
 		switch (settings.cacheOn) {
 		case DONT:
-			entry = new CacheEntryLoadResult<V>(value, new Date(), -1, -1, TimeUnit.SECONDS, false);
+			entry = new CacheEntryLoadResult<V>(false, value, request.getHardTtl(), request.getSoftTtl());
 			break;
 		case EXPIRED:
-			entry = new CacheEntryLoadResult<V>(value, new Date(), request.getHardTtl(), -1, TimeUnit.SECONDS, true);
+			entry = new CacheEntryLoadResult<V>(true, value, request.getHardTtl(), -1);
 			break;
-		case FRESH:
-			entry = new CacheEntryLoadResult<V>(value, new Date(), request.getHardTtl(), request.getSoftTtl(),
-					TimeUnit.SECONDS, true);
+		case REQUEST:
+			entry = new CacheEntryLoadResult<V>(true, value, request.getHardTtl(), request.getSoftTtl());
 			break;
 		default:
 			throw new IllegalStateException("Unsupported switch value " + settings.cacheOn);
@@ -310,13 +306,14 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		CacheEntryLoadResult<V> entry;
 		switch (settings.cacheOn) {
 		case DONT:
-			entry = new CacheEntryLoadResult<V>(value, expiredEntry, false);
+			entry = new CacheEntryLoadResult<V>(false, value, expiredEntry.getHardTtl(), expiredEntry.getSoftTtl());
+			entry.setCached(expiredEntry.getCached());
 			break;
 		case EXPIRED:
-			entry = new CacheEntryLoadResult<V>(value, expiredEntry, true);
+			entry = new CacheEntryLoadResult<V>(true, value, expiredEntry.getHardTtl(), -1);
 			break;
-		case FRESH:
-			entry = new CacheEntryLoadResult<V>(value, request, true);
+		case REQUEST:
+			entry = new CacheEntryLoadResult<V>(true, value, request.getHardTtl(), request.getSoftTtl());
 			break;
 		default:
 			throw new IllegalStateException("Unsupported switch value " + settings.cacheOn);

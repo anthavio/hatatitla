@@ -3,69 +3,42 @@ package com.anthavio.cache;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class CacheEntry<T> implements Serializable {
+public class CacheEntry<V> implements Serializable {
+
+	public static final CacheEntry EMPTY = new CacheEntry(null, -1, -1);
 
 	private static final long serialVersionUID = 1L;
 
-	private final T value;
+	private final V value;
 
-	private final Date created; //when entry was added
+	private Date cached; //when entry was added
 
 	private final long hardTtl; //seconds - entry will disapear after
 
 	private final long softTtl; //seconds - we must revalidate after - static value or server expiry 
 
 	/**
-	 * Simplest possible: hardTTL is equal to softTTL in seconds
-	public CacheEntry(T value, long ttlSeconds) {
-		this(value, ttlSeconds, ttlSeconds);
-	}
-	*/
-
-	/**
-	 * Simplest possible -  hardTTL is equal to softTTL
-	public CacheEntry(T value, long ttl, TimeUnit unit) {
-		this(value, ttl, ttl, unit);
-	}
-	 */
-
-	public CacheEntry(T value, CacheEntry<T> expired) {
-		this(value, expired.getCreated(), expired.getHardTtl(), expired.getSoftTtl(), TimeUnit.SECONDS);
-	}
-
-	/**
-	 * TTLs unit is seconds
-	*/
-	public CacheEntry(T value, long hardTtlSeconds, long softTtlSeconds) {
-		this(value, new Date(), hardTtlSeconds, softTtlSeconds, TimeUnit.SECONDS);
-	}
-
-	/**
 	 * TTLs unit is parameter
 	 * 
-	 * @param value - can be null
-	 * @param hardTtl - eviction time
-	 * @param softTtl - stale content time
-	 * @param unit
+	 * @param value - to be cached, can be null
+	 * @param hardTtl - cache eviction time in seconds
+	 * @param softTtl - stale content time in seconds
 	 */
-	public CacheEntry(T value, Date since, long hardTtl, long softTtl, TimeUnit unit) {
+	public CacheEntry(V value, long hardTtl, long softTtl) {
 		//can be null
 		this.value = value;
 
-		this.created = since;
+		// can be negative
+		this.hardTtl = hardTtl;
 
 		// can be negative
-		this.hardTtl = unit.toSeconds(hardTtl);
-
-		// can be negative
-		this.softTtl = unit.toSeconds(softTtl);
+		this.softTtl = softTtl;
 
 		if (this.softTtl > 0 && this.hardTtl < this.softTtl) {
 			throw new IllegalArgumentException("hardTtl " + this.hardTtl + " must be > softTtl " + this.softTtl);
@@ -73,19 +46,31 @@ public class CacheEntry<T> implements Serializable {
 	}
 
 	public boolean isSoftExpired() {
-		return created.getTime() + (softTtl * 1000) < System.currentTimeMillis();
+		if (cached != null) {
+			return cached.getTime() + (softTtl * 1000) < System.currentTimeMillis();
+		} else {
+			return true;
+		}
 	}
 
 	public boolean isHardExpired() {
-		return created.getTime() + (hardTtl * 1000) < System.currentTimeMillis();
+		if (cached != null) {
+			return cached.getTime() + (hardTtl * 1000) < System.currentTimeMillis();
+		} else {
+			return true;
+		}
 	}
 
-	public T getValue() {
+	public V getValue() {
 		return this.value;
 	}
 
-	public Date getCreated() {
-		return this.created;
+	public Date getCached() {
+		return this.cached;
+	}
+
+	protected final void setCached(Date cached) {
+		this.cached = cached;
 	}
 
 	/**
@@ -96,7 +81,7 @@ public class CacheEntry<T> implements Serializable {
 	}
 
 	public long getSoftExpire() {
-		return created.getTime() + (softTtl * 1000);
+		return cached.getTime() + (softTtl * 1000);
 	}
 
 	/**
@@ -107,14 +92,14 @@ public class CacheEntry<T> implements Serializable {
 	}
 
 	public long getHardExpire() {
-		return created.getTime() + (hardTtl * 1000);
+		return cached.getTime() + (hardTtl * 1000);
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((created == null) ? 0 : created.hashCode());
+		result = prime * result + ((cached == null) ? 0 : cached.hashCode());
 		result = prime * result + (int) (hardTtl ^ (hardTtl >>> 32));
 		result = prime * result + (int) (softTtl ^ (softTtl >>> 32));
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
@@ -130,10 +115,10 @@ public class CacheEntry<T> implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		CacheEntry<?> other = (CacheEntry<?>) obj;
-		if (created == null) {
-			if (other.created != null)
+		if (cached == null) {
+			if (other.cached != null)
 				return false;
-		} else if (!created.equals(other.created))
+		} else if (!cached.equals(other.cached))
 			return false;
 		if (hardTtl != other.hardTtl)
 			return false;
@@ -156,8 +141,12 @@ public class CacheEntry<T> implements Serializable {
 		if (value.length() > 100) {
 			value = value.substring(0, 100) + "...";
 		}
-		return "CacheEntry [since=" + sdf.format(created) + ", hard=" + sdf.format(new Date(getHardExpire())) + ", soft="
-				+ sdf.format(new Date(getSoftExpire())) + ", value=" + value + "]";
+		if (cached != null) {
+			return "CacheEntry [cached=" + sdf.format(cached) + ", hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", value="
+					+ value + "]";
+		} else {
+			return "CacheEntry [cached=, hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", value=" + value + "]";
+		}
 	}
 
 }

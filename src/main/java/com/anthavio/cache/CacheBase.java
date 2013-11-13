@@ -96,7 +96,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	@Override
 	public Boolean set(String userKey, V data, long timeToLive, TimeUnit unit) {
 		long ttlSeconds = unit.toSeconds(timeToLive);
-		CacheEntry<V> entry = new CacheEntry<V>(data, new Date(), ttlSeconds, ttlSeconds, TimeUnit.SECONDS);
+		CacheEntry<V> entry = new CacheEntry<V>(data, ttlSeconds, ttlSeconds);
 		return set(userKey, entry);
 	}
 
@@ -113,8 +113,10 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			throw new IllegalArgumentException("Hard TTL " + entry.getHardTtl() + "is < 1");
 		}
 		try {
+			entry.setCached(new Date());
 			return doSet(cacheKey, entry);
 		} catch (Exception x) {
+			entry.setCached(null);
 			logger.warn("Failed to set: " + userKey + " (" + cacheKey + ")", x);
 			return Boolean.FALSE;
 		}
@@ -168,7 +170,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		} else { //cache miss - we have nothing
 			if (request.isMissingLoadAsync()) {
 				scheduler.startReload(request, null);
-				return null;
+				return CacheEntry.EMPTY;
 			} else {
 				return load(false, request, null);
 			}
@@ -183,7 +185,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		String userKey = request.getUserKey();
 		try {
 			entry = request.getLoader().load(request, async, expiredEntry);
-			if (entry.getCached()) {
+			if (entry.getCacheSet()) {
 				set(request.getUserKey(), entry);
 			}
 			if (request instanceof ScheduledRequest) {
