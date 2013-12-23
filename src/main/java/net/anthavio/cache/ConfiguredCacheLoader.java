@@ -9,24 +9,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
-	/*
-		public static class ConfiguredCacheLoaderBuilder<V> {
-
-			private final SimpleLoader<V> loader;
-
-			public ConfiguredCacheLoaderBuilder(SimpleLoader<V> loader) {
-				this.loader = loader;
-			}
-		}
-
-		public ConfiguredCacheLoader<V> onMissing() {
-			return this;
-		}
-
-		public ConfiguredCacheLoader<V> onExpired() {
-			return this;
-		}
-	*/
 
 	/**
 	 * What to log on entry load exception
@@ -61,24 +43,30 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		REQUEST; // cache as fresh entry from request TTLs
 	}
 
-	public static class MissingErrorSettings {
+	/**
+	 * Recipe what to do on exception when loading missing cache value (cached value NOT available) 
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static class MisingFailedRecipe {
 
 		/**
-		 * dont log & throw exception
+		 * Preconfigured: dont log & throw exception
 		 */
-		public static final MissingErrorSettings SYNC_STRICT = new MissingErrorSettings(LogErrorAs.NOTHING,
+		public static final MisingFailedRecipe SYNC_STRICT = new MisingFailedRecipe(LogErrorAs.NOTHING,
 				MissingReturn.EXCEPTION, CacheReturned.DONT);
 
 		/**
-		 * log stacktrace & return null & dont cache
+		 * Preconfigured: log stacktrace & return null & dont cache
 		 */
-		public static final MissingErrorSettings ASYN_STRICT = new MissingErrorSettings(LogErrorAs.STACKTRACE,
+		public static final MisingFailedRecipe ASYN_STRICT = new MisingFailedRecipe(LogErrorAs.STACKTRACE,
 				MissingReturn.NULL, CacheReturned.DONT);
 
 		/**
-		 * log mesage & return null & dont cache
+		 * Preconfigured: log mesage & return null & dont cache
 		 */
-		public static final MissingErrorSettings SYNC_NULL = new MissingErrorSettings(LogErrorAs.MESSAGE,
+		public static final MisingFailedRecipe SYNC_NULL = new MisingFailedRecipe(LogErrorAs.MESSAGE,
 				MissingReturn.NULL, CacheReturned.DONT);
 
 		private final LogErrorAs logAs;
@@ -87,9 +75,20 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 
 		private final CacheReturned cacheAs;
 
-		public MissingErrorSettings(LogErrorAs logAs, MissingReturn returnAs, CacheReturned cacheAs) {
+		public MisingFailedRecipe(LogErrorAs logAs, MissingReturn returnAs, CacheReturned cacheAs) {
+			if (logAs == null) {
+				throw new IllegalArgumentException("Null LogErrorAs");
+			}
 			this.logAs = logAs;
+
+			if (returnAs == null) {
+				throw new IllegalArgumentException("Null MissingReturn");
+			}
 			this.returnAs = returnAs;
+
+			if (cacheAs == null) {
+				throw new IllegalArgumentException("Null CacheReturned");
+			}
 			this.cacheAs = cacheAs;
 		}
 
@@ -107,15 +106,21 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 
 	}
 
-	public static class ExpiredErrorSettings {
+	/**
+	 * Recipe what to do on exception when loading soft expired cache value (cached value IS available)
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	public static class ExpiredFailedRecipe {
 
-		public static final ExpiredErrorSettings SYNC_STRICT = new ExpiredErrorSettings(LogErrorAs.NOTHING,
+		public static final ExpiredFailedRecipe SYNC_STRICT = new ExpiredFailedRecipe(LogErrorAs.NOTHING,
 				ExpiredReturn.EXCEPTION, CacheReturned.DONT);
 
-		public static final ExpiredErrorSettings SYNC_RETURN = new ExpiredErrorSettings(LogErrorAs.MESSAGE,
+		public static final ExpiredFailedRecipe SYNC_RETURN = new ExpiredFailedRecipe(LogErrorAs.MESSAGE,
 				ExpiredReturn.EXPIRED, CacheReturned.DONT);
 
-		public static final ExpiredErrorSettings ASYN_STRICT = new ExpiredErrorSettings(LogErrorAs.STACKTRACE,
+		public static final ExpiredFailedRecipe ASYN_STRICT = new ExpiredFailedRecipe(LogErrorAs.STACKTRACE,
 				ExpiredReturn.EXPIRED, CacheReturned.DONT);
 
 		private final LogErrorAs logErrorAs;
@@ -124,7 +129,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 
 		private final CacheReturned cacheAs;
 
-		public ExpiredErrorSettings(LogErrorAs logOn, ExpiredReturn returnOn, CacheReturned cacheOn) {
+		public ExpiredFailedRecipe(LogErrorAs logOn, ExpiredReturn returnOn, CacheReturned cacheOn) {
 			this.logErrorAs = logOn;
 			this.returnAs = returnOn;
 			this.cacheAs = cacheOn;
@@ -158,32 +163,27 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 
 	private final SimpleLoader<V> loader;
 
-	protected final MissingErrorSettings msettings;
+	protected final MisingFailedRecipe msettings;
 
-	protected final ExpiredErrorSettings esettings;
-
-	//protected final MissingExceptionSettings asynMissing;
-
-	//protected final ExpiredExceptionSettings asynExpired;
+	protected final ExpiredFailedRecipe esettings;
 
 	/**
 	 * Create with default exception settings 
 	 */
 	public ConfiguredCacheLoader(SimpleLoader<V> loader) {
-		this(loader, MissingErrorSettings.SYNC_STRICT, ExpiredErrorSettings.SYNC_STRICT);
+		this(loader, MisingFailedRecipe.SYNC_STRICT, ExpiredFailedRecipe.SYNC_STRICT);
 	}
 
 	/**
 	 * Create with custom exception settings
 	 * 
 	 */
-	public ConfiguredCacheLoader(SimpleLoader<V> loader, MissingErrorSettings msettings, ExpiredErrorSettings esettings) {
+	public ConfiguredCacheLoader(SimpleLoader<V> loader, MisingFailedRecipe missSettings,
+			ExpiredFailedRecipe expSettings) {
 		this.loader = loader;
 		this.logger = LoggerFactory.getLogger(loader.getClass());
-		this.msettings = msettings;
-		this.esettings = esettings;
-		//this.asynMissing = asynMissing;
-		//this.asynExpired = asynExpired;
+		this.msettings = missSettings;
+		this.esettings = expSettings;
 	}
 
 	/**
@@ -257,7 +257,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @param request
 	 * @return
 	 */
-	protected CacheEntryLoadResult<V> getMissingResult(Exception exception, MissingErrorSettings settings,
+	protected CacheEntryLoadResult<V> getMissingResult(Exception exception, MisingFailedRecipe settings,
 			CacheLoadRequest<V> request) {
 		V value;
 		switch (settings.returnAs) {
@@ -294,7 +294,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @param expiredEntry - previous expired cache entry
 	 * @return
 	 */
-	protected CacheEntryLoadResult<V> getExpiredResult(Exception exception, ExpiredErrorSettings settings,
+	protected CacheEntryLoadResult<V> getExpiredResult(Exception exception, ExpiredFailedRecipe settings,
 			CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
 		V value;
 		switch (settings.returnAs) {

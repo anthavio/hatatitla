@@ -1,17 +1,5 @@
 package net.anthavio.httl;
 
-import java.util.concurrent.ThreadPoolExecutor;
-
-import net.anthavio.cache.HeapMapCache;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.HttpURLSender;
-import net.anthavio.httl.async.ExecutorServiceBuilder;
-import net.anthavio.httl.cache.CachedResponse;
-import net.anthavio.httl.cache.CachingExtractor;
-import net.anthavio.httl.cache.CachingSender;
-
-
 /**
  * 
  * @author martin.vanek
@@ -34,29 +22,30 @@ public class DevelopmentTest {
 			}
 		}
 	}
+	/*
+		private static CachingExtractor newExtractorSender(int port) {
+			String url = "http://localhost:" + port;
+			HttpSender sender = new HttpURLSender(url);
+			//HttpSender sender = new HttpClient4Sender(url);
+			HeapMapCache<Object> cache = new HeapMapCache<Object>();
+			CachingExtractor csender = new CachingExtractor(sender, cache);
 
-	private static CachingExtractor newExtractorSender(int port) {
-		String url = "http://localhost:" + port;
-		HttpSender sender = new HttpURLSender(url);
-		//HttpSender sender = new HttpClient4Sender(url);
-		HeapMapCache<Object> cache = new HeapMapCache<Object>();
-		CachingExtractor csender = new CachingExtractor(sender, cache);
+			ThreadPoolExecutor executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0)
+					.setMaximumPoolSize(1).setMaximumQueueSize(0).build();
+			csender.setExecutor(executor);
+			return csender;
+		}
 
-		ThreadPoolExecutor executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0)
-				.setMaximumPoolSize(1).setMaximumQueueSize(0).build();
-		csender.setExecutor(executor);
-		return csender;
-	}
-
-	private static CachingSender newCachedSender(int port) {
-		String url = "http://localhost:" + port;
-		//HttpSender sender = new SimpleHttpSender(url);
-		HttpSender sender = new HttpClient4Sender(url);
-		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
-		CachingSender csender = new CachingSender(sender, cache);
-		ThreadPoolExecutor executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0)
-				.setMaximumPoolSize(1).setMaximumQueueSize(0).build();
-		csender.setExecutor(executor);
-		return csender;
-	}
+		private static CachingSender newCachedSender(int port) {
+			String url = "http://localhost:" + port;
+			//HttpSender sender = new SimpleHttpSender(url);
+			HttpSender sender = new HttpClient4Sender(url);
+			HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+			CachingSender csender = new CachingSender(sender, cache);
+			ThreadPoolExecutor executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0)
+					.setMaximumPoolSize(1).setMaximumQueueSize(0).build();
+			csender.setExecutor(executor);
+			return csender;
+		}
+		*/
 }

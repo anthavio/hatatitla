@@ -21,10 +21,10 @@ import net.anthavio.cache.Scheduler;
 import net.anthavio.cache.SpyMemcache;
 import net.anthavio.cache.CacheEntryLoader.CacheLoaderException;
 import net.anthavio.cache.ConfiguredCacheLoader.CacheReturned;
-import net.anthavio.cache.ConfiguredCacheLoader.ExpiredErrorSettings;
+import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredReturn;
 import net.anthavio.cache.ConfiguredCacheLoader.LogErrorAs;
-import net.anthavio.cache.ConfiguredCacheLoader.MissingErrorSettings;
+import net.anthavio.cache.ConfiguredCacheLoader.MisingFailedRecipe;
 import net.anthavio.cache.ConfiguredCacheLoader.MissingReturn;
 import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
@@ -252,8 +252,8 @@ public class CacheTest {
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
 
-		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, MissingErrorSettings.SYNC_NULL,
-				ExpiredErrorSettings.SYNC_RETURN);
+		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, MisingFailedRecipe.SYNC_NULL,
+				ExpiredFailedRecipe.SYNC_RETURN);
 
 		CacheLoadRequest<String> request = CacheLoadRequest.With(loader).cacheKey("Return")
 				.cacheFor(2, 1, TimeUnit.SECONDS).build();
@@ -453,8 +453,8 @@ public class CacheTest {
 		cache.setScheduler(scheduler);
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
-		MissingErrorSettings amis = new MissingErrorSettings(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.EXPIRED);
-		ExpiredErrorSettings aexp = new ExpiredErrorSettings(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED,
+		MisingFailedRecipe amis = new MisingFailedRecipe(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.EXPIRED);
+		ExpiredFailedRecipe aexp = new ExpiredFailedRecipe(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED,
 				CacheReturned.EXPIRED);
 		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, amis, aexp);
 		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Eternal").async(true, true)
@@ -539,8 +539,8 @@ public class CacheTest {
 		cache.setScheduler(scheduler);
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
-		MissingErrorSettings mis = new MissingErrorSettings(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.DONT);
-		ExpiredErrorSettings exp = new ExpiredErrorSettings(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED, CacheReturned.DONT);
+		MisingFailedRecipe mis = new MisingFailedRecipe(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.DONT);
+		ExpiredFailedRecipe exp = new ExpiredFailedRecipe(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED, CacheReturned.DONT);
 		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, mis, exp);
 
 		String key = "Scheduled";

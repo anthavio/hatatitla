@@ -2,10 +2,9 @@ package net.anthavio.httl.cache;
 
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.cache.ConfiguredCacheLoader.ExpiredErrorSettings;
-import net.anthavio.cache.ConfiguredCacheLoader.MissingErrorSettings;
+import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
+import net.anthavio.cache.ConfiguredCacheLoader.MisingFailedRecipe;
 import net.anthavio.httl.SenderRequest;
-
 
 /**
  * @author martin.vanek
@@ -15,13 +14,13 @@ public class CachingSenderRequest {
 
 	private final SenderRequest senderRequest;
 
-	private final boolean missingLoadAsync;
+	private final boolean misLoadAsync;
 
-	private final boolean expiredLoadAsync;
+	private final boolean expLoadAsync;
 
-	private final MissingErrorSettings missing;
+	private final MisingFailedRecipe misErrRecipe;
 
-	private final ExpiredErrorSettings expired;
+	private final ExpiredFailedRecipe expErrRecipe;
 
 	private final long hardTtl; //seconds
 
@@ -41,26 +40,21 @@ public class CachingSenderRequest {
 	 * @param refreshMode - how to refresh stale entry 
 	 * @param customCacheKey - custom cache key to be used instead of standard key derived from request url
 	 */
-	public CachingSenderRequest(SenderRequest request, boolean missingLoadAsync, boolean expiredLoadAsync,
-			MissingErrorSettings syncExceptionSettings, ExpiredErrorSettings asyncExceptionSettings, long hardTtl,
-			long softTtl, TimeUnit unit, String userKey) {
+	public CachingSenderRequest(SenderRequest request, boolean misLoadAsync, MisingFailedRecipe misErrRecipe,
+			boolean expLoadAsync, ExpiredFailedRecipe expErrRecipe, long hardTtl, long softTtl, TimeUnit unit, String userKey) {
+
 		if (request == null) {
 			throw new IllegalArgumentException("null request");
 		}
 		this.senderRequest = request;
 
-		this.missingLoadAsync = missingLoadAsync;
-		this.expiredLoadAsync = expiredLoadAsync;
+		this.misLoadAsync = misLoadAsync;
 
-		if ((missingLoadAsync || expiredLoadAsync) && asyncExceptionSettings == null) {
-			throw new IllegalArgumentException("Async ExceptionSettings must not be null");
-		}
-		this.expired = asyncExceptionSettings;
+		this.misErrRecipe = misErrRecipe;
 
-		if ((!missingLoadAsync || !expiredLoadAsync) && syncExceptionSettings == null) {
-			throw new IllegalArgumentException("Sync ExceptionSettings must not be null");
-		}
-		this.missing = syncExceptionSettings;
+		this.expLoadAsync = expLoadAsync;
+
+		this.expErrRecipe = expErrRecipe;
 
 		hardTtl = unit.toSeconds(hardTtl);
 		if (hardTtl <= 0) {
@@ -100,12 +94,12 @@ public class CachingSenderRequest {
 		return lastRefresh + (softTtl * 1000);
 	}
 
-	public boolean isMissingLoadAsync() {
-		return missingLoadAsync;
+	public boolean isMisLoadAsync() {
+		return misLoadAsync;
 	}
 
-	public boolean isExpiredLoadAsync() {
-		return expiredLoadAsync;
+	public boolean isExpLoadAsync() {
+		return expLoadAsync;
 	}
 
 	public String getUserKey() {
@@ -120,12 +114,12 @@ public class CachingSenderRequest {
 		this.lastRefresh = executed;
 	}
 
-	public MissingErrorSettings getMissing() {
-		return missing;
+	public MisingFailedRecipe getMissingRecipe() {
+		return misErrRecipe;
 	}
 
-	public ExpiredErrorSettings getExpired() {
-		return expired;
+	public ExpiredFailedRecipe getExpiredRecipe() {
+		return expErrRecipe;
 	}
 
 	@Override

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.HeapMapCache;
-import net.anthavio.cache.Cache.LoadMode;
+import net.anthavio.cache.Scheduler;
 import net.anthavio.httl.GetRequest;
 import net.anthavio.httl.HttpClient4Sender;
 import net.anthavio.httl.HttpSender;
@@ -23,18 +23,14 @@ import net.anthavio.httl.PostRequest;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
-import net.anthavio.httl.cache.CachedResponse;
-import net.anthavio.httl.cache.CachingSender;
-import net.anthavio.httl.cache.CachingSenderRequest;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.inout.ResponseBodyExtractors;
 import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import net.anthavio.httl.inout.ResponseBodyExtractors;
 
 import org.apache.commons.codec.binary.Base64;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 
 /**
  * 
@@ -65,7 +61,8 @@ public class CachingSenderTest {
 		HttpSender sender = new HttpClient4Sender(url);
 		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
-		csender.setExecutor(executor);
+		Scheduler<CachedResponse> scheduler = new Scheduler<CachedResponse>(cache, executor);
+		cache.setScheduler(scheduler);
 		return csender;
 	}
 
@@ -81,16 +78,16 @@ public class CachingSenderTest {
 		SenderRequest request1 = new GetRequest("/").addParameter("docache", 1);
 		SenderRequest request2 = new GetRequest("/").addParameter("docache", 1);
 
-		SenderResponse response1 = csender1.execute(request1, 1, TimeUnit.SECONDS);
-		SenderResponse response2 = csender2.execute(request2, 1, TimeUnit.SECONDS);
+		SenderResponse response1 = csender1.from(request1).hardTtl(1, TimeUnit.SECONDS).execute();
+		SenderResponse response2 = csender2.from(request2).hardTtl(1, TimeUnit.SECONDS).execute();
 		assertThat(response2).isNotEqualTo(response1); //different sender - different host!
 
 		//switch Request execution to different Sender
-		SenderResponse response3 = csender1.execute(request2, 1, TimeUnit.SECONDS);
+		SenderResponse response3 = csender1.from(request2).hardTtl(1, TimeUnit.SECONDS).execute();
 		assertThat(response3).isEqualTo(response1); //same sender
 		assertThat(response3).isNotEqualTo(response2); //different sender - different host!
 
-		SenderResponse response4 = csender2.execute(request1, 1, TimeUnit.SECONDS);
+		SenderResponse response4 = csender2.from(request1).hardTtl(1, TimeUnit.SECONDS).execute();
 		assertThat(response4).isNotEqualTo(response1); //different sender - different host!
 		assertThat(response4).isEqualTo(response2); //same sender
 
@@ -145,7 +142,7 @@ public class CachingSenderTest {
 		//assertThat(response).isNotInstanceOf(CachedResponse.class); //errors are not cached
 		//response.getValue().close();
 
-		csender.close();
+		//csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
 	}
 
@@ -189,7 +186,7 @@ public class CachingSenderTest {
 		assertThat(extract4.getBody()).isEqualTo(extract3.getBody()); //3,4 extracted are equal
 		assertThat(extract4.getBody()).isEqualTo(extract3.getBody()); //1,4 extracted are equal
 
-		csender.close();
+		//csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
 	}
 
@@ -221,7 +218,7 @@ public class CachingSenderTest {
 		//assertThat(extract2.getResponse()).isSameAs(extract1.getResponse()); //1,2 are same object!
 		assertThat(extract2.getBody()).isEqualTo(extract1.getBody()); //1,2 extracted are equal
 
-		csender.close();
+		//csender.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
 	}
 

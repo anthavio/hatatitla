@@ -2,18 +2,13 @@ package net.anthavio.httl.cache;
 
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.cache.CacheEntry;
-import net.anthavio.cache.CacheEntryLoader;
-import net.anthavio.cache.CacheLoadRequest;
-import net.anthavio.cache.CachingSettings;
-import net.anthavio.cache.LoadingSettings;
 import net.anthavio.cache.Builders.BaseCacheRequestBuilder;
-import net.anthavio.httl.HttpSender;
+import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
+import net.anthavio.cache.ConfiguredCacheLoader.MisingFailedRecipe;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
 import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
-
 
 /**
  * Fluent builders for CachingSender Requests
@@ -54,7 +49,11 @@ public class Builders {
 
 		private boolean missingLoadAsync;
 
+		private MisingFailedRecipe misingFailedRecipe;
+
 		private boolean expiredLoadAsync;
+
+		private ExpiredFailedRecipe expiredFailedRecipe;
 
 		public CachingRequestBuilder(CachingSender csender, SenderRequest request) {
 			super(request);
@@ -65,9 +64,33 @@ public class Builders {
 			this.csender = csender;
 		}
 
+		public BaseRequestBuilder<CachingRequestBuilder> asyncMissing(MisingFailedRecipe onFailure) {
+			this.missingLoadAsync = true;
+			this.misingFailedRecipe = onFailure;
+			return getSelf();
+		}
+
+		public BaseRequestBuilder<CachingRequestBuilder> syncMissing(MisingFailedRecipe onFailure) {
+			this.missingLoadAsync = false;
+			this.misingFailedRecipe = onFailure;
+			return getSelf();
+		}
+
+		public BaseRequestBuilder<CachingRequestBuilder> asyncExpired(ExpiredFailedRecipe onFailure) {
+			this.expiredLoadAsync = true;
+			this.expiredFailedRecipe = onFailure;
+			return getSelf();
+		}
+
+		public BaseRequestBuilder<CachingRequestBuilder> syncExpired(ExpiredFailedRecipe onFailure) {
+			this.expiredLoadAsync = false;
+			this.expiredFailedRecipe = onFailure;
+			return getSelf();
+		}
+
 		public final CachingSenderRequest build() {
-			return new CachingSenderRequest(request, missingLoadAsync, expiredLoadAsync, hardTtl, softTtl, TimeUnit.SECONDS,
-					cacheKey);
+			return new CachingSenderRequest(request, missingLoadAsync, misingFailedRecipe, expiredLoadAsync,
+					expiredFailedRecipe, hardTtl, softTtl, TimeUnit.SECONDS, cacheKey);
 		}
 
 		/**
@@ -116,7 +139,7 @@ public class Builders {
 	 * 
 	 * @author martin.vanek
 	 *
-	 */
+	 
 	public static class CachingExtractorRequestBuilder extends BaseRequestBuilder<CachingExtractorRequestBuilder> {
 
 		private CachingExtractor cextractor;
@@ -129,46 +152,49 @@ public class Builders {
 			this.cextractor = cextractor;
 
 		}
-
-		/**
-		 * Finish fluent builder flow and return CachingExtractorRequest
-		 */
-		public <T> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
-			if (extractor == null) {
-				throw new IllegalArgumentException("response extractor is null");
-			}
-			return new CachingExtractorRequest<T>(request, extractor, hardTtl, softTtl, TimeUnit.SECONDS, mode, cacheKey);
+	*/
+	/**
+	 * Finish fluent builder flow and return CachingExtractorRequest
+	
+	public <T> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
+		if (extractor == null) {
+			throw new IllegalArgumentException("response extractor is null");
 		}
-
-		/**
-		 * Finish fluent builder flow and return CachingExtractorRequest
-		 */
-		public <T> CachingExtractorRequest<T> build(Class<T> resultType) {
-			if (resultType == null) {
-				throw new IllegalArgumentException("response type is null");
-			}
-			return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.SECONDS, mode, cacheKey);
+		return new CachingExtractorRequest<T>(request, extractor, hardTtl, softTtl, TimeUnit.SECONDS, mode, cacheKey);
+	}
+	*/
+	/**
+	 * Finish fluent builder flow and return CachingExtractorRequest
+	 
+	public <T> CachingExtractorRequest<T> build(Class<T> resultType) {
+		if (resultType == null) {
+			throw new IllegalArgumentException("response type is null");
 		}
+		return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.SECONDS, mode, cacheKey);
+	}
+	*/
+	/**
+	 * Go and extract!
+	 
+	public <T> T extract(Class<T> resultType) {
+		CachingExtractorRequest<T> build = build(resultType);
+		return (T) cextractor.extract(build).getValue();
+	}
+	*/
 
-		/**
-		 * Go and extract!
-		 */
-		public <T> T extract(Class<T> resultType) {
-			CachingExtractorRequest<T> build = build(resultType);
-			return (T) cextractor.extract(build).getValue();
-		}
-
-		/**
-		 * Go and extract!
-		 */
-		public <T> T extract(ResponseBodyExtractor<T> extractor) {
-			CachingExtractorRequest<T> build = build(extractor);
-			return (T) cextractor.extract(build).getValue();
-		}
-
+	/**
+	 * Go and extract!
+	 
+	public <T> T extract(ResponseBodyExtractor<T> extractor) {
+		CachingExtractorRequest<T> build = build(extractor);
+		return (T) cextractor.extract(build).getValue();
+	}
+	*/
+	/*
 		@Override
 		protected CachingExtractorRequestBuilder getSelf() {
 			return this;
 		}
 	}
+	*/
 }
