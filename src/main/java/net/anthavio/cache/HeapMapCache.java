@@ -33,7 +33,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 		CacheEntry<V> entry = this.storage.get(key);
 		if (entry == null) {
 			return null;
-		} else if (entry.getHardExpire() < System.currentTimeMillis()) {
+		} else if (entry.getEvictTimestamp() < System.currentTimeMillis()) {
 			//silly but true - don't return if it's expired
 			storage.remove(key);
 			return null;
@@ -112,7 +112,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 			try {
 				//XXX beware of concurrent changes of storage
 				for (Entry<String, CacheEntry<V>> entry : storage.entrySet()) {
-					if (entry.getValue().getHardExpire() < now) {
+					if (entry.getValue().getEvictTimestamp() < now) {
 						storage.remove(entry.getKey());
 					}
 				}

@@ -5,21 +5,9 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 
-import net.anthavio.httl.Authentication;
-import net.anthavio.httl.GetRequest;
-import net.anthavio.httl.HttpClient3Config;
-import net.anthavio.httl.HttpClient3Sender;
-import net.anthavio.httl.HttpClient4Config;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpURLConfig;
-import net.anthavio.httl.HttpURLSender;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
-
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
 
 /**
  * 
@@ -67,6 +55,7 @@ public class AuthenticationTest {
 		HttpURLConfig config = new HttpURLConfig(url);
 		//authentication.setPreemptive(false);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
+		basic.setRealm("MyBasicRealm");
 		config.setAuthentication(basic);
 
 		sender = new HttpURLSender(config);
@@ -83,6 +72,7 @@ public class AuthenticationTest {
 
 		//NOW setup DIGEST authentication
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
+		basic.setRealm("MyDigestRealm");
 		config.setAuthentication(digest);
 
 		sender = new HttpURLSender(config);
@@ -157,17 +147,18 @@ public class AuthenticationTest {
 	public void http4() throws IOException {
 
 		String url = "http://localhost:" + this.server.getHttpPort();
+
 		SenderResponse response = new HttpClient4Sender(url).GET("/").param("x", "y").execute();
 		response.close();
 		//can access unprotected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 
-		response = new HttpClient4Sender(url).GET("/basic").execute();
+		response = new HttpClient4Sender(url).GET("/basic/").execute();
 		response.close();
 		//can't access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		response = new HttpClient4Sender(url).GET("/digest").execute();
+		response = new HttpClient4Sender(url).GET("/digest/").execute();
 		response.close();
 		//can't access DIGEST protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
@@ -175,31 +166,31 @@ public class AuthenticationTest {
 		//setup BASIC authentication
 
 		HttpClient4Config config = new HttpClient4Config(url);
-		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!", "NoRealm");
+		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		//XXX authentication.setPreemptive(false);
 		config.setAuthentication(basic);
 
-		response = config.buildSender().GET("/basic").execute();
+		response = config.buildSender().GET("/basic/").execute();
 		response.close();
 		//can access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 
-		response = config.buildSender().GET("/digest").execute();
+		response = config.buildSender().GET("/digest/").execute();
 		response.close();
 		//can't access DIGEST protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_FORBIDDEN);
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
 		//setup DIGEST authentication
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
 
-		response = config.buildSender().GET("/basic").execute();
+		response = config.buildSender().GET("/basic/").execute();
 		response.close();
 		//can't access BASIC protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		response = config.buildSender().GET("/digest").execute();
+		response = config.buildSender().GET("/digest/").execute();
 		response.close();
 		//can access DIGEST protected
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);

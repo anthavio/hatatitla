@@ -1,7 +1,6 @@
 package net.anthavio.httl.cache;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.CacheBase;
@@ -12,18 +11,10 @@ import net.anthavio.cache.CachingSettings;
 import net.anthavio.cache.ConfiguredCacheLoader;
 import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.cache.LoadingSettings;
-import net.anthavio.httl.ExtractionOperations;
 import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.SenderException;
-import net.anthavio.httl.SenderHttpStatusException;
-import net.anthavio.httl.SenderOperations;
 import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.cache.Builders.CachingRequestBuilder;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
+import net.anthavio.httl.cache.Builders.ExtractingRequestBuilder;
 import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
-import net.anthavio.httl.util.Cutils;
-import net.anthavio.httl.util.HttpHeaderUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,15 +30,15 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class CachingSender implements SenderOperations, ExtractionOperations {
+public class CachingExtractor /*implements SenderOperations, ExtractionOperations*/{
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final HttpSender sender;
 
-	private final CacheBase<CachedResponse> cache;
+	private final CacheBase<Serializable> cache;
 
-	public CachingSender(HttpSender sender, CacheBase<CachedResponse> cache) {
+	public CachingExtractor(HttpSender sender, CacheBase<Serializable> cache) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -70,7 +61,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	/**
 	 * @return underlying cache
 	 */
-	public CacheBase<CachedResponse> getCache() {
+	public CacheBase<Serializable> getCache() {
 		return cache;
 	}
 
@@ -78,8 +69,8 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	 * FIXME - this is silly method name
 	 * Start fluent builder
 	 */
-	public CachingRequestBuilder from(SenderRequest request) {
-		return new CachingRequestBuilder(this, request);
+	public ExtractingRequestBuilder from(SenderRequest request) {
+		return new ExtractingRequestBuilder(this, request);
 	}
 
 	/**
@@ -94,27 +85,35 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 		return cacheKey;
 	}
 
-	public static class SimpleHttpSenderLoader implements SimpleLoader<CachedResponse> {
+	public static class SimpleHttpSenderExtractor<T extends Serializable> implements SimpleLoader<T> {
 
-		private HttpSender sender;
+		private final HttpSender sender;
 
-		private SenderRequest request;
+		private final CachingExtractorRequest<T> request;
 
-		public SimpleHttpSenderLoader(HttpSender sender, SenderRequest request) {
+		public SimpleHttpSenderExtractor(HttpSender sender, CachingExtractorRequest<T> request) {
 			if (sender == null) {
 				throw new IllegalArgumentException("Null sender");
 			}
 			this.sender = sender;
+
 			if (request == null) {
 				throw new IllegalArgumentException("Null request");
 			}
 			this.request = request;
+
 		}
 
 		@Override
-		public CachedResponse load() throws Exception {
-			SenderResponse response = sender.execute(this.request);
-			return new CachedResponse(this.request, response);
+		public T load() throws Exception {
+			ExtractedBodyResponse<T> bodyResponse;
+			if (request.getExtractor() != null) {
+				bodyResponse = sender.extract(request.getSenderRequest(), request.getExtractor());
+				;
+			} else {
+				bodyResponse = sender.extract(request.getSenderRequest(), request.getResultType());
+			}
+			return bodyResponse.getBody();
 		}
 
 	}
@@ -122,16 +121,17 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	/**
 	 * Turns Sender Request into Cache Request
 	 */
-	public CacheLoadRequest<CachedResponse> convert(CachingSenderRequest request) {
+	public <T extends Serializable> CacheLoadRequest<T> convert(CachingExtractorRequest<T> request) {
 		String cacheKey = getCacheKey(request);
 		CachingSettings caching = new CachingSettings(cacheKey, request.getEvictTtl(), request.getExpiryTtl(),
 				TimeUnit.SECONDS);
-		SimpleHttpSenderLoader simple = new SimpleHttpSenderLoader(sender, request.getSenderRequest());
-		CacheEntryLoader<CachedResponse> loader = new ConfiguredCacheLoader<CachedResponse>(simple,
-				request.getMissingRecipe(), request.getExpiredRecipe());
-		LoadingSettings<CachedResponse> loading = new LoadingSettings<CachedResponse>(loader, request.isMissingLoadAsync(),
+
+		SimpleHttpSenderExtractor<T> simple = new SimpleHttpSenderExtractor<T>(sender, request);
+		CacheEntryLoader<T> loader = new ConfiguredCacheLoader<T>(simple, request.getMissingRecipe(),
+				request.getExpiredRecipe());
+		LoadingSettings<T> loading = new LoadingSettings<T>(loader, request.isMissingLoadAsync(),
 				request.isExpiredLoadAsync());
-		return new CacheLoadRequest<CachedResponse>(caching, loading);
+		return new CacheLoadRequest<T>(caching, loading);
 	}
 
 	/**
@@ -141,26 +141,27 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	 * simplifies this class implementation
 	 * causes two cache queries for expired and missing entries 
 	 */
-	public CacheEntry<CachedResponse> execute(CachingSenderRequest request) {
+	public <T extends Serializable> CacheEntry<T> extract(CachingExtractorRequest<T> request) {
 		String cacheKey = getCacheKey(request);
-		CacheEntry<CachedResponse> entry = cache.get(cacheKey);
+		CacheEntry<T> entry = (CacheEntry<T>) cache.get(cacheKey);
 		if (entry != null) {
-			entry.getValue().setRequest(request.getSenderRequest());
+			//entry.getValue().setRequest(request.getSenderRequest());
 			if (!entry.isExpired()) {
-				return entry; //fresh hit
+				return (CacheEntry<T>) entry; //fresh hit
 			} else {
-				CacheLoadRequest<CachedResponse> lrequest = convert(request);
-				return cache.get(lrequest);
+				CacheLoadRequest<T> cacheRequest = convert(request);
+				return (CacheEntry<T>) cache.get((CacheLoadRequest<Serializable>) cacheRequest);
+				//return (CacheEntry<T>) cache.get(lrequest);
 			}
 		} else { //cache miss - we have nothing
-			CacheLoadRequest<CachedResponse> lrequest = convert(request);
-			return cache.get(lrequest);
+			CacheLoadRequest<T> cacheRequest = convert(request);
+			return (CacheEntry<T>) cache.get((CacheLoadRequest<Serializable>) cacheRequest);
 		}
 	}
 
 	/**
 	 * Static caching based on specified TTL
-	 */
+	 
 	public <T> ExtractedBodyResponse<T> extract(CachingSenderRequest request, Class<T> resultType) {
 		SenderResponse response = execute(request).getValue();
 		try {
@@ -170,10 +171,10 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			Cutils.close(response);
 		}
 	}
-
+	*/
 	/**
 	 * Static caching based on specified TTL
-	 */
+	 
 	public <T> ExtractedBodyResponse<T> extract(CachingSenderRequest request, ResponseBodyExtractor<T> extractor) {
 		SenderResponse response = execute(request).getValue();
 		try {
@@ -186,12 +187,12 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			Cutils.close(response);
 		}
 	}
-
+	*/
 	/**
 	 * Caching based on HTTP response headers
 	 * 
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
-	 */
+	 
 	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor) {
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor is null");
@@ -210,12 +211,12 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			Cutils.close(response);
 		}
 	}
-
+	*/
 	/**
 	 * Caching based on HTTP response headers
 	 * 
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
-	 */
+	 
 	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
@@ -228,12 +229,12 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			Cutils.close(response);
 		}
 	}
-
+	*/
 	/**
 	 * Caching based on HTTP headers values (ETag, Last-Modified, Cache-Control, Expires).
 	 * 
 	 * Caller is responsible for closing Response.
-	 */
+	 
 	public SenderResponse execute(SenderRequest request) {
 		if (request == null) {
 			throw new IllegalArgumentException("request is null");
@@ -282,7 +283,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			return response;
 		}
 	}
-
+	*/
 	@Override
 	public String toString() {
 		return "CachingSender [url=" + sender.getConfig().getHostUrl() + "]";

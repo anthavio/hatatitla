@@ -12,7 +12,6 @@ import net.anthavio.httl.util.Cutils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Abstract base Cache. Allows easier implementation of the Cache interface
  * 
@@ -78,7 +77,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			return null;
 		}
 
-		if (entry != null && entry.isHardExpired()) {
+		if (entry != null && entry.isEvicted()) {
 			logger.warn("Cache returned hard expired entry: " + entry + " for " + userKey + " (" + cacheKey + ")");
 			//XXX maybe throw away hard expired entry and return null
 		}
@@ -95,8 +94,8 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	protected abstract CacheEntry<V> doGet(String cacheKey) throws Exception;
 
 	@Override
-	public Boolean set(String userKey, V data, long timeToLive, TimeUnit unit) {
-		long ttlSeconds = unit.toSeconds(timeToLive);
+	public Boolean set(String userKey, V data, long evictTtl, TimeUnit unit) {
+		long ttlSeconds = unit.toSeconds(evictTtl);
 		CacheEntry<V> entry = new CacheEntry<V>(data, ttlSeconds, ttlSeconds);
 		return set(userKey, entry);
 	}
@@ -110,8 +109,8 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Cache set: " + userKey + " (" + cacheKey + ")");
 		}
-		if (entry.getHardTtl() < 1) {
-			throw new IllegalArgumentException("Hard TTL " + entry.getHardTtl() + "is < 1");
+		if (entry.getEvictTtl() < 1) {
+			throw new IllegalArgumentException("Evict TTL " + entry.getEvictTtl() + "is < 1");
 		}
 		try {
 			entry.setCached(new Date());
@@ -154,11 +153,11 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		String userKey = request.getUserKey();
 		CacheEntry<V> entry = get(userKey);
 		if (entry != null) {
-			if (!entry.isSoftExpired()) {
+			if (!entry.isExpired()) {
 				return entry; //fresh hit
 			} else {
 				//soft expired - refresh needed
-				logger.debug("Soft expired: " + userKey);
+				logger.debug("Expired: " + userKey);
 				if (request.isExpiredLoadAsync()) {
 					scheduler.startReload(request, entry); //start asynchronous refresh
 					//logger.debug("Soft expired value returned: " + userKey);
@@ -214,7 +213,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	 * 
 	 * Also starts scheduler thread if it is not running yet.
 	 */
-	public void schedule(CacheLoadRequest<V> request) {
+	public void schedule(CacheLoadRequest request) {
 		if (this.scheduler == null) {
 			throw new IllegalStateException("Scheduler for asynchronous refresh is not configured");
 		}

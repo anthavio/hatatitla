@@ -49,24 +49,24 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @author martin.vanek
 	 *
 	 */
-	public static class MisingFailedRecipe {
+	public static class MissingFailedRecipe {
 
 		/**
 		 * Preconfigured: dont log & throw exception
 		 */
-		public static final MisingFailedRecipe SYNC_STRICT = new MisingFailedRecipe(LogErrorAs.NOTHING,
+		public static final MissingFailedRecipe SYNC_STRICT = new MissingFailedRecipe(LogErrorAs.NOTHING,
 				MissingReturn.EXCEPTION, CacheReturned.DONT);
 
 		/**
 		 * Preconfigured: log stacktrace & return null & dont cache
 		 */
-		public static final MisingFailedRecipe ASYN_STRICT = new MisingFailedRecipe(LogErrorAs.STACKTRACE,
+		public static final MissingFailedRecipe ASYN_STRICT = new MissingFailedRecipe(LogErrorAs.STACKTRACE,
 				MissingReturn.NULL, CacheReturned.DONT);
 
 		/**
 		 * Preconfigured: log mesage & return null & dont cache
 		 */
-		public static final MisingFailedRecipe SYNC_NULL = new MisingFailedRecipe(LogErrorAs.MESSAGE,
+		public static final MissingFailedRecipe SYNC_NULL = new MissingFailedRecipe(LogErrorAs.MESSAGE,
 				MissingReturn.NULL, CacheReturned.DONT);
 
 		private final LogErrorAs logAs;
@@ -75,7 +75,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 
 		private final CacheReturned cacheAs;
 
-		public MisingFailedRecipe(LogErrorAs logAs, MissingReturn returnAs, CacheReturned cacheAs) {
+		public MissingFailedRecipe(LogErrorAs logAs, MissingReturn returnAs, CacheReturned cacheAs) {
 			if (logAs == null) {
 				throw new IllegalArgumentException("Null LogErrorAs");
 			}
@@ -163,7 +163,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 
 	private final SimpleLoader<V> loader;
 
-	protected final MisingFailedRecipe msettings;
+	protected final MissingFailedRecipe msettings;
 
 	protected final ExpiredFailedRecipe esettings;
 
@@ -171,14 +171,14 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * Create with default exception settings 
 	 */
 	public ConfiguredCacheLoader(SimpleLoader<V> loader) {
-		this(loader, MisingFailedRecipe.SYNC_STRICT, ExpiredFailedRecipe.SYNC_STRICT);
+		this(loader, MissingFailedRecipe.SYNC_STRICT, ExpiredFailedRecipe.SYNC_STRICT);
 	}
 
 	/**
 	 * Create with custom exception settings
 	 * 
 	 */
-	public ConfiguredCacheLoader(SimpleLoader<V> loader, MisingFailedRecipe missSettings,
+	public ConfiguredCacheLoader(SimpleLoader<V> loader, MissingFailedRecipe missSettings,
 			ExpiredFailedRecipe expSettings) {
 		this.loader = loader;
 		this.logger = LoggerFactory.getLogger(loader.getClass());
@@ -257,7 +257,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @param request
 	 * @return
 	 */
-	protected CacheEntryLoadResult<V> getMissingResult(Exception exception, MisingFailedRecipe settings,
+	protected CacheEntryLoadResult<V> getMissingResult(Exception exception, MissingFailedRecipe settings,
 			CacheLoadRequest<V> request) {
 		V value;
 		switch (settings.returnAs) {
@@ -313,11 +313,11 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		CacheEntryLoadResult<V> entry;
 		switch (settings.cacheAs) {
 		case DONT:
-			entry = new CacheEntryLoadResult<V>(false, value, expiredEntry.getHardTtl(), expiredEntry.getSoftTtl());
+			entry = new CacheEntryLoadResult<V>(false, value, expiredEntry.getEvictTtl(), expiredEntry.getExpiryTtl());
 			entry.setCached(expiredEntry.getCached());
 			break;
 		case EXPIRED:
-			entry = new CacheEntryLoadResult<V>(true, value, expiredEntry.getHardTtl(), -1);
+			entry = new CacheEntryLoadResult<V>(true, value, expiredEntry.getEvictTtl(), -1);
 			break;
 		case REQUEST:
 			entry = new CacheEntryLoadResult<V>(true, value, request.getHardTtl(), request.getSoftTtl());

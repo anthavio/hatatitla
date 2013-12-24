@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
@@ -36,17 +37,16 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class JokerServer {
 
@@ -86,7 +86,7 @@ public class JokerServer {
 			HashLoginService digestLoginService = new HashLoginService("MyDigestRealm");
 			digestLoginService.putUser("zora", new Password("stekystek"), new String[] { "zora", "potapec" });
 
-			jetty.addBean(digestLoginService);
+			//jetty.addBean(digestLoginService);
 
 			/*
 			HashUserRealm realmBasic = new HashUserRealm("MyBasicRealm");
@@ -102,22 +102,38 @@ public class JokerServer {
 			*/
 
 			//security
-			
-		//ServletHandler servletHandler = new ServletHandler();
-			//servletHandler.addServletWithMapping(new ServletHolder(this), "/*");
-			RequestHandler requestHandler = new RequestHandler();
-			
-			SecurityHandler basicHandler = getBasicSecurityHandler(basicLoginService, "kosmonaut");
-			basicHandler.setHandler(requestHandler); //response handler
+
+			RequestHandler servlet = new RequestHandler();
+			ServletHolder servletHolder = new ServletHolder(servlet);
+			//ServletHandler servletHandler = new ServletHandler();
+			//servletHandler.addServletWithMapping(new ServletHolder(new RequestHandler()), "/*");
+
 			SecurityHandler digestHandler = getDigestSecurityHandler(digestLoginService, "potapec");
-			digestHandler.setHandler(requestHandler);//response handler
+			//digestHandler.setHandler(servletHandler);//response handler
 
-			HandlerCollection handlerCollection = new HandlerCollection();
-			handlerCollection.addHandler(basicHandler);
-			handlerCollection.addHandler(digestHandler);
-			jetty.setHandler(handlerCollection);
+			SecurityHandler basicHandler = getBasicSecurityHandler(basicLoginService, "kosmonaut");
+			//basicHandler.setHandler(servletHandler); //response handler
 
-			//jetty.setHandlers(new Handler[] { basicHandler, digestHandler, requestHandler });
+			ServletContextHandler basicContext = new ServletContextHandler();
+			basicContext.setContextPath("/basic");
+			basicContext.setSecurityHandler(basicHandler);
+			basicContext.addServlet(servletHolder, "/*");
+
+			ServletContextHandler digestContext = new ServletContextHandler();
+			digestContext.setContextPath("/digest");
+			digestContext.setSecurityHandler(digestHandler);
+			digestContext.addServlet(servletHolder, "/*");
+
+			ServletContextHandler rootContext = new ServletContextHandler();
+			rootContext.setContextPath("/");
+			rootContext.addServlet(servletHolder, "/*");
+
+			HandlerList handlers = new HandlerList();
+			handlers.addHandler(basicContext);
+			handlers.addHandler(digestContext);
+			handlers.addHandler(rootContext);
+
+			jetty.setHandler(handlers);
 
 			//server socket with single element backlog queue and dynamicaly allocated port
 			serverSocket = new ServerSocket(0, 1);
@@ -173,11 +189,18 @@ public class JokerServer {
 		return frozenPort;
 	}
 
-	private class RequestHandler extends AbstractHandler {
+	private class RequestHandler extends HttpServlet {
 
 		@Override
-		public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-				throws IOException, ServletException {
+		protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException,
+				IOException {
+
+			//@Override
+			//public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+			//	throws IOException, ServletException {
+
+			logger.info("Handling " + request);
+
 			requestCount.incrementAndGet();
 			Date now = new Date();
 
@@ -243,7 +266,7 @@ public class JokerServer {
 				response.setStatus(HttpServletResponse.SC_OK);
 				writeResponse(request, response, now, "Hello");
 			}
-			//((Request) request).setHandled(true);			
+
 		}
 
 		private void writeResponse(HttpServletRequest request, HttpServletResponse response, Date now, String text)
@@ -318,7 +341,7 @@ public class JokerServer {
 			}
 
 			response.setCharacterEncoding(outputCharset);
-			response.setBufferSize(1024);
+			//response.setBufferSize(1024);
 			ServletOutputStream output = response.getOutputStream();
 
 			String acceptMimeType = request.getHeader("Accept");
@@ -369,65 +392,38 @@ public class JokerServer {
 
 	private SecurityHandler getBasicSecurityHandler(LoginService realm, String role) {
 
-		Constraint constraint = new Constraint(Constraint.__BASIC_AUTH, role);
+		Constraint constraint = new Constraint();
+		constraint.setName(Constraint.__BASIC_AUTH);
 		constraint.setAuthenticate(true);
+		constraint.setRoles(new String[] { role });
 
 		ConstraintMapping mapping = new ConstraintMapping();
+		mapping.setPathSpec("/*");
 		mapping.setConstraint(constraint);
-		mapping.setPathSpec("/basic/*");
 
 		ConstraintSecurityHandler handler = new ConstraintSecurityHandler();
 		handler.setConstraintMappings(Collections.singletonList(mapping));
 		handler.setAuthenticator(new BasicAuthenticator());
 		handler.setLoginService(realm);
 		return handler;
-
-		/*
-		Constraint constraint = new Constraint(Constraint.__BASIC_AUTH, role);
-		constraint.setAuthenticate(true);
-
-		ConstraintMapping mapping = new ConstraintMapping();
-		mapping.setConstraint(constraint);
-		mapping.setPathSpec("/basic/*");
-
-		SecurityHandler handler = new SecurityHandler();
-		handler.setAuthenticator(new BasicAuthenticator());
-		handler.setUserRealm(realm);
-		handler.setConstraintMappings(new ConstraintMapping[] { mapping });
-
-		return handler;
-		*/
 	}
 
-	private SecurityHandler getDigestSecurityHandler(LoginService realm, String role) {
+	private ConstraintSecurityHandler getDigestSecurityHandler(LoginService realm, String role) {
 		Constraint constraint = new Constraint(Constraint.__DIGEST_AUTH, role);
 		constraint.setAuthenticate(true);
 
 		ConstraintMapping mapping = new ConstraintMapping();
+		mapping.setPathSpec("/*");
 		mapping.setConstraint(constraint);
-		mapping.setPathSpec("/digest/*");
+
+		//HashSet<String> roles = new HashSet<String>();
+		//roles.add(role);
 
 		ConstraintSecurityHandler handler = new ConstraintSecurityHandler();
 		handler.setConstraintMappings(Collections.singletonList(mapping));
-		handler.setAuthenticator(new BasicAuthenticator());
+		handler.setAuthenticator(new DigestAuthenticator());
 		handler.setLoginService(realm);
 		return handler;
-
-		/*
-		Constraint constraint = new Constraint(Constraint.__DIGEST_AUTH, role);
-		constraint.setAuthenticate(true);
-
-		ConstraintMapping mapping = new ConstraintMapping();
-		mapping.setConstraint(constraint);
-		mapping.setPathSpec("/digest/*");
-
-		SecurityHandler handler = new SecurityHandler();
-		handler.setAuthenticator(new DigestAuthenticator());
-		handler.setUserRealm(realm);
-		handler.setConstraintMappings(new ConstraintMapping[] { mapping });
-		return handler;
-		*/
-
 	}
 
 }

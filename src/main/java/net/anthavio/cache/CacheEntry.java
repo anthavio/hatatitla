@@ -19,43 +19,43 @@ public class CacheEntry<V> implements Serializable {
 
 	private Date cached; //when entry was added
 
-	private final long hardTtl; //seconds - entry will disapear after
+	private final long evictTtl; //seconds - entry will disapear after
 
-	private final long softTtl; //seconds - we must revalidate after - static value or server expiry 
+	private final long expiryTtl; //seconds - must revalidate after - static value or server expiry 
 
 	/**
 	 * TTLs unit is parameter
 	 * 
 	 * @param value - to be cached, can be null
-	 * @param hardTtl - cache eviction time in seconds
-	 * @param softTtl - stale content time in seconds
+	 * @param evictTtl - cache entry eviction in seconds
+	 * @param expiryTtl - cache entry become stale in seconds
 	 */
-	public CacheEntry(V value, long hardTtl, long softTtl) {
+	public CacheEntry(V value, long evictTtl, long expiryTtl) {
 		//can be null
 		this.value = value;
 
 		// can be negative
-		this.hardTtl = hardTtl;
+		this.evictTtl = evictTtl;
 
 		// can be negative
-		this.softTtl = softTtl;
+		this.expiryTtl = expiryTtl;
 
-		if (this.softTtl > 0 && this.hardTtl < this.softTtl) {
-			throw new IllegalArgumentException("hardTtl " + this.hardTtl + " must be > softTtl " + this.softTtl);
+		if (this.expiryTtl > 0 && this.evictTtl < this.expiryTtl) {
+			throw new IllegalArgumentException("evictTtl " + this.evictTtl + " must be > recentTtl " + this.expiryTtl);
 		}
 	}
 
-	public boolean isSoftExpired() {
+	public boolean isExpired() {
 		if (cached != null) {
-			return cached.getTime() + (softTtl * 1000) < System.currentTimeMillis();
+			return cached.getTime() + (expiryTtl * 1000) < System.currentTimeMillis();
 		} else {
 			return true;
 		}
 	}
 
-	public boolean isHardExpired() {
+	public boolean isEvicted() {
 		if (cached != null) {
-			return cached.getTime() + (hardTtl * 1000) < System.currentTimeMillis();
+			return cached.getTime() + (evictTtl * 1000) < System.currentTimeMillis();
 		} else {
 			return true;
 		}
@@ -76,23 +76,23 @@ public class CacheEntry<V> implements Serializable {
 	/**
 	 * @return seconds - after entry will disapear
 	 */
-	public long getHardTtl() {
-		return hardTtl;
+	public long getEvictTtl() {
+		return evictTtl;
 	}
 
-	public long getSoftExpire() {
-		return cached.getTime() + (softTtl * 1000);
+	public long getEvictTimestamp() {
+		return cached.getTime() + (evictTtl * 1000);
 	}
 
 	/**
-	 * @return seconds - after we must revalidate
+	 * @return seconds - after we must revalidate or update value
 	 */
-	public long getSoftTtl() {
-		return softTtl;
+	public long getExpiryTtl() {
+		return expiryTtl;
 	}
 
-	public long getHardExpire() {
-		return cached.getTime() + (hardTtl * 1000);
+	public long getExpiryTimestamp() {
+		return cached.getTime() + (expiryTtl * 1000);
 	}
 
 	@Override
@@ -100,8 +100,8 @@ public class CacheEntry<V> implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((cached == null) ? 0 : cached.hashCode());
-		result = prime * result + (int) (hardTtl ^ (hardTtl >>> 32));
-		result = prime * result + (int) (softTtl ^ (softTtl >>> 32));
+		result = prime * result + (int) (evictTtl ^ (evictTtl >>> 32));
+		result = prime * result + (int) (expiryTtl ^ (expiryTtl >>> 32));
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		return result;
 	}
@@ -120,9 +120,9 @@ public class CacheEntry<V> implements Serializable {
 				return false;
 		} else if (!cached.equals(other.cached))
 			return false;
-		if (hardTtl != other.hardTtl)
+		if (evictTtl != other.evictTtl)
 			return false;
-		if (softTtl != other.softTtl)
+		if (expiryTtl != other.expiryTtl)
 			return false;
 		if (value == null) {
 			if (other.value != null)
@@ -142,10 +142,10 @@ public class CacheEntry<V> implements Serializable {
 			value = value.substring(0, 100) + "...";
 		}
 		if (cached != null) {
-			return "CacheEntry [cached=" + sdf.format(cached) + ", hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", value="
-					+ value + "]";
+			return "CacheEntry [cached=" + sdf.format(cached) + ", evictTtl=" + evictTtl + ", expiryTtl=" + expiryTtl
+					+ ", value=" + value + "]";
 		} else {
-			return "CacheEntry [cached=, hardTtl=" + hardTtl + ", softTtl=" + softTtl + ", value=" + value + "]";
+			return "CacheEntry [cached=, evictTtl=" + evictTtl + ", expiryTtl=" + expiryTtl + ", value=" + value + "]";
 		}
 	}
 

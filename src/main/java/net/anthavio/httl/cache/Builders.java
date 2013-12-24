@@ -1,10 +1,11 @@
 package net.anthavio.httl.cache;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.Builders.BaseCacheRequestBuilder;
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
-import net.anthavio.cache.ConfiguredCacheLoader.MisingFailedRecipe;
+import net.anthavio.cache.ConfiguredCacheLoader.MissingFailedRecipe;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
@@ -47,11 +48,11 @@ public class Builders {
 
 		private final CachingSender csender;
 
-		private boolean missingLoadAsync;
+		private boolean missingLoadAsync = false;
 
-		private MisingFailedRecipe misingFailedRecipe;
+		private MissingFailedRecipe misingFailedRecipe;
 
-		private boolean expiredLoadAsync;
+		private boolean expiredLoadAsync = false;
 
 		private ExpiredFailedRecipe expiredFailedRecipe;
 
@@ -64,31 +65,40 @@ public class Builders {
 			this.csender = csender;
 		}
 
-		public BaseRequestBuilder<CachingRequestBuilder> asyncMissing(MisingFailedRecipe onFailure) {
-			this.missingLoadAsync = true;
+		public BaseRequestBuilder<CachingRequestBuilder> async(boolean missing, boolean expired) {
+			this.missingLoadAsync = missing;
+			this.expiredLoadAsync = expired;
+			return getSelf();
+		}
+
+		public BaseRequestBuilder<CachingRequestBuilder> missing(boolean asynchronous, MissingFailedRecipe onFailure) {
+			this.missingLoadAsync = asynchronous;
 			this.misingFailedRecipe = onFailure;
 			return getSelf();
 		}
 
-		public BaseRequestBuilder<CachingRequestBuilder> syncMissing(MisingFailedRecipe onFailure) {
-			this.missingLoadAsync = false;
-			this.misingFailedRecipe = onFailure;
-			return getSelf();
-		}
-
-		public BaseRequestBuilder<CachingRequestBuilder> asyncExpired(ExpiredFailedRecipe onFailure) {
-			this.expiredLoadAsync = true;
-			this.expiredFailedRecipe = onFailure;
-			return getSelf();
-		}
-
-		public BaseRequestBuilder<CachingRequestBuilder> syncExpired(ExpiredFailedRecipe onFailure) {
-			this.expiredLoadAsync = false;
+		public BaseRequestBuilder<CachingRequestBuilder> expired(boolean asynchronous, ExpiredFailedRecipe onFailure) {
+			this.expiredLoadAsync = asynchronous;
 			this.expiredFailedRecipe = onFailure;
 			return getSelf();
 		}
 
 		public final CachingSenderRequest build() {
+			if (misingFailedRecipe == null) {
+				if (missingLoadAsync) {
+					misingFailedRecipe = MissingFailedRecipe.ASYN_STRICT;
+				} else {
+					misingFailedRecipe = MissingFailedRecipe.SYNC_STRICT;
+				}
+			}
+			if (expiredFailedRecipe == null) {
+				if (expiredLoadAsync) {
+					expiredFailedRecipe = ExpiredFailedRecipe.ASYN_STRICT;
+				} else {
+					expiredFailedRecipe = ExpiredFailedRecipe.SYNC_STRICT;
+				}
+			}
+
 			return new CachingSenderRequest(request, missingLoadAsync, misingFailedRecipe, expiredLoadAsync,
 					expiredFailedRecipe, hardTtl, softTtl, TimeUnit.SECONDS, cacheKey);
 		}
@@ -139,12 +149,20 @@ public class Builders {
 	 * 
 	 * @author martin.vanek
 	 *
-	 
-	public static class CachingExtractorRequestBuilder extends BaseRequestBuilder<CachingExtractorRequestBuilder> {
+	 */
+	public static class ExtractingRequestBuilder extends BaseRequestBuilder<ExtractingRequestBuilder> {
 
 		private CachingExtractor cextractor;
 
-		public CachingExtractorRequestBuilder(CachingExtractor cextractor, SenderRequest request) {
+		private boolean missingLoadAsync = false;
+
+		private MissingFailedRecipe misingFailedRecipe;
+
+		private boolean expiredLoadAsync = false;
+
+		private ExpiredFailedRecipe expiredFailedRecipe;
+
+		public ExtractingRequestBuilder(CachingExtractor cextractor, SenderRequest request) {
 			super(request);
 			if (cextractor == null) {
 				throw new IllegalArgumentException("CachingExtractor is null");
@@ -152,49 +170,101 @@ public class Builders {
 			this.cextractor = cextractor;
 
 		}
-	*/
-	/**
-	 * Finish fluent builder flow and return CachingExtractorRequest
-	
-	public <T> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
-		if (extractor == null) {
-			throw new IllegalArgumentException("response extractor is null");
-		}
-		return new CachingExtractorRequest<T>(request, extractor, hardTtl, softTtl, TimeUnit.SECONDS, mode, cacheKey);
-	}
-	*/
-	/**
-	 * Finish fluent builder flow and return CachingExtractorRequest
-	 
-	public <T> CachingExtractorRequest<T> build(Class<T> resultType) {
-		if (resultType == null) {
-			throw new IllegalArgumentException("response type is null");
-		}
-		return new CachingExtractorRequest<T>(request, resultType, hardTtl, softTtl, TimeUnit.SECONDS, mode, cacheKey);
-	}
-	*/
-	/**
-	 * Go and extract!
-	 
-	public <T> T extract(Class<T> resultType) {
-		CachingExtractorRequest<T> build = build(resultType);
-		return (T) cextractor.extract(build).getValue();
-	}
-	*/
 
-	/**
-	 * Go and extract!
-	 
-	public <T> T extract(ResponseBodyExtractor<T> extractor) {
-		CachingExtractorRequest<T> build = build(extractor);
-		return (T) cextractor.extract(build).getValue();
-	}
-	*/
-	/*
 		@Override
-		protected CachingExtractorRequestBuilder getSelf() {
+		protected ExtractingRequestBuilder getSelf() {
 			return this;
 		}
+
+		public ExtractingRequestBuilder async(boolean missing, boolean expired) {
+			this.missingLoadAsync = missing;
+			this.expiredLoadAsync = expired;
+			return getSelf();
+		}
+
+		public ExtractingRequestBuilder missing(boolean asynchronous, MissingFailedRecipe onFailure) {
+			this.missingLoadAsync = asynchronous;
+			this.misingFailedRecipe = onFailure;
+			return getSelf();
+		}
+
+		public ExtractingRequestBuilder expired(boolean asynchronous, ExpiredFailedRecipe onFailure) {
+			this.expiredLoadAsync = asynchronous;
+			this.expiredFailedRecipe = onFailure;
+			return getSelf();
+		}
+
+		/**
+		 * Finish fluent builder flow and return CachingExtractorRequest
+		 */
+		public <T extends Serializable> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
+			if (extractor == null) {
+				throw new IllegalArgumentException("response extractor is null");
+			}
+
+			if (misingFailedRecipe == null) {
+				if (missingLoadAsync) {
+					misingFailedRecipe = MissingFailedRecipe.ASYN_STRICT;
+				} else {
+					misingFailedRecipe = MissingFailedRecipe.SYNC_STRICT;
+				}
+			}
+			if (expiredFailedRecipe == null) {
+				if (expiredLoadAsync) {
+					expiredFailedRecipe = ExpiredFailedRecipe.ASYN_STRICT;
+				} else {
+					expiredFailedRecipe = ExpiredFailedRecipe.SYNC_STRICT;
+				}
+			}
+
+			return new CachingExtractorRequest<T>(extractor, request, missingLoadAsync, misingFailedRecipe, expiredLoadAsync,
+					expiredFailedRecipe, hardTtl, softTtl, TimeUnit.SECONDS, cacheKey);
+
+		}
+
+		/**
+		 * Finish fluent builder flow and return CachingExtractorRequest
+		 */
+		public <T extends Serializable> CachingExtractorRequest<T> build(Class<T> resultType) {
+			if (resultType == null) {
+				throw new IllegalArgumentException("response type is null");
+			}
+			if (misingFailedRecipe == null) {
+				if (missingLoadAsync) {
+					misingFailedRecipe = MissingFailedRecipe.ASYN_STRICT;
+				} else {
+					misingFailedRecipe = MissingFailedRecipe.SYNC_STRICT;
+				}
+			}
+			if (expiredFailedRecipe == null) {
+				if (expiredLoadAsync) {
+					expiredFailedRecipe = ExpiredFailedRecipe.ASYN_STRICT;
+				} else {
+					expiredFailedRecipe = ExpiredFailedRecipe.SYNC_STRICT;
+				}
+			}
+
+			return new CachingExtractorRequest<T>(resultType, request, missingLoadAsync, misingFailedRecipe,
+					expiredLoadAsync, expiredFailedRecipe, hardTtl, softTtl, TimeUnit.SECONDS, cacheKey);
+		}
+
+		/**
+		 * Go and extract!
+		 
+		public <T extends Serializable> T extract(Class<T> resultType) {
+			CachingExtractorRequest<T> build = build(resultType);
+			return (T) cextractor.extract(build).getValue();
+		}
+		 */
+
+		/**
+		 * Go and extract!
+		 
+		public <T extends Serializable> T extract(ResponseBodyExtractor<T> extractor) {
+			CachingExtractorRequest<T> build = build(extractor);
+			return (T) cextractor.extract(build).getValue();
+		}
+		*/
 	}
-	*/
+
 }

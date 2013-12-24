@@ -34,7 +34,7 @@ public class EHCache<V extends Serializable> extends CacheBase<V> {
 
 	@Override
 	protected Boolean doSet(String cacheKey, CacheEntry<V> entry) {
-		ehCache.put(new Element(cacheKey, entry, Boolean.FALSE, 0, (int) entry.getHardTtl()));
+		ehCache.put(new Element(cacheKey, entry, Boolean.FALSE, 0, (int) entry.getEvictTtl()));
 		return true;
 	}
 

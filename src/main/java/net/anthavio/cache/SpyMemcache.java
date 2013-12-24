@@ -119,7 +119,7 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 		if (cacheKey.length() > MaxKeyLength) {
 			throw new IllegalArgumentException("Key length exceded maximum " + MaxKeyLength);
 		}
-		int ttlMillis = (int) entry.getHardTtl();
+		int ttlMillis = (int) entry.getEvictTtl();
 		Future<Boolean> future = client.set(cacheKey, ttlMillis, entry);
 		try {
 			return future.get(operationTimeout, TimeUnit.MILLISECONDS);

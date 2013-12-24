@@ -3,7 +3,7 @@ package net.anthavio.httl.cache;
 import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
-import net.anthavio.cache.ConfiguredCacheLoader.MisingFailedRecipe;
+import net.anthavio.cache.ConfiguredCacheLoader.MissingFailedRecipe;
 import net.anthavio.httl.SenderRequest;
 
 /**
@@ -14,59 +14,77 @@ public class CachingSenderRequest {
 
 	private final SenderRequest senderRequest;
 
-	private final boolean misLoadAsync;
+	private final boolean missingLoadAsync;
 
-	private final boolean expLoadAsync;
+	private final boolean expiredLoadAsync;
 
-	private final MisingFailedRecipe misErrRecipe;
+	private final MissingFailedRecipe missingFailRecipe;
 
-	private final ExpiredFailedRecipe expErrRecipe;
+	private final ExpiredFailedRecipe expiredFailRecipe;
 
-	private final long hardTtl; //seconds
+	private final long evictTtl; //seconds
 
-	private final long softTtl; //seconds
+	private final long expiryTtl; //seconds
 
 	private final String userKey; //caller takes responsibility for key uniqueness
 
-	private long lastRefresh; //only for RefreshMode.SCHEDULED 
+	/**
+	 * Synchronous loading with single TTL
+	 */
+	public CachingSenderRequest(SenderRequest senderRequest, int evictTtl, TimeUnit unit) {
+		this(senderRequest, false, MissingFailedRecipe.SYNC_STRICT, false, ExpiredFailedRecipe.SYNC_RETURN, evictTtl,
+				evictTtl, unit, null);
+	}
+
+	/**
+	 * Synchronous loading with both TTLs
+	 */
+	public CachingSenderRequest(SenderRequest senderRequest, int evictTtl, int expiryTtl, TimeUnit unit) {
+		this(senderRequest, false, MissingFailedRecipe.SYNC_STRICT, false, ExpiredFailedRecipe.SYNC_RETURN, evictTtl,
+				expiryTtl, unit, null);
+	}
 
 	/**
 	 * Full constructor - Use CachingRequestBuilder instead of this...
 	 * 
-	 * @param request - request to request a request
-	 * @param hardTtl - cache entry expiry time 
-	 * @param softTtl - cache entry refresh time
+	 * @param senderRequest - request to request a request
+	 * @param missingLoadAsync - Asynchronous load of the missing cache entry
+	 * @param missingFailRecipe - What to do on missing entry load failure
+	 * @param expiredLoadAsync - Asynchronous load of the expired cache entry
+	 * @param expiredFailRecipe - What to do on expired entry load failure
+	 * @param evictTtl - cache entry expiry time 
+	 * @param validTtl - cache entry refresh time
 	 * @param unit - time unit of ttl
-	 * @param refreshMode - how to refresh stale entry 
-	 * @param customCacheKey - custom cache key to be used instead of standard key derived from request url
+	 * @param userKey - custom cache key to be used instead of standard key derived from request url
 	 */
-	public CachingSenderRequest(SenderRequest request, boolean misLoadAsync, MisingFailedRecipe misErrRecipe,
-			boolean expLoadAsync, ExpiredFailedRecipe expErrRecipe, long hardTtl, long softTtl, TimeUnit unit, String userKey) {
+	public CachingSenderRequest(SenderRequest senderRequest, boolean missingLoadAsync,
+			MissingFailedRecipe missingFailRecipe, boolean expiredLoadAsync, ExpiredFailedRecipe expiredFailRecipe,
+			long evictTtl, long expiryTtl, TimeUnit unit, String userKey) {
 
-		if (request == null) {
-			throw new IllegalArgumentException("null request");
+		if (senderRequest == null) {
+			throw new IllegalArgumentException("Null SenderRequest");
 		}
-		this.senderRequest = request;
+		this.senderRequest = senderRequest;
 
-		this.misLoadAsync = misLoadAsync;
+		this.missingLoadAsync = missingLoadAsync;
 
-		this.misErrRecipe = misErrRecipe;
+		this.missingFailRecipe = missingFailRecipe;
 
-		this.expLoadAsync = expLoadAsync;
+		this.expiredLoadAsync = expiredLoadAsync;
 
-		this.expErrRecipe = expErrRecipe;
+		this.expiredFailRecipe = expiredFailRecipe;
 
-		hardTtl = unit.toSeconds(hardTtl);
-		if (hardTtl <= 0) {
-			throw new IllegalArgumentException("hardTtl " + hardTtl + " must be >= 1 second ");
+		evictTtl = unit.toSeconds(evictTtl);
+		if (evictTtl <= 0) {
+			throw new IllegalArgumentException("evictTtl " + evictTtl + " must be >= 1 second ");
 		}
-		this.hardTtl = hardTtl;
+		this.evictTtl = evictTtl;
 
-		softTtl = unit.toSeconds(softTtl);
-		if (hardTtl < softTtl) {
-			throw new IllegalArgumentException("hardTtl " + hardTtl + " must be >= softTtl " + softTtl);
+		expiryTtl = unit.toSeconds(expiryTtl);
+		if (evictTtl < expiryTtl) {
+			throw new IllegalArgumentException("evictTtl " + evictTtl + " must be >= expiryTtl " + expiryTtl);
 		}
-		this.softTtl = softTtl;
+		this.expiryTtl = expiryTtl;
 
 		if (userKey != null && userKey.length() == 0) {
 			throw new IllegalArgumentException("Custom cache key CAN be null, but MUST NOT be EMPTY string");
@@ -78,53 +96,37 @@ public class CachingSenderRequest {
 		return senderRequest;
 	}
 
-	public long getHardTtl() {
-		return hardTtl;
+	public long getEvictTtl() {
+		return evictTtl;
 	}
 
-	protected long getHardExpire() {
-		return lastRefresh + (hardTtl * 1000);
+	public long getExpiryTtl() {
+		return expiryTtl;
 	}
 
-	public long getSoftTtl() {
-		return softTtl;
+	public boolean isMissingLoadAsync() {
+		return missingLoadAsync;
 	}
 
-	protected long getSoftExpire() {
-		return lastRefresh + (softTtl * 1000);
-	}
-
-	public boolean isMisLoadAsync() {
-		return misLoadAsync;
-	}
-
-	public boolean isExpLoadAsync() {
-		return expLoadAsync;
+	public boolean isExpiredLoadAsync() {
+		return expiredLoadAsync;
 	}
 
 	public String getUserKey() {
 		return userKey;
 	}
 
-	protected long getLastRefresh() {
-		return lastRefresh;
-	}
-
-	protected void setLastRefresh(long executed) {
-		this.lastRefresh = executed;
-	}
-
-	public MisingFailedRecipe getMissingRecipe() {
-		return misErrRecipe;
+	public MissingFailedRecipe getMissingRecipe() {
+		return missingFailRecipe;
 	}
 
 	public ExpiredFailedRecipe getExpiredRecipe() {
-		return expErrRecipe;
+		return expiredFailRecipe;
 	}
 
 	@Override
 	public String toString() {
-		return "CachingRequest [hardTtl=" + hardTtl + ", softTtl=" + softTtl + "]";
+		return "CachingRequest [evictTtl=" + evictTtl + ", expiryTtl=" + expiryTtl + "]";
 	}
 
 }

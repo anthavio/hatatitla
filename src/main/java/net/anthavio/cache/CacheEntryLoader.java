@@ -32,8 +32,8 @@ public abstract class CacheEntryLoader<V> {
 
 		private final boolean cacheSet;
 
-		public CacheEntryLoadResult(boolean cacheSet, V value, long hardTtl, long softTtl) {
-			super(value, hardTtl, softTtl);
+		public CacheEntryLoadResult(boolean cacheSet, V value, long evictTtl, long expireTtl) {
+			super(value, evictTtl, expireTtl);
 			this.cacheSet = cacheSet;
 		}
 

@@ -4,7 +4,6 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.httl.util.Cutils;
 
-
 /**
  * 
  * @author martin.vanek
@@ -46,27 +45,27 @@ public class Builders {
 		/**
 		 * Sets both hard and soft TTL
 		 */
-		public S cacheFor(long hardTtl, long softTtl, TimeUnit unit) {
-			if (softTtl > hardTtl) {
+		public S cache(long evictTtl, long expiryTtl, TimeUnit unit) {
+			if (expiryTtl > evictTtl) {
 				throw new IllegalArgumentException("Hard TTL must be greater then Soft TTL");
 			}
-			softTtl(softTtl, unit);
-			hardTtl(hardTtl, unit);
+			expiryTtl(expiryTtl, unit);
+			evictTtl(evictTtl, unit);
 			return getSelf();
 		}
 
 		/**
 		 * Sets hard TTL - How long to keep resource in cache
 		 */
-		public S hardTtl(long hardTtl, TimeUnit unit) {
+		public S evictTtl(long evictTtl, TimeUnit unit) {
 			if (unit == null) {
 				throw new IllegalArgumentException("Caching unit is null");
 			}
 
-			this.hardTtl = unit.toSeconds(hardTtl);
+			this.hardTtl = unit.toSeconds(evictTtl);
 
-			if (this.hardTtl <= 1) {
-				throw new IllegalArgumentException("Hard TTL must be at least 1 second");
+			if (this.hardTtl < 1) {
+				throw new IllegalArgumentException("Evict TTL must be at least 1 second");
 			}
 
 			if (this.softTtl == 0) {//if unset yet
@@ -79,15 +78,15 @@ public class Builders {
 		/**
 		 * Sets soft TTL - Interval between resource freshness checks
 		 */
-		public S softTtl(long softTtl, TimeUnit unit) {
+		public S expiryTtl(long expiryTtl, TimeUnit unit) {
 			if (unit == null) {
 				throw new IllegalArgumentException("Caching unit is null");
 			}
 
-			this.softTtl = unit.toSeconds(softTtl);
+			this.softTtl = unit.toSeconds(expiryTtl);
 
 			if (this.softTtl < 1) {
-				throw new IllegalArgumentException("Soft TTL must be at least 1 second");
+				throw new IllegalArgumentException("Expiry TTL must be at least 1 second");
 			}
 
 			if (this.hardTtl == 0) {

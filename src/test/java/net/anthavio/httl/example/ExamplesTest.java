@@ -3,13 +3,11 @@ package net.anthavio.httl.example;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.bind.Marshaller;
 
 import net.anthavio.cache.CacheBase;
-import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.HeapMapCache;
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.GetRequest;
@@ -17,23 +15,16 @@ import net.anthavio.httl.HttpClient3Config;
 import net.anthavio.httl.HttpClient3Sender;
 import net.anthavio.httl.HttpClient4Config;
 import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpSender;
 import net.anthavio.httl.HttpURLConfig;
 import net.anthavio.httl.HttpURLSender;
 import net.anthavio.httl.SenderRequest.ValueStrategy;
-import net.anthavio.httl.async.ExecutorServiceBuilder;
 import net.anthavio.httl.cache.CachedResponse;
-import net.anthavio.httl.cache.CachingExtractor;
-import net.anthavio.httl.cache.CachingExtractorRequest;
 import net.anthavio.httl.cache.CachingSender;
 import net.anthavio.httl.cache.CachingSenderRequest;
 import net.anthavio.httl.inout.Jackson2ExtractorFactory;
 import net.anthavio.httl.inout.Jackson2RequestMarshaller;
 import net.anthavio.httl.inout.JaxbRequestMarshaller;
 import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
-
-import org.testng.Assert;
-
 
 /**
  * We will be using Github API http://developer.github.com/v3/
@@ -44,7 +35,7 @@ import org.testng.Assert;
 public class ExamplesTest {
 
 	public static void main(String[] args) {
-		cachingScheduled();
+		//cachingScheduled();
 	}
 
 	public static void fluent() {
@@ -198,7 +189,7 @@ public class ExamplesTest {
 
 		//2a Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
-			ExtractedBodyResponse<String> extract = csender.from(getusers).hardTtl(1, TimeUnit.MINUTES).extract(String.class);
+			ExtractedBodyResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).extract(String.class);
 			extract.getBody();//Cache hit
 		}
 
@@ -210,7 +201,7 @@ public class ExamplesTest {
 		}
 
 		//2c Create CachingRequest - fluent
-		CachingSenderRequest crequest2 = csender.from(getusers).hardTtl(1, TimeUnit.MINUTES).build();
+		CachingSenderRequest crequest2 = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).build();
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedBodyResponse<String> response = csender.extract(crequest2, String.class);
 			response.getBody();//Cache hit
@@ -219,78 +210,79 @@ public class ExamplesTest {
 		sender.close();
 		cache.close();
 	}
+	/*
+		public static void cachingExtractor() {
+			//Create normal HttpSender
+			HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
+			//Provide cache instance - Simple Heap Hashmap in this case
+			CacheBase<Object> cache = new HeapMapCache<Object>();
+			//Create Caching Extractor
+			CachingExtractor cextractor = new CachingExtractor(sender, cache);
 
-	public static void cachingExtractor() {
-		//Create normal HttpSender
-		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
-		//Provide cache instance - Simple Heap Hashmap in this case
-		CacheBase<Object> cache = new HeapMapCache<Object>();
-		//Create Caching Extractor
-		CachingExtractor cextractor = new CachingExtractor(sender, cache);
+			//Create normal request
+			GetRequest get = new GetRequest("/get");
 
-		//Create normal request
-		GetRequest get = new GetRequest("/get");
+			//Response will kept in cache for 10 seconds (hard TTL) and will be refreshed every 5 seconds (soft TTL) using background thread.
 
-		//Response will kept in cache for 10 seconds (hard TTL) and will be refreshed every 5 seconds (soft TTL) using background thread.
+			//Use fluent interface to execute/extract
+			for (int i = 0; i < 1000; ++i) {
+				HttpbinOut out = cextractor.from(get).cacheFor(10, 5, TimeUnit.SECONDS).extract(HttpbinOut.class);//Cache hit
+			}
 
-		//Use fluent interface to execute/extract
-		for (int i = 0; i < 1000; ++i) {
-			HttpbinOut out = cextractor.from(get).cacheFor(10, 5, TimeUnit.SECONDS).extract(HttpbinOut.class);//Cache hit
+			//Precreated Caching request
+			CachingExtractorRequest<HttpbinOut> crequest = cextractor.from(get).cacheFor(10, 5, TimeUnit.SECONDS)
+					.build(HttpbinOut.class);
+			for (int i = 0; i < 1000; ++i) {
+				CacheEntry<HttpbinOut> out = cextractor.extract(crequest); //Cache hit
+			}
+
+			//Precreated Caching request
+			CachingExtractorRequest<HttpbinOut> crequest2 = CachingExtractorRequest.Builder(cextractor, get)
+					.cacheFor(10, 5, TimeUnit.SECONDS).mode(LoadMode.STRICT).build(HttpbinOut.class);
+			for (int i = 0; i < 1000; ++i) {
+				CacheEntry<HttpbinOut> out = cextractor.extract(crequest2);//Cache hit
+			}
+
+			cache.close();
+			cextractor.close();
 		}
 
-		//Precreated Caching request
-		CachingExtractorRequest<HttpbinOut> crequest = cextractor.from(get).cacheFor(10, 5, TimeUnit.SECONDS)
-				.build(HttpbinOut.class);
-		for (int i = 0; i < 1000; ++i) {
-			CacheEntry<HttpbinOut> out = cextractor.extract(crequest); //Cache hit
+		public static void cachingScheduled() {
+			//Create normal HttpSender
+			HttpSender sender = new HttpClient4Sender("http://httpbin.org");
+			//Provide cache instance - Simple Heap Hashmap in this case
+			CacheBase<Object> cache = new HeapMapCache<Object>();
+			//Setup asynchronous support
+			ExecutorService executor = ExecutorServiceBuilder.begin().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
+			//Create Caching Extractor
+			CachingExtractor cextractor = new CachingExtractor(sender, cache, executor);
+			//Create normal request
+			GetRequest get = new GetRequest("/get");
+
+			//Response will kept in cache for 60 seconds (hatr TTL) and will be refreshed every 3 seconds (soft TTL) using background thread. 
+			//Unavailability could happen only when remote service became unaccessible for more than 60-3 seconds
+			CachingExtractorRequest<HttpbinOut> crequest = cextractor.from(get).cacheFor(60, 3, TimeUnit.SECONDS)
+					.mode(LoadMode.SCHEDULED).build(HttpbinOut.class);
+
+			CacheEntry<HttpbinOut> out1 = cextractor.extract(crequest); //cache put
+			CacheEntry<HttpbinOut> out2 = cextractor.extract(crequest); //cache hit
+			Assert.assertTrue(out1 == out2); //same instance from cache
+
+			//sleep until background refresh is performed
+			try {
+				Thread.sleep(4 * 1000);
+			} catch (InterruptedException ix) {
+				ix.printStackTrace();
+			}
+
+			CacheEntry<HttpbinOut> out3 = cextractor.extract(crequest);
+			Assert.assertTrue(out1 != out3); //different instance now
+
+			sender.close();
+			executor.shutdown();
+			cache.close();
 		}
-
-		//Precreated Caching request
-		CachingExtractorRequest<HttpbinOut> crequest2 = CachingExtractorRequest.Builder(cextractor, get)
-				.cacheFor(10, 5, TimeUnit.SECONDS).mode(LoadMode.STRICT).build(HttpbinOut.class);
-		for (int i = 0; i < 1000; ++i) {
-			CacheEntry<HttpbinOut> out = cextractor.extract(crequest2);//Cache hit
-		}
-
-		cache.close();
-		cextractor.close();
-	}
-
-	public static void cachingScheduled() {
-		//Create normal HttpSender
-		HttpSender sender = new HttpClient4Sender("http://httpbin.org");
-		//Provide cache instance - Simple Heap Hashmap in this case
-		CacheBase<Object> cache = new HeapMapCache<Object>();
-		//Setup asynchronous support
-		ExecutorService executor = ExecutorServiceBuilder.begin().setMaximumPoolSize(1).setMaximumQueueSize(1).build();
-		//Create Caching Extractor
-		CachingExtractor cextractor = new CachingExtractor(sender, cache, executor);
-		//Create normal request
-		GetRequest get = new GetRequest("/get");
-
-		//Response will kept in cache for 60 seconds (hatr TTL) and will be refreshed every 3 seconds (soft TTL) using background thread. 
-		//Unavailability could happen only when remote service became unaccessible for more than 60-3 seconds
-		CachingExtractorRequest<HttpbinOut> crequest = cextractor.from(get).cacheFor(60, 3, TimeUnit.SECONDS)
-				.mode(LoadMode.SCHEDULED).build(HttpbinOut.class);
-
-		CacheEntry<HttpbinOut> out1 = cextractor.extract(crequest); //cache put
-		CacheEntry<HttpbinOut> out2 = cextractor.extract(crequest); //cache hit
-		Assert.assertTrue(out1 == out2); //same instance from cache
-
-		//sleep until background refresh is performed
-		try {
-			Thread.sleep(4 * 1000);
-		} catch (InterruptedException ix) {
-			ix.printStackTrace();
-		}
-
-		CacheEntry<HttpbinOut> out3 = cextractor.extract(crequest);
-		Assert.assertTrue(out1 != out3); //different instance now
-
-		sender.close();
-		executor.shutdown();
-		cache.close();
-	}
+		*/
 }
 
 class HttpbinIn {

@@ -4,30 +4,16 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.CacheBase;
-import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.HeapMapCache;
-import net.anthavio.httl.HttpClient3Config;
-import net.anthavio.httl.HttpClient3Sender;
-import net.anthavio.httl.HttpClient4Config;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.PostRequest;
-import net.anthavio.httl.SenderException;
-import net.anthavio.httl.SenderHttpStatusException;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.SenderRequest.EncodeStrategy;
 import net.anthavio.httl.TestResponse.NameValue;
-import net.anthavio.httl.cache.CachingExtractor;
-import net.anthavio.httl.cache.CachingExtractorRequest;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
+import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.inout.ResponseBodyExtractors;
 import net.anthavio.httl.inout.ResponseErrorHandler;
 import net.anthavio.httl.inout.ResponseHandler;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
@@ -35,7 +21,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
 
 /**
  * 
@@ -191,12 +176,12 @@ public class MarshallingExtractingTest {
 		}
 
 		CacheBase<Object> cache = new HeapMapCache<Object>();
-		CachingExtractor cextractor = new CachingExtractor(sender, cache);
-		CachingExtractorRequest<String> crequest = cextractor.from(request).hardTtl(2, TimeUnit.MINUTES).softTtl(1, TimeUnit.MINUTES)
-				.build(String.class);
+		//CachingExtractor cextractor = new CachingExtractor(sender, cache);
+		//CachingExtractorRequest<String> crequest = cextractor.from(request).hardTtl(2, TimeUnit.MINUTES).softTtl(1, TimeUnit.MINUTES)
+		//		.build(String.class);
 
-		CacheEntry<String> extract2 = cextractor.extract(crequest);
-		System.out.println(extract2);
+		//CacheEntry<String> extract2 = cextractor.extract(crequest);
+		//System.out.println(extract2);
 		/*
 		CachingExtractorRequest<String> crequest = new CachingExtractorRequest<String>(request, String.class, 10l, 20l,
 				TimeUnit.SECONDS, RefreshMode.ASYNC_REQUEST);
