@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.util.Cutils;
 
-
 /**
  * 
  * @author martin.vanek
@@ -100,7 +99,7 @@ public class SenderRequest {
 	}
 
 	// Constructors of standalone request instance without reference to it's Sender
-
+	/*
 	public SenderRequest(Method method) {
 		this(null, method, null, null, null);
 	}
@@ -108,7 +107,7 @@ public class SenderRequest {
 	public SenderRequest(Method method, Multival parameters) {
 		this(null, method, null, parameters, null);
 	}
-
+	*/
 	public SenderRequest(Method method, String urlPath) {
 		this(null, method, urlPath, null, null);
 	}
