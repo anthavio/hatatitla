@@ -1,5 +1,6 @@
 package net.anthavio.httl.cache;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class CachingSender implements SenderOperations, ExtractionOperations {
+public class CachingSender implements SenderOperations, ExtractionOperations, Closeable {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -57,7 +58,6 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 			throw new IllegalArgumentException("cache is null");
 		}
 		this.cache = cache;
-
 	}
 
 	/**
@@ -72,6 +72,11 @@ public class CachingSender implements SenderOperations, ExtractionOperations {
 	 */
 	public CacheBase<CachedResponse> getCache() {
 		return cache;
+	}
+
+	public void close() {
+		sender.close();
+		cache.close();
 	}
 
 	/**
