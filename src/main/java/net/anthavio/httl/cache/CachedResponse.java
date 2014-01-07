@@ -7,16 +7,15 @@ import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
 
+import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.SenderException;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * 
@@ -78,12 +77,16 @@ public class CachedResponse extends SenderResponse implements Serializable {
 		this.request = request;
 	}
 
+	public boolean isBinaryContent() {
+		return contentBinary != null;
+	}
+
 	@Override
 	public InputStream getStream() {
 		if (contentBinary != null) {
 			return new ByteArrayInputStream(contentBinary);
 		} else {
-			logger.warn("Inefficient conversion from string to bytes");
+			logger.warn("Inefficient conversion from string to bytes. Consider using getReader() method instead");
 			return new ByteArrayInputStream(contentString.getBytes(getCharset()));
 		}
 	}
@@ -91,7 +94,7 @@ public class CachedResponse extends SenderResponse implements Serializable {
 	@Override
 	public Reader getReader() {
 		if (contentBinary != null) {
-			logger.warn("Inefficient conversion from bytes to string");
+			logger.warn("Inefficient conversion from bytes to string. Consider using getStream() method instead");
 			return new StringReader(new String(contentBinary, getCharset()));
 		} else {
 			return new StringReader(contentString);
@@ -102,14 +105,14 @@ public class CachedResponse extends SenderResponse implements Serializable {
 		if (contentBinary != null) {
 			return contentBinary;
 		} else {
-			logger.warn("Inefficient conversion from string to bytes");
+			logger.warn("Inefficient conversion from string to bytes. Consider using getAsString() method instead");
 			return contentString.getBytes(getCharset());
 		}
 	}
 
 	public String getAsString() {
 		if (contentBinary != null) {
-			logger.warn("Inefficient conversion from bytes to string");
+			logger.warn("Inefficient conversion from bytes to string. Consider using getAsBytes() method instead");
 			return new String(contentBinary, getCharset());
 		} else {
 			return contentString;
