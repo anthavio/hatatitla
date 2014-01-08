@@ -21,6 +21,8 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -33,7 +35,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.params.CoreConnectionPNames;
-
 
 /**
  * 
@@ -107,6 +108,12 @@ public class HttpClient4Sender extends HttpSender {
 			break;
 		case DELETE:
 			httpRequest = new HttpDelete(path);
+			break;
+		case HEAD:
+			httpRequest = new HttpHead(path);
+			break;
+		case OPTIONS:
+			httpRequest = new HttpOptions(path);
 			break;
 		case POST:
 			HttpPost httpPost = new HttpPost(path);

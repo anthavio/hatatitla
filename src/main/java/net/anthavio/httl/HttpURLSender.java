@@ -22,7 +22,6 @@ import net.anthavio.httl.util.HttpHeaderUtil;
 
 import org.apache.commons.codec.binary.Base64;
 
-
 /**
  * Simple java HttpURLConnection implementation of the HttpSender. No additional library is required
  * 
@@ -146,6 +145,8 @@ public class HttpURLSender extends HttpSender {
 		switch (request.getMethod()) {
 		case GET:
 		case DELETE:
+		case HEAD:
+		case OPTIONS:
 			if (this.logger.isDebugEnabled()) {
 				logHeaders("Request", connection.getRequestProperties());
 			}
@@ -214,9 +215,7 @@ public class HttpURLSender extends HttpSender {
 
 		Map<String, List<String>> headerFields = connection.getHeaderFields();
 		if (this.logger.isDebugEnabled()) {
-			if (this.logger.isDebugEnabled()) {
-				logHeaders("Response", headerFields);
-			}
+			logHeaders("Response", headerFields);
 		}
 		Multival responseHeaders = new Multival(headerFields);
 

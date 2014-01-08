@@ -23,14 +23,15 @@ import org.apache.commons.httpclient.StatusLine;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.DeleteMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
+import org.apache.commons.httpclient.methods.OptionsMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.util.EncodingUtil;
-
 
 /**
  * 
@@ -89,6 +90,12 @@ public class HttpClient3Sender extends HttpSender {
 			break;
 		case DELETE:
 			httpMethod = new DeleteMethod(path);
+			break;
+		case HEAD:
+			httpMethod = new HeadMethod(path);
+			break;
+		case OPTIONS:
+			httpMethod = new OptionsMethod(path);
 			break;
 		case POST:
 			PostMethod httpPost = new PostMethod(path);
