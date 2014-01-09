@@ -18,7 +18,7 @@ public class JettyResponse extends SenderResponse {
 	private static final long serialVersionUID = 1L;
 
 	public JettyResponse(JettyContentExchange exchange) {
-		super(exchange.getStatus(), exchange.getMessage(), convert(exchange.getResponseHeaders()),
+		super(exchange.getHttpStatus(), exchange.getMessage(), convert(exchange.getResponseHeaders()),
 				new ByteArrayInputStream(exchange.getResponseBody()));
 	}
 

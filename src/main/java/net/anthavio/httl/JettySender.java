@@ -13,54 +13,51 @@ import net.anthavio.httl.SenderBodyRequest.FakeStream;
 import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
-import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.security.Realm;
-import org.eclipse.jetty.client.security.SimpleRealmResolver;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFields.Field;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 
 /**
- * Jetty 8 based sender
+ * Jetty 8 based sender - DO NOT USE IT !!! It is bag is sh*t, hangs on almost anything
  * 
  * http://wiki.eclipse.org/Jetty/Tutorial/HttpClient
  * 
  * @author martin.vanek
  *
  */
+@Deprecated
 public class JettySender extends HttpSender {
 
-	private final HttpSenderConfig config;
+	private final JettySenderConfig config;
 
 	private HttpClient client;
 
-	public JettySender(HttpSenderConfig config) {
-		this(config, null);
+	public JettySender(String baseUrl) {
+		this(new JettySenderConfig(baseUrl));
 	}
 
-	public JettySender(HttpSenderConfig config, ExecutorService executor) {
+	public JettySender(JettySenderConfig config) {
+		super(config);
+		this.config = config;
+		this.client = config.buildHttpClient();
+		try {
+			client.start();
+		} catch (Exception x) {
+			throw new RuntimeException("Failed to start client", x);
+		}
+	}
+
+	public JettySender(String baseUrl, ExecutorService executor) {
+		this(new JettySenderConfig(baseUrl), executor);
+	}
+
+	public JettySender(JettySenderConfig config, ExecutorService executor) {
 		super(config, executor);
 		this.config = config;
-
-		client = new HttpClient();
-		client.setConnectBlocking(false);
-		client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-		client.setConnectTimeout(config.getConnectTimeoutMillis());
-		client.setTimeout(config.getReadTimeoutMillis());
-		client.setMaxConnectionsPerAddress(config.getPoolMaximumSize());
-		//client.setIdleTimeout(config.get???);
-
-		if (config.getFollowRedirects()) {
-			client.setMaxRedirects(10);
-		}
-		if (config.getAuthentication() != null) {
-			Realm realm = new SimpleRealm("whatever", config.getAuthentication().getUsername(), config.getAuthentication()
-					.getPassword());
-			client.setRealmResolver(new SimpleRealmResolver(realm));
-		}
+		this.client = config.buildHttpClient();
 		try {
 			client.start();
 		} catch (Exception x) {
@@ -69,14 +66,30 @@ public class JettySender extends HttpSender {
 	}
 
 	@Override
+	public JettySenderConfig getConfig() {
+		return config;
+	}
+
+	@Override
+	public void close() {
+		try {
+			client.stop();
+		} catch (Exception x) {
+			throw new RuntimeException("Failed to stop client", x);
+		}
+
+	}
+
+	@Override
 	protected SenderResponse doExecute(SenderRequest request, String path, String query) throws IOException {
 		JettyContentExchange exchange = new JettyContentExchange(true);
-		//exchange.setURL(config.getHostUrl() + path);
+		exchange.setURL(config.getHostUrl() + path);
+		/*
 		exchange.setMethod(request.getMethod().name());
 		exchange.setScheme(config.getHostUrl().getProtocol());
 		exchange.setAddress(new Address(config.getHostUrl().getHost(), config.getHostUrl().getPort()));
 		exchange.setRequestURI(path);
-
+		*/
 		Multival headers = request.getHeaders();
 
 		if (headers != null && headers.size() > 0) {
@@ -159,14 +172,14 @@ public class JettySender extends HttpSender {
 						}
 						String requestContent = marshaller.marshall(fake.getValue());
 						exchange.setRequestContentSource(new ByteArrayInputStream(requestContent.getBytes(charset)));
-						/*
-						if (fake.isStreaming()) {
-							//marshaller.write(fake.getValue(), exchange.getOutputStream(), charset);
-						} else {
-							//XXX create string first an then write...
-							//marshaller.write(fake.getValue(), exchange.getOutputStream(), charset);
-						}
-						*/
+
+						//if (fake.isStreaming()) {
+						//marshaller.write(fake.getValue(), exchange.getOutputStream(), charset);
+						//} else {
+						//XXX create string first an then write...
+						//marshaller.write(fake.getValue(), exchange.getOutputStream(), charset);
+						//}
+
 					}
 				} else {
 					exchange.setRequestContentSource(stream);
@@ -181,7 +194,7 @@ public class JettySender extends HttpSender {
 		default:
 			throw new IllegalArgumentException("Unsupported method " + request.getMethod());
 		}
-
+		exchange.setURL(config.getHostUrl() + path);
 		client.send(exchange);
 
 		try {
@@ -191,11 +204,15 @@ public class JettySender extends HttpSender {
 		}
 
 		if (exchange.getException() != null) {
+			//exchange.getException().printStackTrace();
 			Throwable x = exchange.getException();
 			if (x instanceof ConnectException) {
 				throw (ConnectException) x;
 			} else if (x instanceof SocketTimeoutException) {
-				throw (SocketTimeoutException) x;
+				ConnectException cx = new ConnectException("Connect timeout " + getConfig().getConnectTimeoutMillis() + " ms");
+				cx.setStackTrace(x.getStackTrace());
+				throw cx;
+				//throw (SocketTimeoutException) x;
 			} else if (x instanceof IOException) {
 				throw (IOException) x;
 			} else {
@@ -204,6 +221,7 @@ public class JettySender extends HttpSender {
 		} else {
 			return new JettyResponse(exchange);
 		}
+
 	}
 
 	private void logHeaders(String string, HttpFields headers) {
@@ -216,19 +234,9 @@ public class JettySender extends HttpSender {
 
 	}
 
-	@Override
-	public void close() {
-		try {
-			client.stop();
-		} catch (Exception x) {
-			throw new RuntimeException("Failed to stop client", x);
-		}
-
-	}
-
 	public class JettyContentExchange extends ContentExchange {
 
-		private int status;
+		private int httpStatus;
 
 		private String message;
 
@@ -242,8 +250,8 @@ public class JettySender extends HttpSender {
 			super(cacheFields);
 		}
 
-		public int getStatus() {
-			return status;
+		public int getHttpStatus() {
+			return httpStatus;
 		}
 
 		public String getMessage() {
@@ -265,13 +273,13 @@ public class JettySender extends HttpSender {
 		@Override
 		protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException {
 			super.onResponseStatus(version, status, reason);
-			this.status = status;
+			this.httpStatus = status;
 			this.message = reason.toDetailString();
 		}
 
 		@Override
 		protected void onResponseHeaderComplete() throws IOException {
-			super.onResponseHeaderComplete();
+			//super.onResponseHeaderComplete();
 			if (logger.isDebugEnabled()) {
 				logHeaders("Response", getResponseFields());
 			}
@@ -284,13 +292,14 @@ public class JettySender extends HttpSender {
 
 		@Override
 		protected void onExpire() {
-			this.exception = new ConnectException("yadda yadda");
+			this.exception = new ConnectException("Connect timeout " + getConfig().getHostUrl().toString());
 		}
 
 		@Override
 		protected void onResponseComplete() throws IOException {
 			responseHeaders = getResponseFields();
 			responseBody = getResponseContentBytes();
+			//super.onResponseComplete();
 		}
 
 		@Override
@@ -299,34 +308,4 @@ public class JettySender extends HttpSender {
 		}
 	}
 
-	private static class SimpleRealm implements Realm {
-
-		private String id;
-
-		private String principal;
-
-		private String credentials;
-
-		private SimpleRealm(String id, String principal, String credentials) {
-			this.id = id;
-			this.principal = principal;
-			this.credentials = credentials;
-		}
-
-		@Override
-		public String getId() {
-			return id;
-		}
-
-		@Override
-		public String getPrincipal() {
-			return principal;
-		}
-
-		@Override
-		public String getCredentials() {
-			return credentials;
-		}
-
-	}
 }

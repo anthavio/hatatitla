@@ -10,6 +10,10 @@
 		</encoder>
 	</appender>
 
+	<logger name="org.eclipse.jetty">
+		<level value="info"/>
+	</logger>
+
 	<logger name="org.apache.http">
 		<level value="debug"/>
 	</logger>
@@ -34,8 +38,8 @@
 		<level value="debug"/>
 	</logger>
 	
-	<logger name="org.eclipse.jetty">
-		<level value="info"/>
+	<logger name="org.eclipse.jetty.client">
+		<level value="debug"/>
 	</logger>
 	
 	<logger name="net.anthavio">

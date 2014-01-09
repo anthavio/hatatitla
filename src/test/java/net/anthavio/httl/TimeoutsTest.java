@@ -7,24 +7,12 @@ import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.httl.GetRequest;
-import net.anthavio.httl.HttpClient3Config;
-import net.anthavio.httl.HttpClient3Sender;
-import net.anthavio.httl.HttpClient4Config;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.HttpURLConfig;
-import net.anthavio.httl.HttpURLSender;
-import net.anthavio.httl.SenderException;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
 
 /**
  * 
@@ -83,6 +71,20 @@ public class TimeoutsTest {
 		readTimeout(newHttp4(this.urlSingle));
 	}
 
+	//@Test //Buggy as hell
+	public void jetty() throws IOException {
+		HttpSender sender = newJetty(this.urlFrozen);
+		connectTimeout(sender);
+		sender.close();
+
+		//pool timeout is not testable here
+		//poolTimeout(newSimple(this.urlSingle));
+
+		sender = newJetty(this.urlSingle);
+		readTimeout(sender);
+		sender.close();
+	}
+
 	private void poolTimeout(HttpSender sender) throws IOException {
 		GetRequest request = new GetRequest("/");
 		request.addParameter("sleep", "1");
@@ -117,6 +119,7 @@ public class TimeoutsTest {
 	private void readTimeout(HttpSender sender) throws IOException {
 		SenderRequest request = new GetRequest("/");
 		//pass without sleep
+
 		SenderResponse response = sender.execute(request);
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		response.close(); //return to pool
@@ -181,6 +184,17 @@ public class TimeoutsTest {
 		config.setPoolMaximumSize(1);
 		config.setPoolAcquireTimeoutMillis(300);
 		HttpClient4Sender sender = new HttpClient4Sender(config);
+		sender.setExecutor(executor);
+		return sender;
+	}
+
+	private JettySender newJetty(String url) {
+		JettySenderConfig config = new JettySenderConfig(url);
+		config.setConnectTimeoutMillis(1100);
+		config.setReadTimeoutMillis(1300);
+		config.setPoolMaximumSize(1);
+		//config.setPoolAcquireTimeoutMillis(300);
+		JettySender sender = new JettySender(config);
 		sender.setExecutor(executor);
 		return sender;
 	}

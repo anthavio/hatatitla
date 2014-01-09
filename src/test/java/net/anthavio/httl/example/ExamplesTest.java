@@ -17,6 +17,7 @@ import net.anthavio.httl.HttpClient4Config;
 import net.anthavio.httl.HttpClient4Sender;
 import net.anthavio.httl.HttpURLConfig;
 import net.anthavio.httl.HttpURLSender;
+import net.anthavio.httl.JettySender;
 import net.anthavio.httl.SenderRequest.ValueStrategy;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.cache.CachingSender;
@@ -36,6 +37,16 @@ public class ExamplesTest {
 
 	public static void main(String[] args) {
 		//cachingScheduled();
+		try {
+			JettySender sender = new JettySender("http://httpbin.org/");
+			ExtractedBodyResponse<String> extract = sender.GET("/get").param("prdel", "krtel").extract(String.class);
+			System.out.println(extract);
+
+			sender.close();
+		} catch (Exception x) {
+			x.printStackTrace();
+		}
+
 	}
 
 	public static void fluent() {
@@ -189,7 +200,8 @@ public class ExamplesTest {
 
 		//2a Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
-			ExtractedBodyResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).extract(String.class);
+			ExtractedBodyResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES)
+					.extract(String.class);
 			extract.getBody();//Cache hit
 		}
 
