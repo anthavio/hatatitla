@@ -144,7 +144,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	protected abstract Boolean doRemove(String cacheKey) throws Exception;
 
 	/**
-	 * Ultimate CacheRequest method 
+	 * Client Cache get 
 	 */
 	public CacheEntry<V> get(CacheLoadRequest<V> request) {
 		if ((request.isMissingLoadAsync() || request.isExpiredLoadAsync()) && scheduler == null) {
@@ -156,16 +156,26 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			if (!entry.isExpired()) {
 				return entry; //fresh hit
 			} else {
-				//soft expired - refresh needed
-				logger.debug("Expired: " + userKey);
-				if (request.isExpiredLoadAsync()) {
-					scheduler.startReload(request, entry); //start asynchronous refresh
-					//logger.debug("Soft expired value returned: " + userKey);
-					return entry;
-				} else {
-					//logger.debug("Sync refresh start " + cacheKey);
-					return load(false, request, entry);
-				}
+				return load(request, entry);
+			}
+		} else { //cache miss - we have nothing
+			return load(request, entry);
+		}
+	}
+
+	/**
+	 * Client enforced Cache load
+	 */
+	public CacheEntry<V> load(CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
+		if (expiredEntry != null) {
+			//soft expired - refresh needed
+			if (request.isExpiredLoadAsync()) {
+				scheduler.startReload(request, expiredEntry); //start asynchronous refresh
+				//logger.debug("Soft expired value returned: " + userKey);
+				return expiredEntry;
+			} else {
+				//logger.debug("Sync refresh start " + cacheKey);
+				return load(false, request, expiredEntry);
 			}
 		} else { //cache miss - we have nothing
 			if (request.isMissingLoadAsync()) {
@@ -180,7 +190,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	/**
 	 * Load and store value into cache.
 	 */
-	public CacheEntry<V> load(boolean async, CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
+	protected CacheEntry<V> load(boolean async, CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
 		CacheEntryLoadResult<V> entry;
 		String userKey = request.getUserKey();
 		try {

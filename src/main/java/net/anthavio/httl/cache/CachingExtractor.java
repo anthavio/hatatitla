@@ -109,7 +109,6 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 			ExtractedBodyResponse<T> bodyResponse;
 			if (request.getExtractor() != null) {
 				bodyResponse = sender.extract(request.getSenderRequest(), request.getExtractor());
-				;
 			} else {
 				bodyResponse = sender.extract(request.getSenderRequest(), request.getResultType());
 			}
@@ -150,12 +149,13 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 				return (CacheEntry<T>) entry; //fresh hit
 			} else {
 				CacheLoadRequest<T> cacheRequest = convert(request);
-				return (CacheEntry<T>) cache.get((CacheLoadRequest<Serializable>) cacheRequest);
+				return (CacheEntry<T>) cache.load((CacheLoadRequest<Serializable>) cacheRequest,
+						(CacheEntry<Serializable>) entry);
 				//return (CacheEntry<T>) cache.get(lrequest);
 			}
 		} else { //cache miss - we have nothing
 			CacheLoadRequest<T> cacheRequest = convert(request);
-			return (CacheEntry<T>) cache.get((CacheLoadRequest<Serializable>) cacheRequest);
+			return (CacheEntry<T>) cache.load((CacheLoadRequest<Serializable>) cacheRequest, null);
 		}
 	}
 

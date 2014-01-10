@@ -155,11 +155,11 @@ public class CachingSender implements SenderOperations, ExtractionOperations, Cl
 				return entry; //fresh hit
 			} else {
 				CacheLoadRequest<CachedResponse> lrequest = convert(request);
-				return cache.get(lrequest);
+				return cache.load(lrequest, entry);
 			}
 		} else { //cache miss - we have nothing
 			CacheLoadRequest<CachedResponse> lrequest = convert(request);
-			return cache.get(lrequest);
+			return cache.load(lrequest, null);
 		}
 	}
 
