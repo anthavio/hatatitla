@@ -79,7 +79,7 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 		JsonFactory factory = mapper.getFactory();
 		JsonParser parser = factory.createJsonParser(reader);
 		String xName = className + System.currentTimeMillis();
-		stack.add(new AstNode(xName, null, false)); //artificial root element - must stay on the top of the Stack
+		stack.add(new AstNode(xName, (Class<?>) null, false)); //artificial root element - must stay on the top of the Stack
 		doField(className, parser);
 		if (!xName.equals(stack.peek().getName())) {
 			throw new IllegalStateException("Artificial element " + xName + " not found on the top of the stack");
@@ -92,22 +92,26 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 	}
 
 	private void doField(String name, JsonParser parser) throws IOException {
-		logger.debug("Field begin " + name);
+		logger.debug(">> Field " + name);
 		JsonToken token = parser.nextToken();
+		String typeName;
 		if (token == JsonToken.START_OBJECT) {
-			doObject(name, parser);
+			AstNode node = doObject(name, parser);
+			typeName = node.getTypeName();
 		} else if (token == JsonToken.START_ARRAY) {
-			doArray(name, parser);
+			AstNode node = doArray(name, parser);
+			typeName = node.getTypeName();
 		} else { //must be value then
 			Class<?> type = doValue(parser);
+			typeName = type.getName();
 			stack.peek().addField(name, type);
 		}
-		logger.debug("Field ended " + name);
+		logger.debug("<< Field " + name + " type " + typeName);
 	}
 
 	private AstNode doObject(String name, JsonParser parser) throws IOException {
-		logger.debug("Object begin " + name);
-		AstNode object = AstNode.object(name);
+		logger.debug(">> Object " + name);
+		AstNode object = new AstNode(name, (Class<?>) null, false);
 		stack.push(object);
 		while (parser.nextToken() != JsonToken.END_OBJECT) {
 			JsonToken token = parser.getCurrentToken();
@@ -125,7 +129,7 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 		object = declare(object);
 
 		stack.peek().addField(object); //add to parent
-		logger.debug("Object ended " + name + " " + object);
+		logger.debug("<< Object " + name + " " + object);
 		return object;
 	}
 
@@ -148,7 +152,8 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 			//System.out.println(object + " vs " + existing);
 			if (existing.equalsFields(object)) {
 				//System.out.println("existing " + object);
-				return existing;
+				object = new AstNode(object.getName(), existing.getTypeName(), existing.isArray());
+				return object;
 			}
 		}
 
@@ -167,8 +172,8 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 	}
 
 	private AstNode doArray(String name, JsonParser parser) throws IOException {
-		logger.debug("Array begin " + name);
-		AstNode array = AstNode.array(name);
+		logger.debug(">> Array " + name);
+		AstNode array = new AstNode(name, (Class<?>) null, true);
 		stack.push(array);
 		int counter = 0;
 		AstNode first = null;
@@ -218,7 +223,12 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 			throw new IllegalStateException("Stack corrupted for " + array);
 		}
 		stack.peek().addField(array); //add this array into parent object
-		logger.debug("Array ended " + name + " " + array);
+
+		if (array.getElements().isEmpty()) {
+			array.setTypeName(Void.class); //empty array
+		}
+
+		logger.debug("<< Array " + name + " " + array);
 		return array;
 	}
 
@@ -259,7 +269,7 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 				//not a date, keep it string
 			}
 		}
-		logger.debug("Value " + value + " of " + type);
+		logger.debug("== value '" + value + "' type " + type.getName());
 		return type;
 	}
 

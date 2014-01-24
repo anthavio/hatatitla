@@ -114,17 +114,23 @@ public abstract class JavaCodeGenerator {
 	private String buildFieldType(AstNode field) {
 		StringBuilder sb = new StringBuilder();
 		AstNode f = field;
-		while (f.isArray()) {
+		while (f.isArray()) { //nested arrays...
 			sb.append("java.util.List<");
-			f = f.getElements().get(0); //JSON null?
+			if (f.getElements().isEmpty()) {
+				break; //empty array
+			}
+			f = f.getElements().get(0);
 		}
 
 		sb.append(field.getTypeName());
 
 		f = field;
 		while (f.isArray()) {
-			f = f.getElements().get(0); //JSON null?
 			sb.append(">");
+			if (f.getElements().isEmpty()) {
+				break; //empty array
+			}
+			f = f.getElements().get(0);
 		}
 
 		return sb.toString();
@@ -321,18 +327,6 @@ class AstNode {
 
 	private boolean simpleType;
 
-	public static AstNode array(String name) {
-		return new AstNode(name, null, true);
-	}
-
-	public static AstNode object(String name) {
-		return new AstNode(name, null, false);
-	}
-
-	public static AstNode Fielem(String name, Class<?> clazz) {
-		return new AstNode(name, clazz, false);
-	}
-
 	public AstNode(String name, Class<?> clazz, boolean array) {
 		if (Cutils.isEmpty(name)) {
 			throw new IllegalArgumentException("Name is empty");
@@ -344,6 +338,16 @@ class AstNode {
 		}
 
 		this.array = array;
+	}
+
+	public AstNode(String name, String typeName, boolean array) {
+		if (Cutils.isEmpty(name)) {
+			throw new IllegalArgumentException("Name is empty");
+		}
+		this.name = name;
+		setTypeName(typeName);
+		this.array = array;
+
 	}
 
 	public String getName() {
@@ -362,17 +366,20 @@ class AstNode {
 	public void setTypeName(Class<?> clazz) {
 		String name = clazz.getName();
 		if (name.startsWith("java.lang")) {
-			this.typeName = clazz.getSimpleName();
-			this.simpleType = true;
+			setTypeName(clazz.getSimpleName());
 		} else {
-			this.typeName = clazz.getName();
-			this.simpleType = false;
+			setTypeName(clazz.getName());
 		}
 	}
 
 	//For Object (custom)
 	public void setTypeName(String name) {
 		this.typeName = name;
+		if (name.startsWith("java.lang")) {
+			this.simpleType = true;
+		} else {
+			this.simpleType = false;
+		}
 	}
 
 	//Fields (Object) or Elements (Array)
