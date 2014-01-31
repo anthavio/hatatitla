@@ -333,7 +333,7 @@ public class SenderRequest {
 	/**
 	 * Matrix parameter is allways part of URL.
 	 */
-	public SenderRequest addMartix(String name, Object value) {
+	public SenderRequest addMartixParam(String name, Object value) {
 		if (name.charAt(0) != ';') {
 			name = ";" + name;
 		}
@@ -344,9 +344,23 @@ public class SenderRequest {
 	/**
 	 * Matrix parameter is allways part of URL.
 	 */
-	public SenderRequest setMartix(String name, Object value) {
+	public SenderRequest setMartixParam(String name, Object value) {
 		if (name.charAt(0) != ';') {
 			name = ";" + name;
+		}
+		this.parameters.put(name, value, true);
+		return this;
+	}
+
+	/**
+	 * URL path parameter is allways part of ...well... URL.
+	 */
+	public SenderRequest setUrlParam(String name, Object value) {
+		if (name.charAt(0) != '{') {
+			name = "{" + name + "}";
+		}
+		if (urlPath.indexOf(name) == -1) {
+			throw new IllegalArgumentException("URL path variable: " + name + " not found in: " + urlPath);
 		}
 		this.parameters.put(name, value, true);
 		return this;
@@ -358,7 +372,7 @@ public class SenderRequest {
 			return URI.create(urlPath);
 		} else {
 			URL url = sender.getConfig().getHostUrl();
-			String[] pathAndQuery = sender.getPathAndQuery(this); //XXX NOT all parmas are query for POST
+			String[] pathAndQuery = sender.getPathAndQuery(this); //XXX NOT all params are query for POST
 			String path = pathAndQuery[0];
 			String query = pathAndQuery[1];
 			try {
