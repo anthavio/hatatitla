@@ -1,7 +1,10 @@
 package net.anthavio.httl.rest;
 
+import java.lang.reflect.ParameterizedType;
+
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.rest.ArgConfig.ArgType;
+import net.anthavio.httl.util.GenericType;
 
 /**
  * Method configuration template
@@ -33,8 +36,20 @@ public class MethodConfig<R> {
 
 		private final MimeType[] formats;
 
+		private final ParameterizedType type;
+
+		public ResponseConfig(ParameterizedType type, MimeType[] formats, boolean multi, boolean cursor) {
+			this.clazz = null;
+			this.type = type;
+			this.formats = formats;
+			this.multi = multi;
+			this.cursor = cursor;
+
+		}
+
 		public ResponseConfig(Class<R> clazz, MimeType[] formats, boolean multi, boolean cursor) {
 			this.clazz = clazz;
+			this.type = null;
 			this.formats = formats;
 			this.multi = multi;
 			this.cursor = cursor;
@@ -42,6 +57,10 @@ public class MethodConfig<R> {
 
 		public Class<R> getClazz() {
 			return this.clazz;
+		}
+
+		public ParameterizedType getType() {
+			return this.type;
 		}
 
 		public MimeType[] getFormats() {
@@ -117,6 +136,10 @@ public class MethodConfig<R> {
 		return response.getClazz();
 	}
 
+	public ParameterizedType getResponseType() {
+		return response.getType();
+	}
+
 	/**
 	 * POST
 	 */
@@ -133,6 +156,14 @@ public class MethodConfig<R> {
 	}
 
 	/**
+	 * PUT - GenericType
+	 */
+	public static <R> MethodConfig<R> POST(String urlPath, GenericType<R> responseType, ArgConfig... arguments) {
+		ResponseConfig<R> response = new ResponseConfig<R>(responseType.getParameterizedType(), null, true, true);
+		return new MethodConfig<R>(false, SenderRequest.Method.POST, urlPath, ClientAuth.NONE, response, arguments);
+	}
+
+	/**
 	 * GET
 	 */
 	public static <R> MethodConfig<R> GET(String urlPath, ClientAuth authentication, Class<R> responseClass,
@@ -144,7 +175,53 @@ public class MethodConfig<R> {
 	 * GET anonymous
 	 */
 	public static <R> MethodConfig<R> GET(String urlPath, Class<R> responseClass, ArgConfig... arguments) {
-		return GET(urlPath, ClientAuth.NONE, responseClass, arguments);
+		return Method(false, SenderRequest.Method.GET, urlPath, ClientAuth.NONE, responseClass, arguments);
+	}
+
+	/**
+	 * GET - GenericType
+	 */
+	public static <R> MethodConfig<R> GET(String urlPath, GenericType<R> responseType, ArgConfig... arguments) {
+		ResponseConfig<R> response = new ResponseConfig<R>(responseType.getParameterizedType(), null, true, true);
+		return new MethodConfig<R>(false, SenderRequest.Method.GET, urlPath, ClientAuth.NONE, response, arguments);
+	}
+
+	/**
+	 * PUT
+	 */
+	public static <R> MethodConfig<R> PUT(String urlPath, ClientAuth authentication, Class<R> responseClass,
+			ArgConfig... arguments) {
+		return Method(false, SenderRequest.Method.PUT, urlPath, authentication, responseClass, arguments);
+	}
+
+	/**
+	 * PUT anonymous
+	 */
+	public static <R> MethodConfig<R> PUT(String urlPath, Class<R> responseClass, ArgConfig... arguments) {
+		return PUT(urlPath, ClientAuth.NONE, responseClass, arguments);
+	}
+
+	/**
+	 * PUT - GenericType
+	 */
+	public static <R> MethodConfig<R> PUT(String urlPath, GenericType<R> responseType, ArgConfig... arguments) {
+		ResponseConfig<R> response = new ResponseConfig<R>(responseType.getParameterizedType(), null, true, true);
+		return new MethodConfig<R>(false, SenderRequest.Method.PUT, urlPath, ClientAuth.NONE, response, arguments);
+	}
+
+	/**
+	 * DELETE
+	 */
+	public static <R> MethodConfig<R> DELETE(String urlPath, ClientAuth authentication, Class<R> responseClass,
+			ArgConfig... arguments) {
+		return Method(false, SenderRequest.Method.DELETE, urlPath, authentication, responseClass, arguments);
+	}
+
+	/**
+	 * DELETE anonymous
+	 */
+	public static <R> MethodConfig<R> DELETE(String urlPath, Class<R> responseClass, ArgConfig... arguments) {
+		return DELETE(urlPath, ClientAuth.NONE, responseClass, arguments);
 	}
 
 	public static <R> MethodConfig<R> Method(boolean https, SenderRequest.Method method, String urlPath,
@@ -194,4 +271,5 @@ public class MethodConfig<R> {
 	public static ArgConfig Arg(String name, ArgType<?, ?> type, boolean required, boolean multi) {
 		return new ArgConfig(name, type, required, multi);
 	}
+
 }
