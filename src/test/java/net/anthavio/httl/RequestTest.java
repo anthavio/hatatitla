@@ -57,12 +57,12 @@ public class RequestTest {
 		assertThat(paq[0]).isEqualTo("/path?p0&p1=&p2=1");
 		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		rGet.addMartix("m0", null);//null is skipped by default
+		rGet.addMartixParam("m0", null);//null is skipped by default
 		paq = sender.getPathAndQuery(rGet);
 		assertThat(paq[0]).isEqualTo("/path;m0?p0&p1=&p2=1");
 		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		rGet.addMartix("m1", "");//blank is not skipped by default
+		rGet.addMartixParam("m1", "");//blank is not skipped by default
 		paq = sender.getPathAndQuery(rGet);
 		assertThat(paq[0]).isEqualTo("/path;m0;m1=?p0&p1=&p2=1");
 		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
@@ -94,12 +94,12 @@ public class RequestTest {
 		assertThat(paq[0]).isEqualTo("/path");
 		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		rPost.addMartix("m0", null);
+		rPost.addMartixParam("m0", null);
 		paq = sender.getPathAndQuery(rPost);
 		assertThat(paq[0]).isEqualTo("/path;m0");
 		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 
-		rPost.addMartix("m1", ""); //add matrix parameter
+		rPost.addMartixParam("m1", ""); //add matrix parameter
 		paq = sender.getPathAndQuery(rPost);
 		assertThat(paq[0]).isEqualTo("/path;m0;m1=");
 		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");

@@ -2,6 +2,7 @@ package net.anthavio.httl.inout;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 
 import net.anthavio.httl.SenderResponse;
 
@@ -17,14 +18,14 @@ import com.google.gson.Gson;
  */
 public class GsonResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
-	private final Class<T> resultType;
+	private final Type resultType;
 
 	private final Gson gson;
 
 	/**
 	 * Externaly created ObjectMapper is provided
 	 */
-	public GsonResponseExtractor(Class<T> resultType, Gson gson) {
+	public GsonResponseExtractor(Type resultType, Gson gson) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
@@ -44,10 +45,10 @@ public class GsonResponseExtractor<T> extends ResponseBodyExtractor<T> {
 	public T extract(SenderResponse response) throws IOException {
 		Object object = null;
 		try {
-			return gson.fromJson(new InputStreamReader(response.getStream(), response.getCharset()), resultType);
+			object = gson.fromJson(new InputStreamReader(response.getStream(), response.getCharset()), resultType);
+			return (T) object;
 		} catch (ClassCastException ccx) {
-			String message = "Cannot cast: " + object.getClass().getName() + " into: " + resultType.getName() + " value: "
-					+ object;
+			String message = "Cannot cast: " + object.getClass().getName() + " into: " + resultType + " value: " + object;
 			throw new IllegalArgumentException(message, ccx);
 		}
 	}

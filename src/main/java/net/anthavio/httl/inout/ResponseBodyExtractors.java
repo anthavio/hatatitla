@@ -7,7 +7,7 @@ import java.util.Map;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
-
+import net.anthavio.httl.util.GenericType;
 
 /**
  * Storage for ResponseExtractor
@@ -118,9 +118,23 @@ public class ResponseBodyExtractors {
 	 */
 	public <T> T extract(SenderResponse response, Class<T> resultType) throws IOException {
 		String contentType = response.getFirstHeader("Content-Type");
-		ResponseBodyExtractor<?> extractor = getExtractor(response, resultType);
+		ResponseBodyExtractor<T> extractor = getExtractor(response, resultType);
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor not found for class " + resultType.getName() + " and Content-Type "
+					+ contentType);
+		}
+		return (T) extractor.extract(response);
+	}
+
+	/**
+	 * Extracts Response into desired resultType or fails miserably.
+	 * This method does NOT close Response
+	 */
+	public <T> T extract(SenderResponse response, GenericType<T> typeReference) throws IOException {
+		String contentType = response.getFirstHeader("Content-Type");
+		ResponseBodyExtractor<T> extractor = getExtractor(response, typeReference);
+		if (extractor == null) {
+			throw new IllegalArgumentException("Extractor not found for class " + typeReference + " and Content-Type "
 					+ contentType);
 		}
 		return (T) extractor.extract(response);
@@ -134,6 +148,24 @@ public class ResponseBodyExtractors {
 			return (ResponseBodyExtractor<T>) ResponseBodyExtractors.BYTES;
 		}
 
+		ResponseExtractorFactory extractorFactory = getFactory(response);
+		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, clazz);
+		if (extractor == null) {
+			throw new IllegalStateException("ResponseExtractorFactory " + extractorFactory + " returned null");
+		}
+		return extractor;
+	}
+
+	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, GenericType<T> typeReference) {
+		ResponseExtractorFactory extractorFactory = getFactory(response);
+		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, typeReference.getParameterizedType());
+		if (extractor == null) {
+			throw new IllegalStateException("ResponseExtractorFactory " + extractorFactory + " returned null");
+		}
+		return extractor;
+	}
+
+	private ResponseExtractorFactory getFactory(SenderResponse response) {
 		String contentType = response.getFirstHeader("Content-Type");
 		if (Cutils.isEmpty(contentType)) {
 			throw new IllegalArgumentException("Content-Type header not found");
@@ -143,11 +175,7 @@ public class ResponseBodyExtractors {
 		if (extractorFactory == null) {
 			throw new IllegalArgumentException("Extractor factory not found for " + mediaType);
 		}
-		ResponseBodyExtractor<T> extractor = extractorFactory.getExtractor(response, clazz);
-		if (extractor == null) {
-			throw new IllegalStateException("ResponseExtractorFactory " + extractorFactory + " returned null");
-		}
-		return extractor;
+		return extractorFactory;
 	}
 
 }

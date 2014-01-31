@@ -1,12 +1,13 @@
 package net.anthavio.httl.inout;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.anthavio.httl.SenderResponse;
 
 import org.simpleframework.xml.core.Persister;
-
 
 /**
  * 
@@ -15,7 +16,7 @@ import org.simpleframework.xml.core.Persister;
  */
 public class SimpleXmlExtractorFactory implements ResponseExtractorFactory {
 
-	private final Map<Class<?>, SimpleXmlResponseExtractor<?>> cache = new HashMap<Class<?>, SimpleXmlResponseExtractor<?>>();
+	private final Map<Type, SimpleXmlResponseExtractor<?>> cache = new HashMap<Type, SimpleXmlResponseExtractor<?>>();
 
 	private final Persister persister;
 
@@ -36,7 +37,7 @@ public class SimpleXmlExtractorFactory implements ResponseExtractorFactory {
 	/**
 	 * @return hackish access to cached extractors
 	 */
-	public Map<Class<?>, SimpleXmlResponseExtractor<?>> getCache() {
+	public Map<Type, SimpleXmlResponseExtractor<?>> getCache() {
 		return cache;
 	}
 
@@ -56,6 +57,11 @@ public class SimpleXmlExtractorFactory implements ResponseExtractorFactory {
 		}
 
 		return extractor;
+	}
+
+	@Override
+	public <T> SimpleXmlResponseExtractor<T> getExtractor(SenderResponse response, ParameterizedType resultType) {
+		throw new UnsupportedOperationException("Not yet there....");
 	}
 
 	@Override

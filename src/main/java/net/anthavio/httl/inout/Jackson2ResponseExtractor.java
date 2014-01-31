@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 
 import net.anthavio.httl.SenderResponse;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -18,18 +19,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class Jackson2ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
-	private final Class<T> resultType;
+	private final JavaType resultType;
 
 	private final ObjectMapper mapper;
 
 	/**
 	 * Externaly created ObjectMapper is provided
 	 */
-	public Jackson2ResponseExtractor(Class<T> resultType, ObjectMapper mapper) {
-		if (resultType == null) {
+	public Jackson2ResponseExtractor(JavaType javaType, ObjectMapper mapper) {
+		if (javaType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
-		this.resultType = resultType;
+		this.resultType = javaType;
 
 		if (mapper == null) {
 			throw new IllegalArgumentException("mapper is null");
@@ -49,8 +50,7 @@ public class Jackson2ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 			object = mapper.reader(resultType).readValue(new InputStreamReader(response.getStream(), response.getCharset()));
 			return (T) object;
 		} catch (ClassCastException ccx) {
-			String message = "Cannot cast: " + object.getClass().getName() + " into: " + resultType.getName() + " value: "
-					+ object;
+			String message = "Cannot cast: " + object.getClass().getName() + " into: " + resultType + " value: " + object;
 			throw new IllegalArgumentException(message, ccx);
 		}
 	}

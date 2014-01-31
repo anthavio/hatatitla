@@ -8,11 +8,11 @@ import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.SenderBodyRequest.FakeStream;
 import net.anthavio.httl.SenderRequest.Method;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
+import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.inout.ResponseBodyHandler;
 import net.anthavio.httl.inout.ResponseHandler;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.util.Cutils;
-
+import net.anthavio.httl.util.GenericType;
 
 /**
  * Equivalent of Jersey/JAX-RS-2.0 RequestBuilder
@@ -146,6 +146,15 @@ public class SenderRequestBuilders {
 		public <T> ExtractedBodyResponse<T> extract(Class<T> clazz) {
 			SenderRequest request = build();
 			return httpSender.extract(request, clazz);
+		}
+
+		/**
+		 * Execute Request and extract Response.
+		 * Response is closed automaticaly.
+		 */
+		public <T> ExtractedBodyResponse<T> extract(GenericType<T> typeReference) {
+			SenderRequest request = build();
+			return httpSender.extract(request, typeReference);
 		}
 
 		/**

@@ -1,12 +1,13 @@
 package net.anthavio.httl.inout;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 
 import net.anthavio.httl.SenderResponse;
-
 
 /**
  * 
@@ -15,7 +16,7 @@ import net.anthavio.httl.SenderResponse;
  */
 public class JaxbExtractorFactory implements ResponseExtractorFactory {
 
-	private final Map<Class<?>, JaxbResponseExtractor<?>> cache = new HashMap<Class<?>, JaxbResponseExtractor<?>>();
+	private final Map<Type, JaxbResponseExtractor<?>> cache = new HashMap<Type, JaxbResponseExtractor<?>>();
 
 	private final JAXBContext jaxbContext;
 
@@ -36,7 +37,7 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 	/**
 	 * @return hackish access to cached extractors
 	 */
-	public Map<Class<?>, JaxbResponseExtractor<?>> getCache() {
+	public Map<Type, JaxbResponseExtractor<?>> getCache() {
 		return cache;
 	}
 
@@ -59,6 +60,11 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 			cache.put(resultType, extractor);
 		}
 		return extractor;
+	}
+
+	@Override
+	public <T> JaxbResponseExtractor<T> getExtractor(SenderResponse response, ParameterizedType resultType) {
+		throw new UnsupportedOperationException("Not yet there....");
 	}
 
 	@Override

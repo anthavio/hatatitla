@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import net.anthavio.httl.SenderResponse;
 
 import org.codehaus.jackson.map.ObjectMapper;
-
+import org.codehaus.jackson.type.JavaType;
 
 /**
  * JSON -> Java 
@@ -19,13 +19,15 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class Jackson1ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 
-	private final Class<T> resultType;
+	//private final Class<T> resultType;
+
+	private final JavaType javaType;
 
 	private final ObjectMapper mapper;
 
 	/**
 	 * Externaly created ObjectMapper is provided
-	 */
+	
 	public Jackson1ResponseExtractor(Class<T> resultType, ObjectMapper mapper) {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
@@ -38,6 +40,18 @@ public class Jackson1ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 		this.mapper = mapper;
 
 	}
+	*/
+	public Jackson1ResponseExtractor(JavaType javaType, ObjectMapper mapper) {
+		if (javaType == null) {
+			throw new IllegalArgumentException("javaType is null");
+		}
+		this.javaType = javaType;
+
+		if (mapper == null) {
+			throw new IllegalArgumentException("mapper is null");
+		}
+		this.mapper = mapper;
+	}
 
 	public ObjectMapper getObjectMapper() {
 		return mapper;
@@ -47,18 +61,17 @@ public class Jackson1ResponseExtractor<T> extends ResponseBodyExtractor<T> {
 	public T extract(SenderResponse response) throws IOException {
 		Object object = null;
 		try {
-			object = mapper.reader(resultType).readValue(new InputStreamReader(response.getStream(), response.getCharset()));
+			object = mapper.reader(javaType).readValue(new InputStreamReader(response.getStream(), response.getCharset()));
 			return (T) object;
 		} catch (ClassCastException ccx) {
-			String message = "Cannot cast: " + object.getClass().getName() + " into: " + resultType.getName() + " value: "
-					+ object;
+			String message = "Cannot cast: " + object.getClass().getName() + " into: " + javaType + " value: " + object;
 			throw new IllegalArgumentException(message, ccx);
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "Jackson1ResponseExtractor [resultType=" + resultType + ", mapper=" + mapper + "]";
+		return "Jackson1ResponseExtractor [resultType=" + javaType + ", mapper=" + mapper + "]";
 	}
 
 }

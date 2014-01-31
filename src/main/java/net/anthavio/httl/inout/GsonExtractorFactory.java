@@ -1,5 +1,7 @@
 package net.anthavio.httl.inout;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,7 +17,7 @@ import com.google.gson.Gson;
  */
 public class GsonExtractorFactory implements ResponseExtractorFactory {
 
-	private final Map<Class<?>, GsonResponseExtractor<?>> cache = new HashMap<Class<?>, GsonResponseExtractor<?>>();
+	private final Map<Type, GsonResponseExtractor<?>> cache = new HashMap<Type, GsonResponseExtractor<?>>();
 
 	private final Gson gson;
 
@@ -46,12 +48,21 @@ public class GsonExtractorFactory implements ResponseExtractorFactory {
 	/**
 	 * Hackish access to internal cache
 	 */
-	public Map<Class<?>, GsonResponseExtractor<?>> getCache() {
+	public Map<Type, GsonResponseExtractor<?>> getCache() {
 		return cache;
 	}
 
 	@Override
 	public <T> GsonResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
+		return getExtractor(response, (Type) resultType);
+	}
+
+	@Override
+	public <T> GsonResponseExtractor<T> getExtractor(SenderResponse response, ParameterizedType resultType) {
+		return getExtractor(response, (Type) resultType);
+	}
+
+	public <T> GsonResponseExtractor<T> getExtractor(SenderResponse response, Type resultType) {
 		GsonResponseExtractor<T> extractor = (GsonResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			extractor = new GsonResponseExtractor<T>(resultType, gson);

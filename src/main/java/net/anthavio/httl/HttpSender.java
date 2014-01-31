@@ -32,17 +32,17 @@ import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.inout.RequestBodyMarshallers;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
+import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.inout.ResponseBodyExtractors;
 import net.anthavio.httl.inout.ResponseBodyHandler;
 import net.anthavio.httl.inout.ResponseErrorHandler;
 import net.anthavio.httl.inout.ResponseExtractorFactory;
 import net.anthavio.httl.inout.ResponseHandler;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.util.Cutils;
+import net.anthavio.httl.util.GenericType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * 
@@ -271,6 +271,15 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 		}
 	}
 
+	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, GenericType<T> typeReference) {
+		if (typeReference == null) {
+			throw new IllegalArgumentException("typeReference is null");
+		}
+		SenderResponse response = execute(request);
+		ResponseBodyExtractor<T> extractor = extractors.getExtractor(response, typeReference);
+		return extract(request, extractor);
+	}
+
 	/**
 	 * Mainly for CachingSender and CachingExtractor to access HttpSenders extracting facilities
 	 */
@@ -419,6 +428,8 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 				.getEmptyValueStrategy();
 		EncodeStrategy encodeStrategy = request.getUrlEncodingStrategy() != null ? request.getUrlEncodingStrategy()
 				: config.getUrlEncodingStrategy();
+
+		String urlPath = request.getUrlPath(); // url path /can/be/{templated}/ 
 		StringBuilder sbMxParams = null;
 		StringBuilder sbQuParams = null;
 		boolean bQp = false; //is any query parameter
@@ -427,6 +438,7 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 		if (parameters != null && parameters.size() != 0) {
 			sbMxParams = new StringBuilder();
 			sbQuParams = new StringBuilder();
+
 			for (String name : parameters) {
 				if (name.charAt(0) == ';') { //matrix parameter
 					List<String> values = parameters.get(name);
@@ -468,6 +480,16 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 							}
 						}
 					}
+				} else if (name.charAt(0) == '{') { // url path parameter
+					int idx = urlPath.indexOf(name);
+					if (idx == -1) {
+						throw new IllegalArgumentException("Url path parameter " + name + " not found in " + request.getUrlPath());
+					}
+					//some explicit checks would be nice here...
+					List<String> values = parameters.get(name);
+					String value = values.get(0);
+					urlPath = urlPath.replace(name, value);
+
 				} else { //query parameter
 					List<String> values = parameters.get(name);
 					if (values == null) {
@@ -517,23 +539,25 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 			}
 		}
 
-		String path = request.getUrlPath();
+		if (urlPath.indexOf('{') != -1) {
+			throw new IllegalStateException("Unresolved URL path parameter found: " + urlPath);
+		}
 
 		//append matrix parameters if any
 		if (sbMxParams != null && sbMxParams.length() != 0) {
-			path = path + sbMxParams;
+			urlPath = urlPath + sbMxParams;
 		}
 
 		//append query parameters if are any and if apropriate
 		if (bQp) {
 			if (!request.getMethod().canHaveBody()) {
-				path = path + "?" + sbQuParams.toString();// GET, DELETE, ... (body not allowed)
+				urlPath = urlPath + "?" + sbQuParams.toString();// GET, DELETE, ... (body not allowed)
 			} else if (request.hasBody()) {
-				path = path + "?" + sbQuParams.toString(); // POST, PUT with body - query must be part of path
+				urlPath = urlPath + "?" + sbQuParams.toString(); // POST, PUT with body - query must be part of path
 			}
 		}
 		String query = sbQuParams != null ? sbQuParams.toString() : null;
-		return new String[] { path, query };
+		return new String[] { urlPath, query };
 	}
 
 	private boolean isEmpty(List<String> values, ValueStrategy nullStrategy, ValueStrategy emptyStrategy) {

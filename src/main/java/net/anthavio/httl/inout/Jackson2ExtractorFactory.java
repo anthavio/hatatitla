@@ -1,10 +1,13 @@
 package net.anthavio.httl.inout;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.anthavio.httl.SenderResponse;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -14,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 
-	private final Map<Class<?>, Jackson2ResponseExtractor<?>> cache = new HashMap<Class<?>, Jackson2ResponseExtractor<?>>();
+	private final Map<Type, Jackson2ResponseExtractor<?>> cache = new HashMap<Type, Jackson2ResponseExtractor<?>>();
 
 	private final ObjectMapper objectMapper;
 
@@ -28,7 +31,7 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 	/**
 	 * Hackis access to internal cache
 	 */
-	public Map<Class<?>, Jackson2ResponseExtractor<?>> getCache() {
+	public Map<Type, Jackson2ResponseExtractor<?>> getCache() {
 		return cache;
 	}
 
@@ -51,9 +54,19 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 	 */
 	@Override
 	public <T> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, Class<T> resultType) {
+		return getExtractor(response, (Type) resultType);
+	}
+
+	@Override
+	public <T> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, ParameterizedType resultType) {
+		return getExtractor(response, (Type) resultType);
+	}
+
+	private <T> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, Type resultType) {
 		Jackson2ResponseExtractor<T> extractor = (Jackson2ResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
-			extractor = new Jackson2ResponseExtractor<T>(resultType, objectMapper);
+			JavaType javaType = this.objectMapper.constructType(resultType);
+			extractor = new Jackson2ResponseExtractor<T>(javaType, objectMapper);
 			cache.put(resultType, extractor);
 		}
 		return extractor;
@@ -63,4 +76,5 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 	public String toString() {
 		return "Jackson2ExtractorFactory [objectMapper=" + objectMapper + ", cache=" + cache.size() + "]";
 	}
+
 }
