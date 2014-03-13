@@ -51,6 +51,37 @@ public class MarshallingExtractingTest {
 	}
 
 	@Test
+	public void defaultExtractors() {
+		HttpClient4Sender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).buildSender();
+		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) sender.getHttpClient()
+				.getConnectionManager();
+
+		sender.GET("/").extract(String.class);
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		try {
+			sender.GET("/").param("dostatus", 500).extract(String.class);
+			Assert.fail("Preceding statement must throw SenderHttpStatusException");
+		} catch (SenderHttpStatusException shsx) {
+			//
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		sender.GET("/").extract(byte[].class);
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		try {
+			sender.GET("/").param("dostatus", 500).extract(byte[].class);
+			Assert.fail("Preceding statement must throw SenderHttpStatusException");
+		} catch (SenderHttpStatusException shsx) {
+			//
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		sender.close();
+	}
+
+	@Test
 	public void responseHandler() throws IOException {
 		HttpClient4Sender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).buildSender();
 		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) sender.getHttpClient()
