@@ -1,8 +1,6 @@
 package net.anthavio.httl;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-
-import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.GsonExtractorFactory;
 import net.anthavio.httl.inout.GsonRequestMarshaller;
 import net.anthavio.httl.inout.GsonResponseExtractor;
@@ -18,7 +16,7 @@ import net.anthavio.httl.inout.JaxbResponseExtractor;
 import net.anthavio.httl.inout.SimpleXmlExtractorFactory;
 import net.anthavio.httl.inout.SimpleXmlRequestMarshaller;
 import net.anthavio.httl.inout.SimpleXmlResponseExtractor;
-import net.anthavio.httl.util.FakeSender.FakeResponse;
+import net.anthavio.httl.util.MockResponse;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.simpleframework.xml.core.Persister;
@@ -47,7 +45,7 @@ public class OptionalLibTest {
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new FakeResponse(200, "application/xml; charset=utf-8", xml);
+		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
 
 		SimpleXmlExtractorFactory factory = new SimpleXmlExtractorFactory(persister);
 		SimpleXmlResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
@@ -69,7 +67,7 @@ public class OptionalLibTest {
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new FakeResponse(200, "application/xml; charset=utf-8", xml);
+		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
 
 		Jackson2ExtractorFactory factory = new Jackson2ExtractorFactory(mapper);
 		Jackson2ResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
@@ -91,7 +89,7 @@ public class OptionalLibTest {
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String json = marshaller.marshall(request);
 
-		SenderResponse response = new FakeResponse(200, "application/xml; charset=utf-8", json);
+		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", json);
 
 		Jackson1ExtractorFactory factory = new Jackson1ExtractorFactory(mapper);
 		Jackson1ResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
@@ -113,7 +111,7 @@ public class OptionalLibTest {
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new FakeResponse(200, "application/xml; charset=utf-8", xml);
+		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
 
 		GsonExtractorFactory factory = new GsonExtractorFactory(gson);
 		GsonResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
@@ -133,7 +131,7 @@ public class OptionalLibTest {
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new FakeResponse(200, "application/xml; charset=utf-8", xml);
+		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
 
 		JaxbExtractorFactory factory = new JaxbExtractorFactory();
 		JaxbResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);

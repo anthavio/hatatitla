@@ -7,11 +7,10 @@ import java.io.Serializable;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 
-import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.util.CodeGeneratingHandler;
 import net.anthavio.httl.util.JsonBuilder;
 import net.anthavio.httl.util.JsonInputGenerator;
-import net.anthavio.httl.util.FakeSender.FakeResponse;
+import net.anthavio.httl.util.MockResponse;
 
 import org.testng.annotations.Test;
 
@@ -72,7 +71,7 @@ public class UtilTest {
 		}
 
 		CodeGeneratingHandler handler = new CodeGeneratingHandler();
-		SenderResponse response = new FakeResponse(200, "application/json; charset=utf-8", json);
+		SenderResponse response = new MockResponse(200, "application/json; charset=utf-8", json);
 		handler.onResponse(response);
 	}
 }

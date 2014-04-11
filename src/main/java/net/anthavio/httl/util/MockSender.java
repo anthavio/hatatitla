@@ -1,16 +1,12 @@
 package net.anthavio.httl.util;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.HttpURLConfig;
+import net.anthavio.httl.SenderBodyRequest;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
-
 
 /**
  * Sometimes we need to test what is sent remote server without actualy sending it...
@@ -18,32 +14,35 @@ import net.anthavio.httl.SenderResponse;
  * @author martin.vanek
  *
  */
-public class FakeSender extends HttpSender {
+public class MockSender extends HttpSender {
 
 	private SenderRequest request; //from last doExecute invocation
 	private String path;//from last doExecute invocation
 	private String query;//from last doExecute invocation
 
-	private SenderResponse response; //what to return form doExecute
+	private SenderResponse response; //what to return from doExecute
+
+	private IOException exception; //throw from doExecute
 
 	private boolean closed;
 
 	private AtomicInteger executions = new AtomicInteger(0);
 
-	public FakeSender(SenderResponse response) {
-		super(new HttpURLConfig("http://never.really.sent.anywhere/"));
-		if (response == null) {
-			throw new IllegalArgumentException("response is null");
-		}
+	public MockSender() {
+		this((SenderResponse) null);
+	}
+
+	public MockSender(SenderResponse response) {
+		super(new MockConfig());
 		this.response = response;
 	}
 
-	public FakeSender(String responseBody) {
+	public MockSender(String responseBody) {
 		this(200, "text/plain", responseBody);
 	}
 
-	public FakeSender(int responseCode, String contentType, String responseBody) {
-		super(new HttpURLConfig("http://never.really.sent.anywhere/"));
+	public MockSender(int responseCode, String contentType, String responseBody) {
+		super(new MockConfig());
 		setResponse(responseCode, contentType, responseBody);
 	}
 
@@ -68,16 +67,36 @@ public class FakeSender extends HttpSender {
 		this.path = path;
 		this.query = query;
 		executions.incrementAndGet();
-		return this.response;
+		if (exception != null) {
+			throw exception;
+		}
+		if (this.response != null) {
+			return this.response;
+		} else {
+			//copy request into response
+			if (request instanceof SenderBodyRequest) {
+				return new MockResponse(200, "OK", request.getHeaders(), ((SenderBodyRequest) request).getBodyStream());
+			} else {
+				String responseBody = "Response to " + request.getMethod() + " " + path + " " + query;
+				return new MockResponse(200, "OK", request.getHeaders(), responseBody);
+			}
+		}
 	}
 
 	/**
-	 * Change Response returned from doExecute
+	 * Set Exception thrown from doExecute
+	 */
+	public void setException(IOException exception) {
+		this.exception = exception;
+	}
+
+	/**
+	 * Set Response returned from doExecute
 	 */
 	public void setResponse(int code, String contentType, String body) {
 		Multival headers = new Multival();
 		headers.add("Content-Type", contentType);
-		this.response = new FakeResponse(code, headers, body);
+		this.response = new MockResponse(code, headers, body);
 	}
 
 	/**
@@ -113,49 +132,6 @@ public class FakeSender extends HttpSender {
 	 */
 	public String getQuery() {
 		return query;
-	}
-
-	/**
-	 * Response from FakeSender
-	 * 
-	 * @author martin.vanek
-	 *
-	 */
-	public static class FakeResponse extends SenderResponse {
-
-		private static final long serialVersionUID = 1L;
-
-		private byte[] bodyBytes;
-
-		private boolean closed;
-
-		public FakeResponse(int code, String contentType, String body) {
-			this(code, new Multival(), body);
-			super.getHeaders().add("Content-Type", contentType);
-			String[] strings = HttpHeaderUtil.splitContentType(contentType, encoding);
-			super.mediaType = strings[0];
-			super.encoding = strings[1];
-		}
-
-		public FakeResponse(int code, Multival headers, String body) {
-			super(code, "fake " + code + " http response", headers, null);
-			this.bodyBytes = body.getBytes(Charset.forName("utf-8"));
-		}
-
-		public InputStream getStream() {
-			return new ByteArrayInputStream(bodyBytes);
-		}
-
-		@Override
-		public void close() {
-			super.close();
-			this.closed = true;
-		}
-
-		public boolean isClosed() {
-			return closed;
-		}
-
 	}
 
 }

@@ -36,8 +36,8 @@ public abstract class SenderResponse implements Closeable, Serializable {
 
 	protected String encoding = "utf-8";//"ISO-8859-1";
 
-	public SenderResponse(int code, String message, Multival headers, InputStream stream) {
-		this.httpStatusCode = code;
+	public SenderResponse(int httpCode, String message, Multival headers, InputStream stream) {
+		this.httpStatusCode = httpCode;
 		this.httpStatusMessage = message;
 		this.headers = headers;
 		String responseEncoding = headers.getFirst("Content-Encoding");
