@@ -1,10 +1,12 @@
 package net.anthavio.httl.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.anthavio.httl.HttpSender;
 import net.anthavio.httl.SenderBodyRequest;
+import net.anthavio.httl.SenderBodyRequest.FakeStream;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
 
@@ -16,11 +18,11 @@ import net.anthavio.httl.SenderResponse;
  */
 public class MockSender extends HttpSender {
 
-	private SenderRequest request; //from last doExecute invocation
-	private String path;//from last doExecute invocation
-	private String query;//from last doExecute invocation
+	private SenderRequest lastRequest; //from last doExecute invocation
+	private String lastPath;//from last doExecute invocation
+	private String lastQuery;//from last doExecute invocation
 
-	private SenderResponse response; //what to return from doExecute
+	private SenderResponse staticResponse; //what to return from doExecute
 
 	private IOException exception; //throw from doExecute
 
@@ -34,7 +36,7 @@ public class MockSender extends HttpSender {
 
 	public MockSender(SenderResponse response) {
 		super(new MockConfig());
-		this.response = response;
+		this.staticResponse = response;
 	}
 
 	public MockSender(String responseBody) {
@@ -43,7 +45,7 @@ public class MockSender extends HttpSender {
 
 	public MockSender(int responseCode, String contentType, String responseBody) {
 		super(new MockConfig());
-		setResponse(responseCode, contentType, responseBody);
+		setStaticResponse(responseCode, contentType, responseBody);
 	}
 
 	/**
@@ -63,24 +65,34 @@ public class MockSender extends HttpSender {
 		if (closed) {
 			throw new IllegalStateException("Sender is closed");
 		}
-		this.request = request;
-		this.path = path;
-		this.query = query;
+		this.lastRequest = request;
+		this.lastPath = path;
+		this.lastQuery = query;
 		executions.incrementAndGet();
 		if (exception != null) {
 			throw exception;
 		}
-		if (this.response != null) {
-			return this.response;
+		if (this.staticResponse != null) {
+			return this.staticResponse;
 		} else {
+			MockResponse response;
 			//copy request into response
 			if (request instanceof SenderBodyRequest) {
-				return new MockResponse(200, "OK", request.getHeaders(), ((SenderBodyRequest) request).getBodyStream());
+				InputStream stream = ((SenderBodyRequest) request).getBodyStream();
+				if (stream instanceof FakeStream) {
+					//XXX what about if value is byte array or so....
+					response = new MockResponse(200, "OK", request.getHeaders(), ((FakeStream) stream).getValue().toString());
+				} else {
+					response = new MockResponse(200, "OK", request.getHeaders(), stream);
+				}
+
 			} else {
-				String responseBody = "Response to " + request.getMethod() + " " + path + " " + query;
-				return new MockResponse(200, "OK", request.getHeaders(), responseBody);
+				String responseBody = "MockResponse to " + request.getMethod() + " " + path;
+				response = new MockResponse(200, "OK", request.getHeaders(), responseBody);
 			}
+			return response;
 		}
+
 	}
 
 	/**
@@ -93,17 +105,17 @@ public class MockSender extends HttpSender {
 	/**
 	 * Set Response returned from doExecute
 	 */
-	public void setResponse(int code, String contentType, String body) {
+	public void setStaticResponse(int code, String contentType, String body) {
 		Multival headers = new Multival();
 		headers.add("Content-Type", contentType);
-		this.response = new MockResponse(code, headers, body);
+		this.staticResponse = new MockResponse(code, "OK", headers, body);
 	}
 
 	/**
 	 * @return Response returned from doExecute
 	 */
-	public SenderResponse getResponse() {
-		return response;
+	public SenderResponse getStaticResponse() {
+		return staticResponse;
 	}
 
 	/**
@@ -116,22 +128,22 @@ public class MockSender extends HttpSender {
 	/**
 	 * @return request from last doExecute invocation
 	 */
-	public SenderRequest getRequest() {
-		return request;
+	public SenderRequest getLastRequest() {
+		return lastRequest;
 	}
 
 	/**
 	 * @return url path from last doExecute invocation
 	 */
-	public String getPath() {
-		return path;
+	public String getLastPath() {
+		return lastPath;
 	}
 
 	/**
 	 * @return url query from last doExecute invocation
 	 */
-	public String getQuery() {
-		return query;
+	public String getLastQuery() {
+		return lastQuery;
 	}
 
 }
