@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,6 +61,10 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 	private final RequestBodyMarshallers marshallers = new RequestBodyMarshallers();
 
 	private final ResponseBodyExtractors extractors = new ResponseBodyExtractors();
+
+	private final List<RequestInterceptor> requestInterceptors = new ArrayList<RequestInterceptor>();
+
+	private final List<ResponseInterceptor> responseInterceptors = new ArrayList<ResponseInterceptor>();
 
 	private ResponseErrorHandler errorResponseHandler;
 
@@ -129,6 +134,50 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 	}
 
 	/**
+	 * Interceptor also works as Listener of course
+	 * @return added or not
+	 */
+	public boolean addRequestInterceptor(RequestInterceptor interceptor) {
+		if (interceptor == null) {
+			throw new IllegalArgumentException("Null interceptor");
+		}
+		return requestInterceptors.add(interceptor);
+	}
+
+	/**
+	 * Interceptor also works as Listener of course
+	 * @return added or not
+	 */
+	public boolean addResponseInterceptor(ResponseInterceptor interceptor) {
+		if (interceptor == null) {
+			throw new IllegalArgumentException("Null interceptor");
+		}
+		return responseInterceptors.add(interceptor);
+	}
+
+	/**
+	 * Interceptor also works as Listener of course
+	 * @return removed or not
+	 */
+	public boolean removeRequestInterceptor(RequestInterceptor interceptor) {
+		if (interceptor == null) {
+			throw new IllegalArgumentException("Null interceptor");
+		}
+		return requestInterceptors.remove(interceptor);
+	}
+
+	/**
+	 * Interceptor also works as Listener of course
+	 * @return removed or not
+	 */
+	public boolean removeResponseInterceptor(ResponseInterceptor interceptor) {
+		if (interceptor == null) {
+			throw new IllegalArgumentException("Null interceptor");
+		}
+		return responseInterceptors.remove(interceptor);
+	}
+
+	/**
 	 * Extremely important for caching -  generates proper key based on information from request and sender
 	 */
 	public String getCacheKey(SenderRequest request) {
@@ -160,7 +209,10 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 			this.logger.debug(request.getMethod() + " " + getConfig().getHostUrl() + path);
 		}
 		try {
-			return doExecute(request, path, query);
+			fireRequestInterceptors(request);
+			SenderResponse response = doExecute(request, path, query);
+			fireResponseInterceptors(response);
+			return response;
 		} catch (IOException iox) {
 			throw new SenderException(iox);
 		}
@@ -414,6 +466,26 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 
 	public SenderPutRequestBuilder PUT(String path) {
 		return new SenderPutRequestBuilder(this, path);
+	}
+
+	protected void fireRequestInterceptors(SenderRequest request) {
+		for (RequestInterceptor interceptor : requestInterceptors) {
+			try {
+				interceptor.onRequest(request);
+			} catch (Exception x) {
+				logger.warn("Interceptor failed: " + interceptor, x);
+			}
+		}
+	}
+
+	protected void fireResponseInterceptors(SenderResponse response) {
+		for (ResponseInterceptor interceptor : responseInterceptors) {
+			try {
+				interceptor.onResponse(response);
+			} catch (Exception x) {
+				logger.warn("Interceptor failed: " + interceptor, x);
+			}
+		}
 	}
 
 	/**
