@@ -72,6 +72,7 @@ public class JettySender extends HttpSender {
 
 	@Override
 	public void close() {
+		fireOnCloseSenderInterceptors();
 		try {
 			client.stop();
 		} catch (Exception x) {

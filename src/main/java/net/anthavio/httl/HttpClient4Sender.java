@@ -74,6 +74,7 @@ public class HttpClient4Sender extends HttpSender {
 
 	@Override
 	public void close() {
+		fireOnCloseSenderInterceptors();
 		try {
 			httpClient.getConnectionManager().shutdown();
 		} catch (Exception x) {

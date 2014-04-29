@@ -9,6 +9,11 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 
+/**
+ * 
+ * @author martin.vanek
+ *
+ */
 public class HttlClientBuilder extends ClientBuilder {
 
 	private Configuration config;

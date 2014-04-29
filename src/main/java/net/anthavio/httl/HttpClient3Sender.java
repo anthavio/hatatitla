@@ -61,6 +61,7 @@ public class HttpClient3Sender extends HttpSender {
 
 	@Override
 	public void close() {
+		fireOnCloseSenderInterceptors();
 		try {
 			if (httpClient.getHttpConnectionManager() instanceof MultiThreadedHttpConnectionManager) {
 				MultiThreadedHttpConnectionManager connectionManager = (MultiThreadedHttpConnectionManager) httpClient

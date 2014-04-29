@@ -61,6 +61,7 @@ public class NettySender extends HttpSender {
 
 	@Override
 	public void close() {
+		fireOnCloseSenderInterceptors();
 		channels.close().awaitUninterruptibly();
 		client.releaseExternalResources();
 	}

@@ -66,6 +66,8 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 
 	private final List<ResponseInterceptor> responseInterceptors = new ArrayList<ResponseInterceptor>();
 
+	private final List<SenderInterceptor> senderInterceptors = new ArrayList<SenderInterceptor>();
+
 	private ResponseErrorHandler errorResponseHandler;
 
 	public HttpSender(HttpSenderConfig config) {
@@ -470,21 +472,19 @@ public abstract class HttpSender implements SenderOperations, Closeable {
 
 	protected void fireRequestInterceptors(SenderRequest request) {
 		for (RequestInterceptor interceptor : requestInterceptors) {
-			try {
-				interceptor.onRequest(request);
-			} catch (Exception x) {
-				logger.warn("Interceptor failed: " + interceptor, x);
-			}
+			interceptor.onRequest(request);
 		}
 	}
 
 	protected void fireResponseInterceptors(SenderResponse response) {
 		for (ResponseInterceptor interceptor : responseInterceptors) {
-			try {
-				interceptor.onResponse(response);
-			} catch (Exception x) {
-				logger.warn("Interceptor failed: " + interceptor, x);
-			}
+			interceptor.onResponse(response);
+		}
+	}
+
+	protected void fireOnCloseSenderInterceptors() {
+		for (SenderInterceptor interceptor : senderInterceptors) {
+			interceptor.onClose(this);
 		}
 	}
 

@@ -70,6 +70,7 @@ public class HttpURLSender extends HttpSender {
 
 	@Override
 	public void close() {
+		fireOnCloseSenderInterceptors();
 		if (connection != null) {
 			try {
 				connection.disconnect();
@@ -77,6 +78,7 @@ public class HttpURLSender extends HttpSender {
 				//ignore
 			}
 		}
+
 	}
 
 	@Override
