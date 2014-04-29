@@ -146,12 +146,12 @@ public class HttpClient4Sender extends HttpSender {
 		}
 
 		if (config.getGzipRequest()) {
-			httpRequest.addHeader("Accept-Encoding", "gzip, deflate");
+			httpRequest.addHeader(Constants.Accept_Encoding, "gzip, deflate");
 			//httpRequest.addHeader("Content-Encoding", "gzip");
 		}
 
 		if (request.hasBody()) {
-			String contentType = request.getFirstHeader("Content-Type");
+			String contentType = request.getFirstHeader(Constants.Content_Type);
 			if (contentType == null) {
 				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
 			}
@@ -159,16 +159,16 @@ public class HttpClient4Sender extends HttpSender {
 			int idxCharset = contentType.indexOf("charset=");
 			if (idxCharset == -1) {
 				contentType = contentType + "; charset=" + config.getCharset();
-				httpRequest.setHeader("Content-Type", contentType);
+				httpRequest.setHeader(Constants.Content_Type, contentType);
 			}
 		}
 
-		if (request.getFirstHeader("Accept") == null && config.getDefaultAccept() != null) {
-			httpRequest.addHeader("Accept", config.getDefaultAccept());
+		if (request.getFirstHeader(Constants.Accept) == null && config.getDefaultAccept() != null) {
+			httpRequest.addHeader(Constants.Accept, config.getDefaultAccept());
 		}
 
-		if (request.getFirstHeader("Accept-Charset") == null) {
-			httpRequest.addHeader("Accept-Charset", config.getEncoding());
+		if (request.getFirstHeader(Constants.Accept_Charset) == null) {
+			httpRequest.addHeader(Constants.Accept_Charset, config.getEncoding());
 		}
 
 		HttpResponse httpResponse = call(httpRequest);
@@ -190,7 +190,7 @@ public class HttpClient4Sender extends HttpSender {
 	}
 
 	private HttpEntity buildEntity(SenderRequest request, String query) throws IOException {
-		String contentType = request.getFirstHeader("Content-Type");
+		String contentType = request.getFirstHeader(Constants.Content_Type);
 		Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
 		String mimeType = (String) type[0];
 		Charset charset = (Charset) type[1];
@@ -222,27 +222,6 @@ public class HttpClient4Sender extends HttpSender {
 		return entity;
 	}
 
-	/*
-		private HttpEntity buildEntity(SenderRequest request, List<NameValuePair> nvQuParams)
-				throws UnsupportedEncodingException {
-			HttpEntity entity;
-			if (request.hasBody()) {
-				InputStream stream = ((BodyRequest) request).getBodyStream();
-				if (stream instanceof StringWrappingStream) {
-					entity = new StringEntity(((StringWrappingStream) stream).getString(), config.getCharset());
-				} else {
-					entity = new InputStreamEntity(stream, -1);
-				}
-			} else if (nvQuParams != null && nvQuParams.size() != 0) {
-				entity = new UrlEncodedFormEntity(nvQuParams, config.getCharset());
-			} else {
-				logger.debug("POST request does not have any parameters or body");
-				entity = new StringEntity("");
-				//throw new IllegalArgumentException("POST request does not have any parameters or body");
-			}
-			return entity;
-		}
-	*/
 	protected HttpResponse call(HttpRequestBase httpRequest) throws IOException {
 		try {
 			if (config.getAuthContext() != null) {

@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.anthavio.httl.Constants;
 import net.anthavio.httl.HttpSender;
 import net.anthavio.httl.SenderBodyRequest;
 import net.anthavio.httl.SenderBodyRequest.FakeStream;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
+import net.anthavio.httl.inout.RequestBodyMarshaller;
 
 /**
  * Sometimes we need to test what is sent remote server without actualy sending it...
@@ -81,12 +83,29 @@ public class MockSender extends HttpSender {
 				InputStream stream = ((SenderBodyRequest) request).getBodyStream();
 				if (stream instanceof FakeStream) {
 					//XXX what about if value is byte array or so....
-					response = new MockResponse(200, "OK", request.getHeaders(), ((FakeStream) stream).getValue().toString());
+					Object value = ((FakeStream) stream).getValue();
+					if (value instanceof String) {
+						response = new MockResponse(200, "OK", request.getHeaders(), (String) value);
+					} else {
+						//object or byte array inside
+						String contentType = request.getFirstHeader(Constants.Content_Type);
+						Object[] type = HttpHeaderUtil.splitContentType(contentType, "utf-8");
+						String mimeType = (String) type[0];
+						//Charset charset = (Charset) type[1];
+						RequestBodyMarshaller marshaller = getRequestMarshaller(mimeType);
+						if (marshaller == null) {
+							throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
+						}
+						String marshalled = marshaller.marshall(value);
+						response = new MockResponse(200, "OK", request.getHeaders(), marshalled);
+					}
+
 				} else {
 					response = new MockResponse(200, "OK", request.getHeaders(), stream);
 				}
 
 			} else {
+				//No request body, but it still would be nice to return something according to Accept header
 				String responseBody = "MockResponse to " + request.getMethod() + " " + path;
 				response = new MockResponse(200, "OK", request.getHeaders(), responseBody);
 			}

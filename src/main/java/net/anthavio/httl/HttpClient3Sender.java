@@ -130,11 +130,11 @@ public class HttpClient3Sender extends HttpSender {
 		httpMethod.setFollowRedirects(config.getFollowRedirects());
 
 		if (config.getGzipRequest()) {
-			httpMethod.addRequestHeader("Accept-Encoding", "gzip, deflate");
+			httpMethod.addRequestHeader(Constants.Accept_Encoding, "gzip, deflate");
 		}
 
 		if (request.hasBody()) {
-			String contentType = request.getFirstHeader("Content-Type");
+			String contentType = request.getFirstHeader(Constants.Content_Type);
 			if (contentType == null) {
 				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
 			}
@@ -142,16 +142,16 @@ public class HttpClient3Sender extends HttpSender {
 			int idxCharset = contentType.indexOf("charset=");
 			if (idxCharset == -1) {
 				contentType = contentType + "; charset=" + config.getCharset();
-				httpMethod.setRequestHeader("Content-Type", contentType);
+				httpMethod.setRequestHeader(Constants.Content_Type, contentType);
 			}
 		}
 
-		if (request.getFirstHeader("Accept") == null && config.getDefaultAccept() != null) {
-			httpMethod.addRequestHeader("Accept", config.getDefaultAccept());
+		if (request.getFirstHeader(Constants.Accept) == null && config.getDefaultAccept() != null) {
+			httpMethod.addRequestHeader(Constants.Accept, config.getDefaultAccept());
 		}
 
-		if (request.getFirstHeader("Accept-Charset") == null) {
-			httpMethod.addRequestHeader("Accept-Charset", config.getEncoding());
+		if (request.getFirstHeader(Constants.Accept_Charset) == null) {
+			httpMethod.addRequestHeader(Constants.Accept_Charset, config.getEncoding());
 		}
 
 		int statusCode = call(httpMethod);
@@ -172,7 +172,7 @@ public class HttpClient3Sender extends HttpSender {
 	}
 
 	private RequestEntity buildEntity(SenderRequest request, String query) throws IOException {
-		String contentType = request.getFirstHeader("Content-Type");
+		String contentType = request.getFirstHeader(Constants.Content_Type);
 		Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
 		String mimeType = (String) type[0];
 		Charset charset = (Charset) type[1];
@@ -238,45 +238,6 @@ public class HttpClient3Sender extends HttpSender {
 			}
 		}
 	}
-
-	/*
-	private RequestEntity buildEntity(BodyRequest request, List<NameValuePair> nvQuParams)
-			throws UnsupportedEncodingException {
-		RequestEntity entity;
-		if (request.hasBody()) {
-			InputStream stream = ((BodyRequest) request).getBodyStream();
-			if (stream instanceof FakeStream) {
-				FakeStream fake = (FakeStream) stream;
-				switch (fake.getType()) {
-				case OBJECT:
-					Object objectBody = fake.getValue();
-					String contentType = request.getFirstHeader("Content-Type");
-					RequestBodyMarshaller marshaller = getBodyMarshaller(contentType);
-					String stringBody = marshaller.marshall(objectBody);
-					entity = new StringRequestEntity(stringBody, null, config.getEncoding());
-					break;
-				case STRING:
-					entity = new StringRequestEntity((String) fake.getValue(), null, config.getEncoding());
-					break;
-				default:
-					throw new IllegalArgumentException("Unsupported FakeType " + fake.getType());
-				}
-			} else {
-				entity = new InputStreamRequestEntity(stream);
-			}
-		} else if (nvQuParams != null && nvQuParams.size() != 0) {
-			String content = EncodingUtil.formUrlEncode(nvQuParams.toArray(new NameValuePair[nvQuParams.size()]),
-					config.getEncoding());
-			entity = new ByteArrayRequestEntity(EncodingUtil.getBytes(content, config.getEncoding()),
-					PostMethod.FORM_URL_ENCODED_CONTENT_TYPE);
-		} else {
-			logger.debug("POST request does not have any parameters or body");
-			entity = new StringRequestEntity("", null, config.getEncoding());
-			//throw new IllegalArgumentException("POST request does not have any parameters or body");
-		}
-		return entity;
-	}
-	*/
 
 	private static class ObjectEntity implements RequestEntity {
 

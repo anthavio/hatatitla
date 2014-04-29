@@ -10,8 +10,12 @@ import java.lang.annotation.Target;
  * @author martin.vanek
  *
  */
-@Target(ElementType.METHOD)
+@Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Body {
 
+	/**
+	 * @return Content-Type header
+	 */
+	String value() default "";
 }

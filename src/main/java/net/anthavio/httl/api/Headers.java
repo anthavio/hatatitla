@@ -15,5 +15,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Headers {
 
+	/**
+	 * @return array of http request headers (possibly with placehoders)
+	 */
 	String[] value();
 }

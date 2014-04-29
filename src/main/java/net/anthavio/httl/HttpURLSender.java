@@ -89,7 +89,8 @@ public class HttpURLSender extends HttpSender {
 		this.connection = connection;
 
 		connection.setUseCaches(false);
-		connection.setDoInput(true);
+		connection.setDoOutput(request.getMethod().canHaveBody()); //connection.getOutputStream()
+		connection.setDoInput(true); //connection.getInputStream()
 
 		Multival headers = request.getHeaders();
 
@@ -112,11 +113,11 @@ public class HttpURLSender extends HttpSender {
 		connection.setInstanceFollowRedirects(config.getFollowRedirects());
 
 		if (config.getGzipRequest()) {
-			connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
+			connection.setRequestProperty(Constants.Accept_Encoding, "gzip, deflate");
 		}
 
 		if (request.hasBody()) {
-			String contentType = request.getFirstHeader("Content-Type");
+			String contentType = request.getFirstHeader(Constants.Content_Type);
 			if (contentType == null) {
 				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
 			}
@@ -124,16 +125,16 @@ public class HttpURLSender extends HttpSender {
 			int idxCharset = contentType.indexOf("charset=");
 			if (idxCharset == -1) {
 				contentType = contentType + "; charset=" + config.getCharset();
-				connection.setRequestProperty("Content-Type", contentType);
+				connection.setRequestProperty(Constants.Content_Type, contentType);
 			}
 		}
 
-		if (request.getFirstHeader("Accept") == null && config.getDefaultAccept() != null) {
-			connection.setRequestProperty("Accept", config.getDefaultAccept());
+		if (request.getFirstHeader(Constants.Accept) == null && config.getDefaultAccept() != null) {
+			connection.setRequestProperty(Constants.Accept, config.getDefaultAccept());
 		}
 
-		if (request.getFirstHeader("Accept-Charset") == null) {
-			connection.setRequestProperty("Accept-Charset", config.getEncoding());
+		if (request.getFirstHeader(Constants.Accept_Charset) == null) {
+			connection.setRequestProperty(Constants.Accept_Charset, config.getEncoding());
 		}
 
 		if (this.basicAuthHeader != null) {
@@ -154,8 +155,8 @@ public class HttpURLSender extends HttpSender {
 		case POST:
 		case PUT:
 			//set "Content-Type" if not explicitly set by parameters
-			if (headers == null || headers.get("Content-Type") == null) {
-				connection.setRequestProperty("Content-Type",
+			if (headers == null || headers.get(Constants.Content_Type) == null) {
+				connection.setRequestProperty(Constants.Content_Type,
 						"application/x-www-form-urlencoded; charset=" + config.getEncoding());
 			}
 
@@ -163,9 +164,7 @@ public class HttpURLSender extends HttpSender {
 				logHeaders("Request", connection.getRequestProperties());
 			}
 
-			connection.setDoOutput(true);
-
-			String contentType = request.getFirstHeader("Content-Type");
+			String contentType = request.getFirstHeader(Constants.Content_Type);
 			Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
 			String mimeType = (String) type[0];
 			Charset charset = (Charset) type[1];
@@ -246,7 +245,7 @@ public class HttpURLSender extends HttpSender {
 	}
 
 	private void writeBytes(HttpURLConnection connection, byte[] dataBytes) throws IOException {
-		connection.setRequestProperty("Content-Length", Integer.toString(dataBytes.length));
+		connection.setRequestProperty(Constants.Content_Length, Integer.toString(dataBytes.length));
 		//if (this.logger.isDebugEnabled()) {
 		//	logHeaders("Request", connection.getRequestProperties());
 		//}

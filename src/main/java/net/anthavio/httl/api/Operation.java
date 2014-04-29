@@ -16,7 +16,8 @@ public @interface Operation {
 
 	HttpMethod method() default HttpMethod.PATH;
 
-	String path() default "";
-
-	String value() default "";
+	/**
+	 * @return "GET /something"
+	 */
+	String value();
 }
