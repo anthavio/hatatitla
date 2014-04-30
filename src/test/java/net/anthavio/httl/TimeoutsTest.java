@@ -33,7 +33,10 @@ public class TimeoutsTest {
 	public void setup() throws Exception {
 		this.server.start();
 		this.urlSingle = "http://localhost:" + this.server.getHttpPort() + "/";
-		this.urlFrozen = "http://localhost:" + this.server.getFrozenPort() + "/";
+		//this.urlFrozen = "http://localhost:" + this.server.getFrozenPort() + "/";
+		//this.urlFrozen = "http://www.google.com:81/";
+		this.urlFrozen = "http://10.254.254.254/";
+
 		this.executor = new ExecutorServiceBuilder().build();
 	}
 
@@ -110,11 +113,18 @@ public class TimeoutsTest {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw ConnectException");
 		} catch (SenderException sex) {
-			//cx.printStackTrace();
+			//if (isMacOs()) {
 			assertThat(sex.getMessage()).isEqualTo("java.net.ConnectException: Connect timeout 1100 ms");
+			//} else {
+			//	assertThat(sex.getMessage()).isEqualTo("java.net.SocketTimeoutException: Read timeout 1300 ms");
+			//}
 		}
 		sender.close();
 	}
+
+	//private boolean isMacOs() {
+	//	return System.getProperty("os.name").toLowerCase().contains("mac");
+	//}
 
 	private void readTimeout(HttpSender sender) throws IOException {
 		SenderRequest request = new GetRequest("/");
