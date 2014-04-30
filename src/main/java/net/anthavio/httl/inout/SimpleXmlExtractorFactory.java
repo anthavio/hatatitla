@@ -61,7 +61,12 @@ public class SimpleXmlExtractorFactory implements ResponseExtractorFactory {
 
 	@Override
 	public <T> SimpleXmlResponseExtractor<T> getExtractor(SenderResponse response, ParameterizedType resultType) {
-		throw new UnsupportedOperationException("Not yet there....");
+		throw new UnsupportedOperationException("Persister can only read Class " + resultType);
+	}
+
+	@Override
+	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Type resultType) {
+		throw new UnsupportedOperationException("Persister can only read Class " + resultType);
 	}
 
 	@Override

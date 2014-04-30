@@ -64,7 +64,12 @@ public class JaxbExtractorFactory implements ResponseExtractorFactory {
 
 	@Override
 	public <T> JaxbResponseExtractor<T> getExtractor(SenderResponse response, ParameterizedType resultType) {
-		throw new UnsupportedOperationException("Not yet there....");
+		throw new UnsupportedOperationException("JAXBContext can be created only for Class " + resultType);
+	}
+
+	@Override
+	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Type resultType) {
+		throw new UnsupportedOperationException("JAXBContext can be created only for Class " + resultType);
 	}
 
 	@Override

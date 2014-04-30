@@ -62,7 +62,8 @@ public class Jackson2ExtractorFactory implements ResponseExtractorFactory {
 		return getExtractor(response, (Type) resultType);
 	}
 
-	private <T> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, Type resultType) {
+	@Override
+	public <T> Jackson2ResponseExtractor<T> getExtractor(SenderResponse response, Type resultType) {
 		Jackson2ResponseExtractor<T> extractor = (Jackson2ResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
 			JavaType javaType = this.objectMapper.constructType(resultType);

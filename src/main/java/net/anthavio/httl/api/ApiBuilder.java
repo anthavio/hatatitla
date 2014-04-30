@@ -20,13 +20,14 @@ import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
+import net.anthavio.httl.inout.ResponseExtractorFactory;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class Reflector {
+public class ApiBuilder {
 
 	static class ProxyInvocationHandler<T> implements InvocationHandler {
 
@@ -44,8 +45,24 @@ public class Reflector {
 
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			MetaMethod mmeta = methods.get(method);
 
+			MetaMethod mmeta = methods.get(method);
+			if (mmeta == null) {
+				String methodName = method.getName();
+				if (methodName.equals("toString") && args == null) {
+					return toString();
+				} else if (methodName.equals("equals") && args != null && args.length == 1) {
+					if (args[0] != null && Proxy.isProxyClass(args[0].getClass())) {
+						return equals(Proxy.getInvocationHandler(args[0]));
+					} else {
+						return false;
+					}
+				} else if (methodName.equals("hashCode") && args == null) {
+					return hashCode();
+				}
+				//Kill others...
+				throw new IllegalStateException("Metadata not found for " + method);
+			}
 			Multival headers = new Multival();
 			MetaHeader[] mheaders = mmeta.headers;
 			for (MetaHeader mheader : mheaders) {
@@ -59,47 +76,51 @@ public class Reflector {
 			Multival params = new Multival();
 			String urlPath = mmeta.urlPath;
 			Object body = null;
-			for (int i = 0; i < args.length; ++i) {
-				MetaParam pmeta = mmeta.parameters[i];
-				Object arg = args[i];
-				switch (pmeta.target) {
-				case PATH:
-					if (arg == null) {
-						throw new IllegalArgumentException("Url path parameter '" + pmeta.name + "' must not be null");
+			if (args != null) {
+				for (int i = 0; i < args.length; ++i) {
+					MetaParam pmeta = mmeta.parameters[i];
+					Object arg = args[i];
+					switch (pmeta.target) {
+					case PATH:
+						if (arg == null) {
+							throw new IllegalArgumentException("Url path parameter '" + pmeta.name + "' must not be null");
+						}
+						urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
+						break;
+					case HEADER:
+						if (arg == null) {
+							throw new IllegalArgumentException("Header parameter '" + pmeta.name + "' must not be null");
+						}
+						headers.set(pmeta.headerName, arg); //replace header
+						break;
+					case QUERY:
+						params.add(pmeta.name, arg);
+						break;
+					case BODY:
+						body = args[i];
+						break;
+					case REQ_INTERCEPTOR:
+						requestInterceptor = (RequestInterceptor) arg;
+						break;
+					case RES_INTERCEPTOR:
+						responseInterceptor = (ResponseInterceptor) arg;
+						break;
+					case REQ_MARSHALLER:
+						requestMarshaller = (RequestBodyMarshaller) arg;
+						break;
+					case RES_EXTRACTOR:
+						responseExtractor = (ResponseBodyExtractor<?>) arg;
+						break;
+					default:
+						throw new IllegalStateException("Unsuported " + pmeta.name + " parameter target " + pmeta.target);
 					}
-					urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
-					break;
-				case HEADER:
-					if (arg == null) {
-						throw new IllegalArgumentException("Header parameter '" + pmeta.name + "' must not be null");
-					}
-					headers.set(pmeta.headerName, arg); //replace header
-					break;
-				case QUERY:
-					params.add(pmeta.name, arg);
-					break;
-				case BODY:
-					body = args[i];
-					break;
-				case REQ_INTERCEPTOR:
-					requestInterceptor = (RequestInterceptor) arg;
-					break;
-				case RES_INTERCEPTOR:
-					responseInterceptor = (ResponseInterceptor) arg;
-					break;
-				case REQ_MARSHALLER:
-					requestMarshaller = (RequestBodyMarshaller) arg;
-					break;
-				case RES_EXTRACTOR:
-					responseExtractor = (ResponseBodyExtractor<?>) arg;
-					break;
-				default:
-					throw new IllegalStateException("Unsuported " + pmeta.name + " parameter target " + pmeta.target);
 				}
 			}
 
-			if (requestMarshaller != null) {
-				String marshalledBody = requestMarshaller.marshall(body);
+			//custom marshaller parameter to process body...
+			String marshalledBody = null;
+			if (requestMarshaller != null && body != null) {
+				marshalledBody = requestMarshaller.marshall(body);
 			}
 
 			SenderRequest request;
@@ -107,9 +128,14 @@ public class Reflector {
 				SenderBodyRequest brequest = new SenderBodyRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params,
 						headers);
 				String contentType = headers.getFirst(Constants.Content_Type);
-				brequest.setBody(body, contentType);
+				if (marshalledBody != null) {
+					brequest.setBody(marshalledBody, contentType);
+				} else if (body != null) {
+					brequest.setBody(body, contentType);
+				}
 				request = brequest;
 			} else {
+				//request without body
 				request = new SenderRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params, headers);
 			}
 
@@ -123,22 +149,84 @@ public class Reflector {
 				responseInterceptor.onResponse(response);
 			}
 
+			//custom extractor parameter to process body...
 			Object extractedBody = null;
 			if (responseExtractor != null) {
 				extractedBody = responseExtractor.extract(response);
 			}
-
-			if (mmeta.returnType == Void.class) {
+			if (mmeta.returnType == void.class) {
 				return null;
 			} else if (mmeta.returnType == SenderResponse.class) {
 				return response;
 			} else {
-				if (extractedBody != null && mmeta.returnType.isAssignableFrom(extractedBody.getClass())) {
+				if (extractedBody != null && mmeta.returnType == extractedBody.getClass()) {
 					return extractedBody;
 				}
-				return sender.extract(response, mmeta.returnType);
+				ResponseExtractorFactory factory = sender.getResponseExtractorFactory(response.getMediaType());
+				if (factory == null) {
+					throw new IllegalStateException("No ResponseExtractor for: '" + response.getMediaType() + "'");
+				}
+				return factory.getExtractor(response, mmeta.returnType).extract(response);
 			}
 		}
+
+		@Override
+		public String toString() {
+			return "ProxyInvocationHandler for " + apiInterface.getName() + " and " + sender;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((apiInterface == null) ? 0 : apiInterface.hashCode());
+			result = prime * result + ((sender == null) ? 0 : sender.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ProxyInvocationHandler other = (ProxyInvocationHandler) obj;
+			if (apiInterface == null) {
+				if (other.apiInterface != null)
+					return false;
+			} else if (!apiInterface.equals(other.apiInterface))
+				return false;
+			if (sender == null) {
+				if (other.sender != null)
+					return false;
+			} else if (!sender.equals(other.sender))
+				return false;
+			return true;
+		}
+
+		/*
+		@Override
+		public int hashCode() {
+			return apiInterface.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null) {
+				return false;
+			}
+			if (this == obj) {
+				return true;
+			}
+			if (ProxyInvocationHandler.class != obj.getClass()) {
+				return false;
+			}
+			ProxyInvocationHandler that = ProxyInvocationHandler.class.cast(obj);
+			return this.apiInterface.equals(that.apiInterface);
+		}
+		*/
 	}
 
 	public static <T> T build(Class<T> apiInterface, HttpSender sender) {
@@ -169,7 +257,7 @@ public class Reflector {
 			}
 
 			MetaParam[] mparams = getMetaParams(method);
-			Map<String, MetaParam> mpmap = new HashMap<String, Reflector.MetaParam>();
+			Map<String, MetaParam> mpmap = new HashMap<String, ApiBuilder.MetaParam>();
 			for (MetaParam mparam : mparams) {
 				mpmap.put(mparam.name, mparam);
 			}
@@ -208,11 +296,13 @@ public class Reflector {
 			}
 
 			if (httpMethod.getMethod().canHaveBody() == false && mpmap.get("#body") != null) {
-				throw new IllegalArgumentException("Parameter body in not allowed on HTTP " + httpMethod.getMethod());
+				throw new IllegalArgumentException("Body in not allowed on HTTP " + httpMethod.getMethod() + " on method "
+						+ method.getName());
 			}
 
 			if (mpmap.get("#" + RequestBodyMarshaller.class.getSimpleName()) != null && mpmap.get("#body") == null) {
-				throw new IllegalArgumentException("Parameter body is required when using RequestBodyMarshaller");
+				throw new IllegalArgumentException("Body is required when using RequestBodyMarshaller on method "
+						+ method.getName());
 			}
 
 			// parameters not found as path or header placeholder are left as query parameters
@@ -224,7 +314,7 @@ public class Reflector {
 	}
 
 	private static MetaHeader[] getMetaHeaders(Class<?> clazz, Method method) {
-		List<MetaHeader> headerList = new ArrayList<Reflector.MetaHeader>();
+		List<MetaHeader> headerList = new ArrayList<ApiBuilder.MetaHeader>();
 		Map<String, Integer> headerMap = new HashMap<String, Integer>();
 
 		Headers cheaders = clazz.getAnnotation(Headers.class);
@@ -279,7 +369,7 @@ public class Reflector {
 	}
 
 	private static MetaParam[] getMetaParams(Method method) {
-		Map<String, MetaParam> map = new HashMap<String, Reflector.MetaParam>();
+		Map<String, MetaParam> map = new HashMap<String, ApiBuilder.MetaParam>();
 		Class<?>[] ptypes = method.getParameterTypes();
 		MetaParam[] result = new MetaParam[ptypes.length];
 		for (int i = 0; i < ptypes.length; i++) {
@@ -358,7 +448,7 @@ public class Reflector {
 		private final String urlPath;
 		private final MetaParam[] parameters;
 		private final MetaHeader[] headers;
-		private final Class<?> returnType;
+		private final Type returnType;
 
 		public MetaMethod(Method method, HttpMethod httpMethod, String urlPath, MetaParam[] parameters, MetaHeader[] headers) {
 			this.method = method;
@@ -366,7 +456,7 @@ public class Reflector {
 			this.urlPath = urlPath;
 			this.parameters = parameters;
 			this.headers = headers;
-			this.returnType = method.getReturnType();
+			this.returnType = method.getGenericReturnType();
 		}
 
 	}

@@ -28,7 +28,8 @@ public class SenderRequest {
 	}
 
 	public static enum Method {
-		GET(false), DELETE(false), HEAD(false), OPTIONS(false), POST(true), PUT(true);
+		GET(false), DELETE(false), HEAD(false), PATCH(false), OPTIONS(false), //
+		POST(true), PUT(true);
 
 		private boolean canHaveBody;
 

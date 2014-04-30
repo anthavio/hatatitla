@@ -20,7 +20,7 @@ public class AdlTest {
 		// https://github.com/Netflix/feign
 
 		MockSender sender = new MockSender();
-		GitHubApi api = Reflector.build(GitHubApi.class, sender);
+		GitHubApi api = ApiBuilder.build(GitHubApi.class, sender);
 
 		RequestBodyMarshaller marshaller;
 		RequestInterceptor requestInterceptor;

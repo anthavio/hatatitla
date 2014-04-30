@@ -8,6 +8,7 @@ import net.anthavio.httl.RequestInterceptor;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderRequest.Method;
 import net.anthavio.httl.SenderResponse;
+import net.anthavio.httl.inout.GsonExtractorFactory;
 import net.anthavio.httl.util.MockSender;
 
 import org.fest.assertions.api.Assertions;
@@ -35,7 +36,7 @@ public class ApiTest {
 		});
 
 		// Build
-		SomeApi api = Reflector.build(SomeApi.class, sender);
+		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
 
 		// Invoke
 		SenderResponse response = api.options("trololo", "ISO-8859-4", new int[] { 3, 2, 1 });
@@ -68,7 +69,7 @@ public class ApiTest {
 		});
 
 		// Build
-		SomeApi api = Reflector.build(SomeApi.class, sender);
+		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
 
 		// Invoke
 		String json = "{ \"name\" : \"Quido Guido\" }";
@@ -92,26 +93,45 @@ public class ApiTest {
 	public void testSomeApiPostBody() {
 		MockSender sender = new MockSender();
 		// Build
-		SomeApi api = Reflector.build(SomeApi.class, sender);
+		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
 
-		SomeBean sent = new SomeBean("Quido Guido", new Date(), 999);
-		SomeBean returned = api.postBody("application/xml", "application/xml", sent);
-		Assertions.assertThat(returned).isEqualsToByComparingFields(sent);
+		SomeBean input = new SomeBean("Quido Guido", new Date(), 999);
+		// Invoke
+		SomeBean asXml = api.postBody("application/xml", "application/xml", input);
+		// Assert
+		Assertions.assertThat(asXml).isEqualsToByComparingFields(input);
+
+		// Invoke
+		SomeBean asJson = api.postBody("application/json", "application/json", input);
+		// Assert
+		Assertions.assertThat(asJson).isEqualsToByComparingFields(input);
 	}
 
 	@Test
 	public void testListReturn() {
 		MockSender sender = new MockSender();
+		String json = "[{\"login\":\"anthavio\",\"id\":647317,\"contributions\":119}]";
+		sender.setStaticResponse(200, "application/json; charset=utf-8", json);
+
+		//HttpURLSender sender = new HttpURLSender("https://api.github.com/");
+		//HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com/");
+
+		sender.setResponseExtractorFactory(new GsonExtractorFactory(), "application/json");
 		// Build
-		SomeApi api = Reflector.build(SomeApi.class, sender);
-		List<Contributor> contributors = api.contributors("zoro", "goro");
-		System.out.println(contributors);
+		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
+		// Invoke
+		List<Contributor> contributors = api.contributors("anthavio", "hatatitla");
+		// Assert
+		Assertions.assertThat(contributors.size()).isPositive();
+		Assertions.assertThat(contributors.get(0).login).isNotEmpty();
+		Assertions.assertThat(contributors.get(0).contributions).isPositive();
 	}
 
 	@Headers({ //
 	"Content-Type: application/json; charset=utf-8", //
 			"Accept: application/json", //
-			"Accept-Charset: utf-8"//
+			"Accept-Charset: utf-8",//
+			"User-Agent: Hatatitla"//
 	})
 	static interface SomeApi {
 
@@ -130,6 +150,7 @@ public class ApiTest {
 
 		@Operation("GET /repos/{owner}/{repo}/contributors")
 		List<Contributor> contributors(@Param("owner") String owner, @Param("repo") String repo);
+
 	}
 
 	static class Contributor {

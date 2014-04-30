@@ -184,7 +184,7 @@ public class ResponseBodyExtractors {
 		return extractor;
 	}
 
-	private ResponseExtractorFactory getFactory(SenderResponse response, Type type) {
+	public ResponseExtractorFactory getFactory(SenderResponse response, Type type) {
 		String contentType = response.getFirstHeader("Content-Type");
 		if (Cutils.isEmpty(contentType)) {
 			throw new IllegalArgumentException("Content-Type header not found");

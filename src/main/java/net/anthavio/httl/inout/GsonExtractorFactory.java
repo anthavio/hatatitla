@@ -62,6 +62,7 @@ public class GsonExtractorFactory implements ResponseExtractorFactory {
 		return getExtractor(response, (Type) resultType);
 	}
 
+	@Override
 	public <T> GsonResponseExtractor<T> getExtractor(SenderResponse response, Type resultType) {
 		GsonResponseExtractor<T> extractor = (GsonResponseExtractor<T>) cache.get(resultType);
 		if (extractor == null) {
