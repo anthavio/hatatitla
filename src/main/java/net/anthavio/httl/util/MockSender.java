@@ -100,8 +100,11 @@ public class MockSender extends HttpSender {
 						response = new MockResponse(200, "OK", request.getHeaders(), marshalled);
 					}
 
-				} else {
+				} else if (stream != null) {
 					response = new MockResponse(200, "OK", request.getHeaders(), stream);
+				} else {
+					String responseBody = "MockResponse to " + request.getMethod() + " " + path + " with null body";
+					response = new MockResponse(200, "OK", request.getHeaders(), responseBody);
 				}
 
 			} else {
@@ -128,6 +131,10 @@ public class MockSender extends HttpSender {
 		Multival headers = new Multival();
 		headers.add("Content-Type", contentType);
 		this.staticResponse = new MockResponse(code, "OK", headers, body);
+	}
+
+	public void setStaticResponse(SenderResponse response) {
+		this.staticResponse = response;
 	}
 
 	/**

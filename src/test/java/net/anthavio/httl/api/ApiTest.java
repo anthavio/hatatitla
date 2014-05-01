@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.List;
 
 import net.anthavio.httl.HttpSender.Multival;
-import net.anthavio.httl.RequestInterceptor;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderRequest.Method;
 import net.anthavio.httl.SenderResponse;
@@ -26,17 +25,9 @@ public class ApiTest {
 
 		MockSender sender = new MockSender();
 		// Set api-key header into every passing request 
-		sender.addRequestInterceptor(new RequestInterceptor() {
-
-			@Override
-			public void onRequest(SenderRequest request) {
-				request.addHeader("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx");
-
-			}
-		});
 
 		// Build
-		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
+		SomeApi api = ApiBuilder.with(sender).addHeader("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
 
 		// Invoke
 		SenderResponse response = api.options("trololo", "ISO-8859-4", new int[] { 3, 2, 1 });
@@ -59,17 +50,9 @@ public class ApiTest {
 	@Test
 	public void testSomeApiPut() {
 		MockSender sender = new MockSender();
-		sender.addRequestInterceptor(new RequestInterceptor() {
-
-			@Override
-			public void onRequest(SenderRequest request) {
-				request.addParameter("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx");
-
-			}
-		});
 
 		// Build
-		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
+		SomeApi api = ApiBuilder.with(sender).addParam("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
 
 		// Invoke
 		String json = "{ \"name\" : \"Quido Guido\" }";

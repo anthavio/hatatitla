@@ -2,10 +2,11 @@ package net.anthavio.httl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 
 import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.util.Cutils;
-
+import net.anthavio.httl.util.ReaderInputStream;
 
 /**
  * Base class for POST and PUT Requests
@@ -38,8 +39,16 @@ public class SenderBodyRequest extends SenderRequest {
 		if (bodyObject == null) {
 			throw new IllegalArgumentException("Body object is null");
 		}
-		FakeStream stream = new FakeStream(bodyObject);
-		setBody(stream, contentType);
+		if (bodyObject instanceof InputStream) {
+			setBody((InputStream) bodyObject, contentType);
+
+		} else if (bodyObject instanceof Reader) {
+			setBody(new ReaderInputStream((Reader) bodyObject), contentType);
+
+		} else {
+			FakeStream stream = new FakeStream(bodyObject);
+			setBody(stream, contentType);
+		}
 		return this;
 	}
 

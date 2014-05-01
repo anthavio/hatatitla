@@ -1,5 +1,8 @@
 package net.anthavio.httl.api;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -21,6 +24,7 @@ import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
 import net.anthavio.httl.inout.ResponseExtractorFactory;
+import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * 
@@ -28,6 +32,59 @@ import net.anthavio.httl.inout.ResponseExtractorFactory;
  *
  */
 public class ApiBuilder {
+
+	public static ApiBuilder with(HttpSender sender) {
+		return new ApiBuilder(sender);
+	}
+
+	private final HttpSender sender;
+
+	private Multival headers = new Multival();
+
+	private Multival params = new Multival();
+
+	public ApiBuilder(HttpSender sender) {
+		this.sender = sender;
+	}
+
+	public ApiBuilder addHeader(String name, Object value) {
+		headers.add(name, value);
+		return this;
+	}
+
+	public ApiBuilder addParam(String name, String value) {
+		params.add(name, value);
+		return this;
+	}
+
+	public <T> T build(Class<T> apiInterface) {
+		if (headers.size() != 0 || params.size() != 0) {
+
+			RequestInterceptor interceptor = new RequestInterceptor() {
+
+				@Override
+				public void onRequest(SenderRequest request) {
+
+					for (String name : headers) {
+						request.addHeader(name, headers.get(name));
+					}
+
+					for (String name : params) {
+						request.addHeader(name, params.get(name));
+					}
+
+				}
+			};
+			sender.addRequestInterceptor(interceptor);
+		}
+		return build(apiInterface, sender);
+	}
+
+	public static <T> T build(Class<T> apiInterface, HttpSender sender) {
+		Map<Method, MetaMethod> methods = processMethods(apiInterface);
+		InvocationHandler handler = new ProxyInvocationHandler<T>(apiInterface, sender, methods);
+		return (T) Proxy.newProxyInstance(apiInterface.getClassLoader(), new Class<?>[] { apiInterface }, handler);
+	}
 
 	static class ProxyInvocationHandler<T> implements InvocationHandler {
 
@@ -154,19 +211,39 @@ public class ApiBuilder {
 			if (responseExtractor != null) {
 				extractedBody = responseExtractor.extract(response);
 			}
-			if (mmeta.returnType == void.class) {
+
+			return getReturn(mmeta.returnType, extractedBody, response);
+		}
+
+		private Object getReturn(Type type, Object extractedBody, SenderResponse response) throws IOException {
+
+			if (type == void.class) {
 				return null;
-			} else if (mmeta.returnType == SenderResponse.class) {
+
+			} else if (type == SenderResponse.class) {
 				return response;
+
+			} else if (type == String.class) {
+				return HttpHeaderUtil.readAsString(response);
+
+			} else if (type == byte[].class) {
+				return HttpHeaderUtil.readAsBytes(response);
+
+			} else if (type == Reader.class) {
+				return response.getReader();
+
+			} else if (type == InputStream.class) {
+				return response.getStream();
+
 			} else {
-				if (extractedBody != null && mmeta.returnType == extractedBody.getClass()) {
+				if (extractedBody != null && type == extractedBody.getClass()) {
 					return extractedBody;
 				}
 				ResponseExtractorFactory factory = sender.getResponseExtractorFactory(response.getMediaType());
 				if (factory == null) {
 					throw new IllegalStateException("No ResponseExtractor for: '" + response.getMediaType() + "'");
 				}
-				return factory.getExtractor(response, mmeta.returnType).extract(response);
+				return factory.getExtractor(response, type).extract(response);
 			}
 		}
 
@@ -206,33 +283,6 @@ public class ApiBuilder {
 			return true;
 		}
 
-		/*
-		@Override
-		public int hashCode() {
-			return apiInterface.hashCode();
-		}
-		
-		@Override
-		public boolean equals(Object obj) {
-			if (obj == null) {
-				return false;
-			}
-			if (this == obj) {
-				return true;
-			}
-			if (ProxyInvocationHandler.class != obj.getClass()) {
-				return false;
-			}
-			ProxyInvocationHandler that = ProxyInvocationHandler.class.cast(obj);
-			return this.apiInterface.equals(that.apiInterface);
-		}
-		*/
-	}
-
-	public static <T> T build(Class<T> apiInterface, HttpSender sender) {
-		Map<Method, MetaMethod> methods = processMethods(apiInterface);
-		InvocationHandler handler = new ProxyInvocationHandler<T>(apiInterface, sender, methods);
-		return (T) Proxy.newProxyInstance(apiInterface.getClassLoader(), new Class<?>[] { apiInterface }, handler);
 	}
 
 	private static Map<Method, MetaMethod> processMethods(Class<?> apiInterface) {

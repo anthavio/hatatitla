@@ -66,6 +66,9 @@ public class SimpleXmlExtractorFactory implements ResponseExtractorFactory {
 
 	@Override
 	public <T> ResponseBodyExtractor<T> getExtractor(SenderResponse response, Type resultType) {
+		if (resultType instanceof Class) {
+			return getExtractor(response, (Class<T>) resultType);
+		}
 		throw new UnsupportedOperationException("Persister can only read Class " + resultType);
 	}
 
