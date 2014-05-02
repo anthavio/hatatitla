@@ -70,7 +70,7 @@ public class ApiBuilder {
 					}
 
 					for (String name : params) {
-						request.addHeader(name, params.get(name));
+						request.addParameter(name, params.get(name));
 					}
 
 				}
