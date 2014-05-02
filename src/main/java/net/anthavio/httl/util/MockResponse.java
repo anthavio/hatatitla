@@ -52,6 +52,11 @@ public class MockResponse extends SenderResponse {
 		this.responseBytes = responseBody.getBytes(Charset.forName("utf-8"));
 	}
 
+	public MockResponse(int httpCode, String httpMessage, Multival headers, byte[] responseBody) {
+		super(httpCode, httpMessage, headers, null);
+		this.responseBytes = responseBody;
+	}
+
 	@Override
 	public InputStream getStream() {
 		return new ByteArrayInputStream(responseBytes);

@@ -11,11 +11,10 @@ import java.text.ParseException;
 import java.util.Date;
 
 import net.anthavio.cache.CacheEntry;
+import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.HttpSender.Multival;
 import net.anthavio.httl.cache.CachedResponse;
-
 
 public class HttpHeaderUtil {
 
@@ -257,6 +256,10 @@ public class HttpHeaderUtil {
 		if (response instanceof CachedResponse) {
 			return ((CachedResponse) response).getAsBytes();
 		}
+		if (response.getStream() == null) {
+			return null; //304 NOT MODIFIED
+		}
+
 		int blength = getBufferLength(response);
 		byte[] buffer = new byte[blength];
 		InputStream input = response.getStream();

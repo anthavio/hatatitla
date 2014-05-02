@@ -15,4 +15,16 @@ import java.lang.annotation.Target;
 public @interface Param {
 
 	String value();
+	/*
+		Class<? extends ParamSetter> set() default ToStringSetter.class;
+
+		static class ToStringSetter<T> implements ParamSetter<T> {
+
+			@Override
+			public void set(SenderRequest request, String name, T value) {
+				// TODO Auto-generated method stub
+
+			}
+		}
+	*/
 }

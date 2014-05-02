@@ -82,10 +82,11 @@ public class MockSender extends HttpSender {
 			if (request instanceof SenderBodyRequest) {
 				InputStream stream = ((SenderBodyRequest) request).getBodyStream();
 				if (stream instanceof FakeStream) {
-					//XXX what about if value is byte array or so....
 					Object value = ((FakeStream) stream).getValue();
 					if (value instanceof String) {
 						response = new MockResponse(200, "OK", request.getHeaders(), (String) value);
+					} else if (value instanceof byte[]) {
+						response = new MockResponse(200, "OK", request.getHeaders(), (byte[]) value);
 					} else {
 						//object or byte array inside
 						String contentType = request.getFirstHeader(Constants.Content_Type);

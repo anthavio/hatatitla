@@ -345,14 +345,18 @@ public class ApiBuilder {
 				}
 			}
 
-			if (httpMethod.getMethod().canHaveBody() == false && mpmap.get("#body") != null) {
-				throw new IllegalArgumentException("Body in not allowed on HTTP " + httpMethod.getMethod() + " on method "
-						+ method.getName());
-			}
+			boolean hasBodyParam = mpmap.get(BODY) != null;
 
-			if (mpmap.get("#" + RequestBodyMarshaller.class.getSimpleName()) != null && mpmap.get("#body") == null) {
-				throw new IllegalArgumentException("Body is required when using RequestBodyMarshaller on method "
-						+ method.getName());
+			if (hasBodyParam) {
+				if (httpMethod.getMethod().canHaveBody() == false) {
+					throw new IllegalArgumentException("Body in not allowed on HTTP " + httpMethod.getMethod() + ". Fix your '"
+							+ method.getName() + "' method declaration on " + method.getDeclaringClass());
+				}
+			} else { // no body param
+				if (mpmap.get("#" + RequestBodyMarshaller.class.getSimpleName()) != null) {
+					throw new IllegalArgumentException("Body is required when using RequestBodyMarshaller. Fix your '"
+							+ method.getName() + "' method declaration on " + method.getDeclaringClass());
+				}
 			}
 
 			// parameters not found as path or header placeholder are left as query parameters
@@ -362,6 +366,8 @@ public class ApiBuilder {
 		}
 		return result;
 	}
+
+	private final static String BODY = "#body";
 
 	private static MetaHeader[] getMetaHeaders(Class<?> clazz, Method method) {
 		List<MetaHeader> headerList = new ArrayList<ApiBuilder.MetaHeader>();
@@ -427,19 +433,19 @@ public class ApiBuilder {
 			String pname;
 			ParamTarget target;
 			// interceptors/marshallers/extractors first - they need no annotation with name
-			if (ptype.isAssignableFrom(RequestInterceptor.class)) {
+			if (RequestInterceptor.class.isAssignableFrom(ptype)) {
 				pname = "#" + RequestInterceptor.class.getSimpleName();
 				target = ParamTarget.REQ_INTERCEPTOR;
 
-			} else if (ptype.isAssignableFrom(ResponseInterceptor.class)) {
+			} else if (ResponseInterceptor.class.isAssignableFrom(ptype)) {
 				pname = "#" + ResponseInterceptor.class.getSimpleName();
 				target = ParamTarget.RES_INTERCEPTOR;
 
-			} else if (ptype.isAssignableFrom(RequestBodyMarshaller.class)) {
+			} else if (RequestBodyMarshaller.class.isAssignableFrom(ptype)) {
 				pname = "#" + RequestBodyMarshaller.class.getSimpleName();
 				target = ParamTarget.REQ_MARSHALLER;
 
-			} else if (ptype.isAssignableFrom(ResponseBodyExtractor.class)) {
+			} else if (ResponseBodyExtractor.class.isAssignableFrom(ptype)) {
 				pname = "#" + ResponseBodyExtractor.class.getSimpleName();
 				target = ParamTarget.RES_EXTRACTOR;
 
@@ -449,7 +455,7 @@ public class ApiBuilder {
 				if (map.containsKey(pname)) {
 					throw new IllegalArgumentException("Duplicate parameter named '" + pname + "' found");
 				}
-				if (pname.equals("#body")) {
+				if (pname.equals(BODY)) {
 					target = ParamTarget.BODY;
 				} else {
 					target = ParamTarget.QUERY;
@@ -474,7 +480,7 @@ public class ApiBuilder {
 			if (annotation instanceof Param) {
 				name = ((Param) annotation).value();
 			} else if (annotation instanceof Body) {
-				name = "#body"; // hardcoded paramater name
+				name = BODY; // hardcoded paramater name
 			} else if (annotation.getClass().getName().equals("javax.inject.Named")) {
 				try {
 					Method mvalue = annotation.getClass().getMethod("value");

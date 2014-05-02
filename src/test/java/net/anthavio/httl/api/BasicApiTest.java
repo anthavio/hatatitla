@@ -9,10 +9,11 @@ import java.util.Date;
 
 import net.anthavio.httl.SenderBodyRequest;
 import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.api.ApiTest.SomeBean;
+import net.anthavio.httl.api.ComplexApiTest.SomeBean;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSender;
 
+import org.apache.commons.io.IOUtils;
 import org.fest.assertions.api.Assertions;
 import org.testng.annotations.Test;
 
@@ -26,8 +27,8 @@ public class BasicApiTest {
 	@Test
 	public void test() throws IOException {
 		MockSender sender = new MockSender();
-		String helloDolly = "Hello Dolly!";
-		sender.setStaticResponse(201, "text/dolly", helloDolly);
+		String helloPlain = "Hello Inčučuna!";
+		sender.setStaticResponse(201, "text/dolly", helloPlain);
 		SimpleApi api = ApiBuilder.build(SimpleApi.class, sender);
 
 		Assertions.assertThat(api.toString()).startsWith(
@@ -46,7 +47,7 @@ public class BasicApiTest {
 		//Then
 		Assertions.assertThat(sender.getLastPath()).isEqualTo("/returnString");
 		Assertions.assertThat(sender.getLastQuery()).isNull();
-		Assertions.assertThat(returnString).isEqualTo(helloDolly);
+		Assertions.assertThat(returnString).isEqualTo(helloPlain);
 
 		SenderResponse returnResponse = api.returnResponse();
 		Assertions.assertThat(sender.getLastPath()).isEqualTo("/returnResponse");
@@ -55,16 +56,20 @@ public class BasicApiTest {
 		Assertions.assertThat(returnResponse.getHttpStatusCode()).isEqualTo(201);
 		Assertions.assertThat(returnResponse.getMediaType()).isEqualTo("text/dolly");
 		Assertions.assertThat(returnResponse.getHeaders()).hasSize(1); //Content-Type
-		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponse)).isEqualTo(helloDolly);
-		Assertions.assertThat(new String(HttpHeaderUtil.readAsBytes(returnResponse))).isEqualTo(helloDolly);
+		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponse)).isEqualTo(helloPlain);
+		Assertions.assertThat(new String(HttpHeaderUtil.readAsBytes(returnResponse))).isEqualTo(helloPlain);
 
 		sender.setStaticResponse(null);
 
 		api.returnVoidPostNothing();
 		Assertions.assertThat(sender.getLastPath()).isEqualTo("/returnVoidPostNothing");
 
+		//Given
+		final SomeBean beanIn = new SomeBean("Quido", new Date(), 369);
+		final String jsonbean = sender.getRequestMarshaller("application/json").marshall(beanIn);
+		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
+
 		//When
-		SomeBean beanIn = new SomeBean("Quido", new Date(), 369);
 		api.returnVoidPostBean(beanIn);
 
 		//Then
@@ -75,34 +80,41 @@ public class BasicApiTest {
 
 		//When
 		api.returnVoidPostBean(null);
-		//Then
 		Assertions.assertThat(sender.getLastPath()).isEqualTo("/returnVoidPostBean");
 
+		//When
 		String returnStringPostBean = api.returnStringPostBean(beanIn);
-		System.out.println(returnStringPostBean);
+		Assertions.assertThat(returnStringPostBean).isEqualTo(jsonbean);
 
-		String returnStringPostBean2 = api.returnStringPostBean(null);
-		System.out.println(returnStringPostBean2);
-
+		//When
+		String returnStringPostBeanNull = api.returnStringPostBean(null);
+		Assertions.assertThat(returnStringPostBeanNull).startsWith("MockResponse");
+		Assertions.assertThat(((SenderBodyRequest) sender.getLastRequest()).getBodyStream()).isNull();
 		SenderResponse returnResponsePostBean = api.returnResponsePostBean(beanIn);
+		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponsePostBean)).isEqualTo(jsonbean);
 
-		String returnBeanPostBean = api.returnBeanPostBean(beanIn);
+		SomeBean returnBeanPostBean = api.returnBeanPostBean(beanIn);
+		Assertions.assertThat(returnBeanPostBean).isEqualsToByComparingFields(beanIn);
 
-		api.returnVoidPostString(helloDolly);
+		api.returnVoidPostString(helloPlain);
 
-		String returnStringPostString = api.returnStringPostString(helloDolly);
+		String returnStringPostString = api.returnStringPostString(helloPlain);
+		Assertions.assertThat(returnStringPostString).isEqualTo(helloPlain);
 
-		String returnBeanPostString = api.returnBeanPostString(helloDolly);
+		SomeBean returnBeanPostString = api.returnBeanPostString(jsonbean);
+		Assertions.assertThat(returnBeanPostString).isEqualsToByComparingFields(beanIn);
 
-		InputStream returnStreamPostBytes = api.returnStreamPostBytes(helloDolly.getBytes());
+		InputStream returnStreamPostBytes = api.returnStreamPostBytes(helloPlain.getBytes());
+		Assertions.assertThat(new String(IOUtils.toByteArray(returnStreamPostBytes))).isEqualTo(helloPlain);
 
-		Reader returnReaderPostString = api.returnReaderPostString(helloDolly);
+		Reader returnReaderPostString = api.returnReaderPostString(helloPlain);
+		Assertions.assertThat(IOUtils.toString(returnReaderPostString)).isEqualTo(helloPlain);
 
-		//api = ApiBuilder.build(SimpleApi.class, new HttpURLSender("http://google.com"));
-		InputStream returnStreamPostStream = api.returnStreamPostStream(new ByteArrayInputStream(helloDolly.getBytes()));
+		InputStream returnStreamPostStream = api.returnStreamPostStream(new ByteArrayInputStream(helloPlain.getBytes()));
+		Assertions.assertThat(IOUtils.toString(returnStreamPostStream)).isEqualTo(helloPlain);
 
-		Reader returnReaderPostReader = api.returnReaderPostReader(new StringReader(helloDolly));
-
+		Reader returnReaderPostReader = api.returnReaderPostReader(new StringReader(helloPlain));
+		Assertions.assertThat(IOUtils.toString(returnReaderPostReader)).isEqualTo(helloPlain);
 	}
 
 	@Headers("Content-Type: application/json")
@@ -130,7 +142,7 @@ public class BasicApiTest {
 		public SenderResponse returnResponsePostBean(@Body SomeBean bean);
 
 		@Operation("POST /returnBeanPostBean")
-		public String returnBeanPostBean(@Body SomeBean bean);
+		public SomeBean returnBeanPostBean(@Body SomeBean bean);
 
 		@Operation("POST /returnVoidPostString")
 		public void returnVoidPostString(@Body String string);
@@ -139,7 +151,7 @@ public class BasicApiTest {
 		public String returnStringPostString(@Body String string);
 
 		@Operation("POST /returnBeanPostString")
-		public String returnBeanPostString(@Body String string);
+		public SomeBean returnBeanPostString(@Body String string);
 
 		@Operation("POST /returnStreamPostBytes")
 		public InputStream returnStreamPostBytes(@Body byte[] bytes);
