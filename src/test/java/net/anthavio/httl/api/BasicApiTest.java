@@ -25,7 +25,8 @@ import org.testng.annotations.Test;
 public class BasicApiTest {
 
 	@Test
-	public void test() throws IOException {
+	public void testBasics() throws IOException {
+		// Given
 		MockSender sender = new MockSender();
 		String helloPlain = "Hello Inčučuna!";
 		sender.setStaticResponse(201, "text/dolly", helloPlain);
@@ -57,14 +58,23 @@ public class BasicApiTest {
 		Assertions.assertThat(returnResponse.getMediaType()).isEqualTo("text/dolly");
 		Assertions.assertThat(returnResponse.getHeaders()).hasSize(1); //Content-Type
 		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponse)).isEqualTo(helloPlain);
-		Assertions.assertThat(new String(HttpHeaderUtil.readAsBytes(returnResponse))).isEqualTo(helloPlain);
+		Assertions.assertThat(new String(HttpHeaderUtil.readAsBytes(returnResponse), "utf-8")).isEqualTo(helloPlain);
 
 		sender.setStaticResponse(null);
 
 		api.returnVoidPostNothing();
 		Assertions.assertThat(sender.getLastPath()).isEqualTo("/returnVoidPostNothing");
 
-		//Given
+	}
+
+	@Test
+	public void testBeans() throws IOException {
+		// Given
+		MockSender sender = new MockSender();
+		String helloPlain = "Hello Inčučuna!";
+		//sender.setStaticResponse(201, "text/dolly", helloPlain);
+		SimpleApi api = ApiBuilder.build(SimpleApi.class, sender);
+
 		final SomeBean beanIn = new SomeBean("Quido", new Date(), 369);
 		final String jsonbean = sender.getRequestMarshaller("application/json").marshall(beanIn);
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
@@ -104,14 +114,25 @@ public class BasicApiTest {
 		SomeBean returnBeanPostString = api.returnBeanPostString(jsonbean);
 		Assertions.assertThat(returnBeanPostString).isEqualsToByComparingFields(beanIn);
 
-		InputStream returnStreamPostBytes = api.returnStreamPostBytes(helloPlain.getBytes());
-		Assertions.assertThat(new String(IOUtils.toByteArray(returnStreamPostBytes))).isEqualTo(helloPlain);
+	}
+
+	@Test
+	public void testStreams() throws IOException {
+		// Given
+		MockSender sender = new MockSender();
+		String helloPlain = "Hello Inčučuna!";
+		sender.setStaticResponse(201, "text/dolly", helloPlain);
+		SimpleApi api = ApiBuilder.build(SimpleApi.class, sender);
+
+		InputStream returnStreamPostBytes = api.returnStreamPostBytes(helloPlain.getBytes("utf-8"));
+		Assertions.assertThat(new String(IOUtils.toByteArray(returnStreamPostBytes), "utf-8")).isEqualTo(helloPlain);
 
 		Reader returnReaderPostString = api.returnReaderPostString(helloPlain);
 		Assertions.assertThat(IOUtils.toString(returnReaderPostString)).isEqualTo(helloPlain);
 
-		InputStream returnStreamPostStream = api.returnStreamPostStream(new ByteArrayInputStream(helloPlain.getBytes()));
-		Assertions.assertThat(IOUtils.toString(returnStreamPostStream)).isEqualTo(helloPlain);
+		InputStream returnStreamPostStream = api.returnStreamPostStream(new ByteArrayInputStream(helloPlain
+				.getBytes("utf-8")));
+		Assertions.assertThat(IOUtils.toString(returnStreamPostStream, "utf-8")).isEqualTo(helloPlain);
 
 		Reader returnReaderPostReader = api.returnReaderPostReader(new StringReader(helloPlain));
 		Assertions.assertThat(IOUtils.toString(returnReaderPostReader)).isEqualTo(helloPlain);

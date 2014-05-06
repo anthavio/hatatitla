@@ -148,16 +148,17 @@ public class ApiBuilder {
 					MetaParam pmeta = mmeta.parameters[i];
 					Object arg = args[i];
 					if (pmeta.setter != null) {
-						//special setter is on it's own
+						//custom setter works it's own way
 						pmeta.setter.set(arg, pmeta.name, request);
 					} else {
-						//default setters hardcoded
+						//default setters are hardcoded
 						switch (pmeta.target) {
 						case PATH:
 							if (arg == null) {
 								throw new IllegalArgumentException("Url path parameter '" + pmeta.name + "' must not be null");
 							}
-							urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
+							//urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
+							params.set("{" + pmeta.name + "}", arg);
 							break;
 						case HEADER:
 							if (arg == null) {
@@ -172,7 +173,7 @@ public class ApiBuilder {
 							if (pmeta.variable != null) {
 								headers.set(Constants.Content_Type, pmeta.variable);
 							}
-							body = args[i];
+							body = arg;
 							break;
 						case REQ_INTERCEPTOR:
 							requestInterceptor = (RequestInterceptor) arg;

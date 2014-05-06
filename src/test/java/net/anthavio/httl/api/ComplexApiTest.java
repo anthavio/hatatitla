@@ -37,7 +37,7 @@ public class ComplexApiTest {
 
 		SenderRequest request = sender.getLastRequest();
 		Assertions.assertThat(request.getMethod()).isEqualTo(Method.OPTIONS);
-		Assertions.assertThat(request.getUrlPath()).isEqualTo("/something/trololo");
+		Assertions.assertThat(request.getUrlPath()).isEqualTo("/something/{awful}");
 		Assertions.assertThat(request.getFirstHeader("api-key")).isEqualTo("zxzxzx-zxzxzx-zxzxzx-zxzxzx");
 		Assertions.assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
 		Assertions.assertThat(request.getFirstHeader("Accept-Charset")).isEqualTo("ISO-8859-4"); //replaced global utf-8
@@ -63,7 +63,7 @@ public class ComplexApiTest {
 
 		SenderRequest request = sender.getLastRequest();
 		Assertions.assertThat(request.getMethod()).isEqualTo(Method.PUT);
-		Assertions.assertThat(request.getUrlPath()).isEqualTo("/store/whatever");
+		Assertions.assertThat(request.getUrlPath()).isEqualTo("/store/{else}");
 		Assertions.assertThat(request.getFirstHeader("api-key")).isNull();
 		Assertions.assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
 		Assertions.assertThat(request.getFirstHeader("Accept-Charset")).isEqualTo("utf-8");
