@@ -21,6 +21,7 @@ import net.anthavio.httl.inout.RequestBodyMarshaller;
 public class MockSender extends HttpSender {
 
 	private SenderRequest lastRequest; //from last doExecute invocation
+	private SenderResponse lastResponse; //from last doExecute invocation
 	private String lastPath;//from last doExecute invocation
 	private String lastQuery;//from last doExecute invocation
 
@@ -75,6 +76,7 @@ public class MockSender extends HttpSender {
 			throw exception;
 		}
 		if (this.staticResponse != null) {
+			this.lastResponse = staticResponse;
 			return this.staticResponse;
 		} else {
 			MockResponse response;
@@ -113,6 +115,7 @@ public class MockSender extends HttpSender {
 				String responseBody = "MockResponse to " + request.getMethod() + " " + path;
 				response = new MockResponse(200, "OK", request.getHeaders(), responseBody);
 			}
+			this.lastResponse = response;
 			return response;
 		}
 
@@ -157,6 +160,13 @@ public class MockSender extends HttpSender {
 	 */
 	public SenderRequest getLastRequest() {
 		return lastRequest;
+	}
+
+	/**
+	 * @return response from last doExecute invocation
+	 */
+	public SenderResponse getLastResponse() {
+		return lastResponse;
 	}
 
 	/**

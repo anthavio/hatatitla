@@ -1,7 +1,9 @@
 package net.anthavio.httl.api;
 
+import java.io.IOException;
 import java.util.Date;
 
+import net.anthavio.httl.Constants;
 import net.anthavio.httl.RequestInterceptor;
 import net.anthavio.httl.ResponseInterceptor;
 import net.anthavio.httl.SenderRequest;
@@ -11,6 +13,8 @@ import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
 import net.anthavio.httl.util.MockSender;
 
+import org.fest.assertions.api.Assertions;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.testng.annotations.Test;
 
@@ -22,17 +26,43 @@ import org.testng.annotations.Test;
 public class SpecialApiTest {
 
 	@Test
-	public void test() {
+	public void interceptors() throws IOException {
+
+		// Given
 		MockSender sender = new MockSender();
 		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
 
 		SomeBean bean = new SomeBean("Quido Guido", new Date(), 999);
-
+		String json = sender.getRequestMarshaller("application/json").marshall(bean);
+		// When
 		MockRequestInterceptor reqinc = new MockRequestInterceptor();
 		MockResponseInterceptor resinc = new MockResponseInterceptor();
-		String string = api.intercept(bean, reqinc, resinc);
+		String returned = api.intercept(bean, reqinc, resinc);
+		// Then
+		Assertions.assertThat(reqinc.getLastRequest()).isEqualTo(sender.getLastRequest());
+		Assertions.assertThat(resinc.getLastResponse()).isEqualTo(sender.getLastResponse());
+		Assertions.assertThat(sender.getLastRequest().getFirstHeader(Constants.Content_Type))
+				.startsWith("application/json");
+		Assertions.assertThat(sender.getLastResponse().getFirstHeader(Constants.Content_Type)).startsWith(
+				"application/json");
 
-		//api.paging(new PageRequest(1, 10));
+		Assertions.assertThat(returned).isEqualTo(json);
+	}
+
+	@Test
+	public void customSetter() {
+		// Given
+		MockSender sender = new MockSender();
+		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
+
+		// When
+		SenderResponse response = api.customSetter(new PageRequest(3, 13));
+
+		// Then
+		Assertions.assertThat(response).isEqualTo(sender.getLastResponse());
+		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.number")).isEqualTo("3");
+		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.size")).isEqualTo("13");
+		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.sort")).isNull(); //not present
 	}
 
 	static interface SpecialApi {
@@ -48,8 +78,8 @@ public class SpecialApiTest {
 		@Headers("Content-Type: application/xml")
 		String marshaller(RequestBodyMarshaller marshaller, @Body Object body);
 
-		@Operation("GET /paging")
-		String paging(@Param(value = "page", setter = PageableSetter.class) Pageable pager);
+		@Operation("GET /customSetter")
+		SenderResponse customSetter(@Param(value = "xpage", setter = PageableSetter.class) Pageable pager);
 
 		@Operation("POST /everything")
 		SomeBean everything(@Param(value = "page", setter = PageableSetter.class) Pageable pager,

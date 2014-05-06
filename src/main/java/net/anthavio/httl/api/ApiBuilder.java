@@ -121,59 +121,74 @@ public class ApiBuilder {
 				//Kill others...
 				throw new IllegalStateException("Metadata not found for " + method);
 			}
+
 			Multival headers = new Multival();
 			MetaHeader[] mheaders = mmeta.headers;
 			for (MetaHeader mheader : mheaders) {
 				headers.add(mheader.name, mheader.value); //header value can be placeholder
 			}
+			Multival params = new Multival();
+			String urlPath = mmeta.urlPath;
+
+			SenderRequest request;
+			if (mmeta.httpMethod.getMethod().canHaveBody()) {
+				request = new SenderBodyRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params, headers);
+			} else {
+				request = new SenderRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params, headers);
+			}
+
 			RequestInterceptor requestInterceptor = null;
 			ResponseInterceptor responseInterceptor = null;
 			RequestBodyMarshaller requestMarshaller = null;
 			ResponseBodyExtractor<?> responseExtractor = null;
 
-			Multival params = new Multival();
-			String urlPath = mmeta.urlPath;
 			Object body = null;
 			if (args != null) {
 				for (int i = 0; i < args.length; ++i) {
 					MetaParam pmeta = mmeta.parameters[i];
 					Object arg = args[i];
-					switch (pmeta.target) {
-					case PATH:
-						if (arg == null) {
-							throw new IllegalArgumentException("Url path parameter '" + pmeta.name + "' must not be null");
+					if (pmeta.setter != null) {
+						//special setter is on it's own
+						pmeta.setter.set(arg, pmeta.name, request);
+					} else {
+						//default setters hardcoded
+						switch (pmeta.target) {
+						case PATH:
+							if (arg == null) {
+								throw new IllegalArgumentException("Url path parameter '" + pmeta.name + "' must not be null");
+							}
+							urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
+							break;
+						case HEADER:
+							if (arg == null) {
+								throw new IllegalArgumentException("Header parameter '" + pmeta.name + "' must not be null");
+							}
+							headers.set(pmeta.variable, arg); //replace header
+							break;
+						case QUERY:
+							params.add(pmeta.name, arg);
+							break;
+						case BODY:
+							if (pmeta.variable != null) {
+								headers.set(Constants.Content_Type, pmeta.variable);
+							}
+							body = args[i];
+							break;
+						case REQ_INTERCEPTOR:
+							requestInterceptor = (RequestInterceptor) arg;
+							break;
+						case RES_INTERCEPTOR:
+							responseInterceptor = (ResponseInterceptor) arg;
+							break;
+						case REQ_MARSHALLER:
+							requestMarshaller = (RequestBodyMarshaller) arg;
+							break;
+						case RES_EXTRACTOR:
+							responseExtractor = (ResponseBodyExtractor<?>) arg;
+							break;
+						default:
+							throw new IllegalStateException("Unsuported " + pmeta.name + " parameter target " + pmeta.target);
 						}
-						urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
-						break;
-					case HEADER:
-						if (arg == null) {
-							throw new IllegalArgumentException("Header parameter '" + pmeta.name + "' must not be null");
-						}
-						headers.set(pmeta.variable, arg); //replace header
-						break;
-					case QUERY:
-						params.add(pmeta.name, arg);
-						break;
-					case BODY:
-						if (pmeta.variable != null) {
-							headers.set(Constants.Content_Type, pmeta.variable);
-						}
-						body = args[i];
-						break;
-					case REQ_INTERCEPTOR:
-						requestInterceptor = (RequestInterceptor) arg;
-						break;
-					case RES_INTERCEPTOR:
-						responseInterceptor = (ResponseInterceptor) arg;
-						break;
-					case REQ_MARSHALLER:
-						requestMarshaller = (RequestBodyMarshaller) arg;
-						break;
-					case RES_EXTRACTOR:
-						responseExtractor = (ResponseBodyExtractor<?>) arg;
-						break;
-					default:
-						throw new IllegalStateException("Unsuported " + pmeta.name + " parameter target " + pmeta.target);
 					}
 				}
 			}
@@ -184,21 +199,13 @@ public class ApiBuilder {
 				marshalledBody = requestMarshaller.marshall(body);
 			}
 
-			SenderRequest request;
 			if (mmeta.httpMethod.getMethod().canHaveBody()) {
-				SenderBodyRequest brequest = new SenderBodyRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params,
-						headers);
-
 				String contentType = headers.getFirst(Constants.Content_Type);
 				if (marshalledBody != null) {
-					brequest.setBody(marshalledBody, contentType);
+					((SenderBodyRequest) request).setBody(marshalledBody, contentType);
 				} else if (body != null) {
-					brequest.setBody(body, contentType);
+					((SenderBodyRequest) request).setBody(body, contentType);
 				}
-				request = brequest;
-			} else {
-				//request without body
-				request = new SenderRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params, headers);
 			}
 
 			if (requestInterceptor != null) {
