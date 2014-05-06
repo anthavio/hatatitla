@@ -1,5 +1,7 @@
-Hatatitla
-=========
+Hatatitla [![Build Status](https://anthavio.ci.cloudbees.com/buildStatus/icon?job=hatatitla-snapshot)](https://anthavio.ci.cloudbees.com/job/hatatitla-snapshot/)
+==========
+ ![Cloudbees DEV@cloud](http://www.cloudbees.com/sites/default/files/Button-Powered-by-CB.png)
+
 
 Configurable and tweakable REST client library you have been dreaming of
 
