@@ -266,7 +266,7 @@ public class HttpClient3Sender extends HttpSender {
 
 		@Override
 		public boolean isRepeatable() {
-			return true;
+			return this.content != null;
 		}
 
 		@Override

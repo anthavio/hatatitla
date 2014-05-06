@@ -75,7 +75,7 @@ public class BasicApiTest {
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
 		SimpleApi api = ApiBuilder.build(SimpleApi.class, sender);
 
-		final SomeBean beanIn = new SomeBean("Quido", new Date(), 369);
+		final SomeBean beanIn = new SomeBean("Kvído Vymětal", new Date(), 369);
 		final String jsonbean = sender.getRequestMarshaller("application/json").marshall(beanIn);
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
 

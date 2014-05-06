@@ -55,7 +55,7 @@ public class ComplexApiTest {
 		SomeApi api = ApiBuilder.with(sender).addParam("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
 
 		// Invoke
-		String json = "{ \"name\" : \"Quido Guido\" }";
+		String json = "{ \"name\" : \"Kvído Vymětal\" }";
 		String response = api.put("whatever", json);
 
 		// Assert
@@ -78,7 +78,7 @@ public class ComplexApiTest {
 		// Build
 		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
 
-		SomeBean input = new SomeBean("Quido Guido", new Date(), 999);
+		SomeBean input = new SomeBean("Kvído Vymětal", new Date(), 999);
 		// Invoke
 		SomeBean asXml = api.postBody("application/xml", "application/xml", input);
 		// Assert

@@ -1,6 +1,8 @@
 package net.anthavio.httl.api;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.Date;
 
 import net.anthavio.httl.Constants;
@@ -32,7 +34,7 @@ public class SpecialApiTest {
 		MockSender sender = new MockSender();
 		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
 
-		SomeBean bean = new SomeBean("Quido Guido", new Date(), 999);
+		SomeBean bean = new SomeBean("Kvído Vymětal", new Date(), 999);
 		String json = sender.getRequestMarshaller("application/json").marshall(bean);
 		// When
 		MockRequestInterceptor reqinc = new MockRequestInterceptor();
@@ -65,6 +67,64 @@ public class SpecialApiTest {
 		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.sort")).isNull(); //not present
 	}
 
+	@Test
+	public void responseExtractor() throws IOException {
+		// Given
+		MockSender sender = new MockSender();
+		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
+		final SomeBean bean = new SomeBean("Kvído Vymětal", new Date(), 999);
+		String bodyXml = sender.getRequestMarshaller("application/xml").marshall(bean);
+
+		// When
+		final Date dateToCheck = new Date();
+		ResponseBodyExtractor<Date> extractor = new ResponseBodyExtractor<Date>() {
+
+			@Override
+			public Date extract(SenderResponse response) throws IOException {
+				dateToCheck.setTime(bean.getDate().getTime());
+				return bean.getDate();
+			}
+		};
+
+		Date returnedDate = api.extractor(extractor, bean);
+		// Then
+		Assertions.assertThat(returnedDate).isEqualTo(bean.getDate());
+
+		// When
+		String returnedXml = api.extractorSilly(bean, extractor);
+		// Then
+		Assertions.assertThat(returnedXml).isEqualTo(bodyXml);
+		Assertions.assertThat(dateToCheck).isEqualTo(bean.getDate());
+	}
+
+	@Test
+	public void requestMarshaller() throws IOException {
+		// Given
+		MockSender sender = new MockSender();
+		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
+		SomeBean bean = new SomeBean("Kvído Vymětal", new Date(), 999);
+		//String bodyXml = sender.getRequestMarshaller("application/xml").marshall(bean);
+
+		// When
+		RequestBodyMarshaller marshaller = new RequestBodyMarshaller() {
+
+			@Override
+			public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
+				stream.write(((SomeBean) requestBody).getName().getBytes("utf-8"));
+			}
+
+			@Override
+			public String marshall(Object requestBody) throws IOException {
+				return ((SomeBean) requestBody).getName();
+			}
+		};
+		String returned = api.marshaller(marshaller, bean);
+
+		// Then
+		Assertions.assertThat(returned).isEqualTo(bean.getName());
+
+	}
+
 	static interface SpecialApi {
 
 		@Operation("POST /intercept")
@@ -72,7 +132,10 @@ public class SpecialApiTest {
 				ResponseInterceptor responseInterceptor);
 
 		@Operation("POST /extractor")
-		String extractor(ResponseBodyExtractor<Date> extractor, @Body("application/xml") SomeBean bean);
+		Date extractor(ResponseBodyExtractor<Date> extractor, @Body("application/xml") SomeBean bean);
+
+		@Operation("POST /extractorSilly")
+		String extractorSilly(@Body("application/xml") SomeBean bean, ResponseBodyExtractor<Date> extractor);
 
 		@Operation("POST /marshaller")
 		@Headers("Content-Type: application/xml")

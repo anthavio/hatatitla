@@ -1,5 +1,6 @@
 package net.anthavio.httl;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -290,7 +291,7 @@ public class HttpClient4Sender extends HttpSender {
 
 		@Override
 		public boolean isRepeatable() {
-			return true;
+			return this.content != null;
 		}
 
 		@Override
@@ -300,7 +301,7 @@ public class HttpClient4Sender extends HttpSender {
 
 		@Override
 		public InputStream getContent() throws IOException, IllegalStateException {
-			return null;
+			return new ByteArrayInputStream(content);
 		}
 
 		@Override

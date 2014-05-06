@@ -17,7 +17,7 @@ public interface RequestBodyMarshaller {
 	public String marshall(Object requestBody) throws IOException;
 
 	/**
-	 * Marshall Request body object directly into OutputStream
+	 * Marshall Request body object directly into OutputStream. Do not close the stream.
 	 */
 	public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException;
 

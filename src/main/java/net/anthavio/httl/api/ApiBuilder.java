@@ -104,9 +104,10 @@ public class ApiBuilder {
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
-			MetaMethod mmeta = methods.get(method);
-			if (mmeta == null) {
+			MetaMethod metaMethod = methods.get(method);
+			if (metaMethod == null) {
 				String methodName = method.getName();
+				//java.lang.Object methods...
 				if (methodName.equals("toString") && args == null) {
 					return toString();
 				} else if (methodName.equals("equals") && args != null && args.length == 1) {
@@ -118,23 +119,23 @@ public class ApiBuilder {
 				} else if (methodName.equals("hashCode") && args == null) {
 					return hashCode();
 				}
-				//Kill others...
+				//Kill others not having annotation
 				throw new IllegalStateException("Metadata not found for " + method);
 			}
 
 			Multival headers = new Multival();
-			MetaHeader[] mheaders = mmeta.headers;
+			MetaHeader[] mheaders = metaMethod.headers;
 			for (MetaHeader mheader : mheaders) {
-				headers.add(mheader.name, mheader.value); //header value can be placeholder
+				headers.add(mheader.name, mheader.value); //header value can be templated
 			}
 			Multival params = new Multival();
-			String urlPath = mmeta.urlPath;
+			String urlPath = metaMethod.urlPath;
 
 			SenderRequest request;
-			if (mmeta.httpMethod.getMethod().canHaveBody()) {
-				request = new SenderBodyRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params, headers);
+			if (metaMethod.httpMethod.getMethod().canHaveBody()) {
+				request = new SenderBodyRequest(sender, metaMethod.httpMethod.getMethod(), urlPath, params, headers);
 			} else {
-				request = new SenderRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params, headers);
+				request = new SenderRequest(sender, metaMethod.httpMethod.getMethod(), urlPath, params, headers);
 			}
 
 			RequestInterceptor requestInterceptor = null;
@@ -145,50 +146,61 @@ public class ApiBuilder {
 			Object body = null;
 			if (args != null) {
 				for (int i = 0; i < args.length; ++i) {
-					MetaParam pmeta = mmeta.parameters[i];
+					MetaParam metaParam = metaMethod.parameters[i];
 					Object arg = args[i];
-					if (pmeta.setter != null) {
+					if (metaParam.setter != null) {
 						//custom setter works it's own way
-						pmeta.setter.set(arg, pmeta.name, request);
+						metaParam.setter.set(arg, metaParam.name, request);
 					} else {
-						//default setters are hardcoded
-						switch (pmeta.target) {
-						case PATH:
-							if (arg == null) {
-								throw new IllegalArgumentException("Url path parameter '" + pmeta.name + "' must not be null");
+						//default setters are hardcoded here...
+						switch (metaParam.target) {
+						case QUERY:
+							params.add(metaParam.name, arg);
+							break;
+						case BODY:
+							if (metaParam.variable != null) {
+								headers.set(Constants.Content_Type, metaParam.variable); //replace header if exists
 							}
-							//urlPath = urlPath.replace("{" + pmeta.name + "}", String.valueOf(args[i])); //somehow more effectively ?
-							params.set("{" + pmeta.name + "}", arg);
+							body = arg; //can be null
 							break;
 						case HEADER:
 							if (arg == null) {
-								throw new IllegalArgumentException("Header parameter '" + pmeta.name + "' must not be null");
+								throw new IllegalArgumentException("Header parameter '" + metaParam.name + "' must not be null");
 							}
-							headers.set(pmeta.variable, arg); //replace header
+							headers.set(metaParam.variable, arg); //replace header value
 							break;
-						case QUERY:
-							params.add(pmeta.name, arg);
-							break;
-						case BODY:
-							if (pmeta.variable != null) {
-								headers.set(Constants.Content_Type, pmeta.variable);
+						case PATH:
+							if (arg == null) {
+								throw new IllegalArgumentException("Url path parameter '" + metaParam.name + "' must not be null");
 							}
-							body = arg;
+							params.set("{" + metaParam.name + "}", arg);
 							break;
 						case REQ_INTERCEPTOR:
+							if (arg == null) {
+								throw new IllegalArgumentException("Null RequestInterceptor parameter");
+							}
 							requestInterceptor = (RequestInterceptor) arg;
 							break;
 						case RES_INTERCEPTOR:
+							if (arg == null) {
+								throw new IllegalArgumentException("Null ResponseInterceptor parameter");
+							}
 							responseInterceptor = (ResponseInterceptor) arg;
 							break;
 						case REQ_MARSHALLER:
+							if (arg == null) {
+								throw new IllegalArgumentException("Null RequestBodyMarshaller parameter");
+							}
 							requestMarshaller = (RequestBodyMarshaller) arg;
 							break;
 						case RES_EXTRACTOR:
+							if (arg == null) {
+								throw new IllegalArgumentException("Null ResponseBodyExtractor parameter");
+							}
 							responseExtractor = (ResponseBodyExtractor<?>) arg;
 							break;
 						default:
-							throw new IllegalStateException("Unsuported " + pmeta.name + " parameter target " + pmeta.target);
+							throw new IllegalStateException("Unsuported " + metaParam.name + " parameter target " + metaParam.target);
 						}
 					}
 				}
@@ -200,7 +212,7 @@ public class ApiBuilder {
 				marshalledBody = requestMarshaller.marshall(body);
 			}
 
-			if (mmeta.httpMethod.getMethod().canHaveBody()) {
+			if (metaMethod.httpMethod.getMethod().canHaveBody()) {
 				String contentType = headers.getFirst(Constants.Content_Type);
 				if (marshalledBody != null) {
 					((SenderBodyRequest) request).setBody(marshalledBody, contentType);
@@ -225,7 +237,7 @@ public class ApiBuilder {
 				extractedBody = responseExtractor.extract(response);
 			}
 
-			return getReturn(mmeta.returnType, extractedBody, response);
+			return getReturn(metaMethod.returnType, extractedBody, response);
 		}
 
 		private Object getReturn(Type type, Object extractedBody, SenderResponse response) throws IOException {
@@ -462,7 +474,6 @@ public class ApiBuilder {
 		for (int i = 0; i < types.length; i++) {
 			Class<?> type = types[i];
 			String name;
-			ParamTarget target;
 			MetaParam meta;
 			// interceptors/marshallers/extractors first - they need no annotation with name
 			if (RequestInterceptor.class.isAssignableFrom(type)) {
