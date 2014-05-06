@@ -24,7 +24,7 @@ public class ComplexApiTest {
 	public void testSomeApiOptions() {
 
 		MockSender sender = new MockSender();
-		// Set api-key header into every passing request 
+		// Set api-key header into every passing request
 
 		// Build
 		SomeApi api = ApiBuilder.with(sender).addHeader("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);

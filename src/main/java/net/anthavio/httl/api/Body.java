@@ -14,4 +14,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Body {
 
+	/**
+	 * @return 'Content-Type' http request header value
+	 */
+	String value() default "";
 }

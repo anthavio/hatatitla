@@ -21,6 +21,7 @@ import net.anthavio.httl.ResponseInterceptor;
 import net.anthavio.httl.SenderBodyRequest;
 import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderResponse;
+import net.anthavio.httl.api.Param.DefaultParamSetter;
 import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
 import net.anthavio.httl.inout.ResponseExtractorFactory;
@@ -148,12 +149,15 @@ public class ApiBuilder {
 						if (arg == null) {
 							throw new IllegalArgumentException("Header parameter '" + pmeta.name + "' must not be null");
 						}
-						headers.set(pmeta.headerName, arg); //replace header
+						headers.set(pmeta.variable, arg); //replace header
 						break;
 					case QUERY:
 						params.add(pmeta.name, arg);
 						break;
 					case BODY:
+						if (pmeta.variable != null) {
+							headers.set(Constants.Content_Type, pmeta.variable);
+						}
 						body = args[i];
 						break;
 					case REQ_INTERCEPTOR:
@@ -184,6 +188,7 @@ public class ApiBuilder {
 			if (mmeta.httpMethod.getMethod().canHaveBody()) {
 				SenderBodyRequest brequest = new SenderBodyRequest(sender, mmeta.httpMethod.getMethod(), urlPath, params,
 						headers);
+
 				String contentType = headers.getFirst(Constants.Content_Type);
 				if (marshalledBody != null) {
 					brequest.setBody(marshalledBody, contentType);
@@ -306,13 +311,14 @@ public class ApiBuilder {
 				path = segments[1];
 			}
 
-			MetaParam[] mparams = getMetaParams(method);
-			Map<String, MetaParam> mpmap = new HashMap<String, ApiBuilder.MetaParam>();
-			for (MetaParam mparam : mparams) {
-				mpmap.put(mparam.name, mparam);
+			//@Param annotations
+			MetaParam[] params = processParameters(method);
+			Map<String, MetaParam> paramMap = new HashMap<String, ApiBuilder.MetaParam>();
+			for (MetaParam param : params) {
+				paramMap.put(param.name, param);
 			}
 
-			//path parameters
+			//search url path for {placehoders}
 			int lastOpn = -1;
 			while ((lastOpn = path.indexOf('{', lastOpn + 1)) != -1) {
 				int lastCls = path.indexOf('}', lastOpn + 1);
@@ -321,39 +327,54 @@ public class ApiBuilder {
 				}
 
 				String pathParam = path.substring(lastOpn + 1, lastCls);
-				MetaParam mparam = mpmap.get(pathParam);
-				if (mparam == null) {
+				MetaParam param = paramMap.get(pathParam);
+				if (param == null) {
 					throw new IllegalArgumentException("Path placeholder '" + pathParam + "' not found as '" + method.getName()
 							+ "' method parameter");
 				} else {
-					mparam.setTarget(ParamTarget.PATH);
+					param.setTarget(ParamTarget.PATH);
 				}
 			}
 			//XXX maybe some prevention against duplicate path/header placeholders
 
-			//header parameters
-			MetaHeader[] mheaders = getMetaHeaders(apiInterface, method);
-			for (MetaHeader mheader : mheaders) {
-				if (mheader.parametrized) {
-					MetaParam mparam = mpmap.get(mheader.value);
-					if (mparam == null) {
-						throw new IllegalArgumentException("Header placeholder '" + mheader.value + "' not found as '"
-								+ method.getName() + "' method parameter");
+			//@Header annotations
+			MetaHeader[] headers = processHeaders(apiInterface, method);
+			Map<String, MetaHeader> headerMap = new HashMap<String, ApiBuilder.MetaHeader>();
+			for (MetaHeader header : headers) {
+				if (header.templated) {
+					MetaParam param = paramMap.get(header.value); //Templated @Header needs @Param with value
+					if (param != null) {
+						param.setTargetHeader(header.name);
 					} else {
-						mparam.setTargetHeader(mheader.name);
+						throw new IllegalArgumentException("Templated Header '" + header.value + "' not found as '"
+								+ method.getName() + "' method parameter");
 					}
 				}
+				headerMap.put(header.name, header);
 			}
 
-			boolean hasBodyParam = mpmap.get(BODY) != null;
+			//Some sanity checks...
 
-			if (hasBodyParam) {
+			MetaParam body = paramMap.get(BODY);
+
+			if (body != null) {
 				if (httpMethod.getMethod().canHaveBody() == false) {
-					throw new IllegalArgumentException("Body in not allowed on HTTP " + httpMethod.getMethod() + ". Fix your '"
-							+ method.getName() + "' method declaration on " + method.getDeclaringClass());
+					throw new IllegalArgumentException("Body in not allowed on HTTP " + httpMethod.getMethod() + " on: " + method);
 				}
+
+				if (body.variable == null && headerMap.get(Constants.Content_Type) == null) {
+					throw new IllegalArgumentException(
+							"Content-Type not specified. Neither as a @Header nor as @Body parameter on: " + method);
+				}
+
+				//maybe set priority instead of exception... maybe
+				if (body.variable != null && headerMap.get(Constants.Content_Type) != null) {
+					throw new IllegalArgumentException("Content-Type specified twice. As a @Header and as @Body parameter on: "
+							+ method);
+				}
+
 			} else { // no body param
-				if (mpmap.get("#" + RequestBodyMarshaller.class.getSimpleName()) != null) {
+				if (paramMap.get("#" + RequestBodyMarshaller.class.getSimpleName()) != null) {
 					throw new IllegalArgumentException("Body is required when using RequestBodyMarshaller. Fix your '"
 							+ method.getName() + "' method declaration on " + method.getDeclaringClass());
 				}
@@ -361,7 +382,7 @@ public class ApiBuilder {
 
 			// parameters not found as path or header placeholder are left as query parameters
 
-			MetaMethod mmeta = new MetaMethod(method, httpMethod, path, mparams, mheaders);
+			MetaMethod mmeta = new MetaMethod(method, httpMethod, path, params, headers);
 			result.put(method, mmeta);
 		}
 		return result;
@@ -369,19 +390,20 @@ public class ApiBuilder {
 
 	private final static String BODY = "#body";
 
-	private static MetaHeader[] getMetaHeaders(Class<?> clazz, Method method) {
+	private static MetaHeader[] processHeaders(Class<?> clazz, Method method) {
 		List<MetaHeader> headerList = new ArrayList<ApiBuilder.MetaHeader>();
 		Map<String, Integer> headerMap = new HashMap<String, Integer>();
 
+		//Process Type declared (global) annotations first
 		Headers cheaders = clazz.getAnnotation(Headers.class);
 		if (cheaders != null && cheaders.value().length != 0) {
 			for (String header : cheaders.value()) {
 				if (header.indexOf('{') != -1 && header.indexOf('}') != -1) {
-					throw new IllegalArgumentException("Global headers cannot be parametrized: " + header);
+					throw new IllegalArgumentException("Shared headers cannot be templated: " + header);
 				}
 				int idx = header.indexOf(':');
 				if (idx == -1 || idx > header.length() - 2) {
-					throw new IllegalArgumentException("Wrong global header syntax: " + header);
+					throw new IllegalArgumentException("Shared header syntax error: " + header);
 				}
 				String name = header.substring(0, idx).trim();
 				String value = header.substring(idx + 1).trim();
@@ -391,31 +413,32 @@ public class ApiBuilder {
 			}
 		}
 
+		//Process Method declared (local) annotations now
 		Headers mheaders = method.getAnnotation(Headers.class);
 		if (mheaders != null && mheaders.value().length != 0) {
 			for (String header : mheaders.value()) {
 				int idx = header.indexOf(':');
 				if (idx == -1 || idx > header.length() - 2) {
-					throw new IllegalArgumentException("Wrong method header syntax: " + header);
+					throw new IllegalArgumentException("Method header syntax error: " + header);
 				}
 				String name = header.substring(0, idx).trim();
 				String value = header.substring(idx + 1).trim();
-				boolean parametrized = false;
+				boolean templated = false;
 
 				int idxOpn = value.indexOf('{');
 				int idxCls = value.indexOf('}', idxOpn + 1);
 				if (idxOpn != -1) {
 					if (idxCls != -1) {
 						value = value.substring(idxOpn + 1, idxCls);
-						parametrized = true;
+						templated = true;
 					} else {
 						throw new IllegalArgumentException("Unpaired brackets in method header: " + header);
 					}
 				}
-				MetaHeader metaHeader = new MetaHeader(name, value, parametrized);
+				MetaHeader metaHeader = new MetaHeader(name, value, templated);
 				Integer index = headerMap.get(name);
 				if (index != null) {
-					headerList.set(index, metaHeader); //replace global if exists
+					headerList.set(index, metaHeader); //replace shared if exists
 				} else {
 					headerList.add(metaHeader);
 				}
@@ -424,63 +447,76 @@ public class ApiBuilder {
 		return headerList.toArray(new MetaHeader[headerList.size()]);
 	}
 
-	private static MetaParam[] getMetaParams(Method method) {
-		Map<String, MetaParam> map = new HashMap<String, ApiBuilder.MetaParam>();
-		Class<?>[] ptypes = method.getParameterTypes();
-		MetaParam[] result = new MetaParam[ptypes.length];
-		for (int i = 0; i < ptypes.length; i++) {
-			Class<?> ptype = ptypes[i];
-			String pname;
+	private static MetaParam[] processParameters(Method method) {
+		Map<String, MetaParam> map = new HashMap<String, MetaParam>();
+		Class<?>[] types = method.getParameterTypes();
+		MetaParam[] result = new MetaParam[types.length];
+		for (int i = 0; i < types.length; i++) {
+			Class<?> type = types[i];
+			String name;
 			ParamTarget target;
+			MetaParam meta;
 			// interceptors/marshallers/extractors first - they need no annotation with name
-			if (RequestInterceptor.class.isAssignableFrom(ptype)) {
-				pname = "#" + RequestInterceptor.class.getSimpleName();
-				target = ParamTarget.REQ_INTERCEPTOR;
+			if (RequestInterceptor.class.isAssignableFrom(type)) {
+				name = "#" + RequestInterceptor.class.getSimpleName();
+				meta = new MetaParam(i, name, type, null, ParamTarget.REQ_INTERCEPTOR);
 
-			} else if (ResponseInterceptor.class.isAssignableFrom(ptype)) {
-				pname = "#" + ResponseInterceptor.class.getSimpleName();
-				target = ParamTarget.RES_INTERCEPTOR;
+			} else if (ResponseInterceptor.class.isAssignableFrom(type)) {
+				name = "#" + ResponseInterceptor.class.getSimpleName();
+				meta = new MetaParam(i, name, type, null, ParamTarget.RES_INTERCEPTOR);
 
-			} else if (RequestBodyMarshaller.class.isAssignableFrom(ptype)) {
-				pname = "#" + RequestBodyMarshaller.class.getSimpleName();
-				target = ParamTarget.REQ_MARSHALLER;
+			} else if (RequestBodyMarshaller.class.isAssignableFrom(type)) {
+				name = "#" + RequestBodyMarshaller.class.getSimpleName();
+				meta = new MetaParam(i, name, type, null, ParamTarget.REQ_MARSHALLER);
 
-			} else if (ResponseBodyExtractor.class.isAssignableFrom(ptype)) {
-				pname = "#" + ResponseBodyExtractor.class.getSimpleName();
-				target = ParamTarget.RES_EXTRACTOR;
+			} else if (ResponseBodyExtractor.class.isAssignableFrom(type)) {
+				name = "#" + ResponseBodyExtractor.class.getSimpleName();
+				meta = new MetaParam(i, name, type, null, ParamTarget.RES_EXTRACTOR);
 
 			} else {
 				// normal parameters here...
-				pname = getParameterName(i, method);
-				if (map.containsKey(pname)) {
-					throw new IllegalArgumentException("Duplicate parameter named '" + pname + "' found");
-				}
-				if (pname.equals(BODY)) {
-					target = ParamTarget.BODY;
-				} else {
-					target = ParamTarget.QUERY;
-				}
+				meta = parseParameter(i, method);
 			}
-			MetaParam pmeta = new MetaParam(i, pname, ptype, target);
-			result[i] = pmeta;
-			map.put(pname, pmeta);
+
+			if (map.containsKey(meta.name)) {
+				throw new IllegalArgumentException("Duplicate parameter named '" + meta.name + "' found");
+			}
+			result[i] = meta;
+			map.put(meta.name, meta);
 		}
 		return result;
 	}
 
-	private static String getParameterName(int index, Method method) {
+	private static MetaParam parseParameter(int index, Method method) {
 		Annotation[][] mannotations = method.getParameterAnnotations();
 		if (mannotations.length == 0) {
-			throw new IllegalArgumentException("Cannot determine parameter's name for method " + method.getName()
-					+ " on position " + (index + 1) + ". No annotation present");
+			throw new IllegalArgumentException("Cannot determine parameter's name for method '" + method.getName()
+					+ "' on position " + (index + 1) + ". No annotation present");
 		}
+		Class<?> type = method.getParameterTypes()[index];
 		Annotation[] pannotations = mannotations[index];
 		String name = null;
+		ParamSetter setter = null;
+		String variable = null;
 		for (Annotation annotation : pannotations) {
 			if (annotation instanceof Param) {
-				name = ((Param) annotation).value();
+				Param param = (Param) annotation;
+				name = param.value();
+
+				if (param.setter() != DefaultParamSetter.class) {
+					try {
+						setter = param.setter().newInstance();
+					} catch (Exception x) {
+						throw new IllegalArgumentException("Cannot create " + param.setter().getName() + " instance ", x);
+					}
+				}
+
 			} else if (annotation instanceof Body) {
-				name = BODY; // hardcoded paramater name
+				Body body = (Body) annotation;
+				name = BODY;
+				if (!body.value().isEmpty()) {
+					variable = body.value(); //Content-Type header
+				}
 			} else if (annotation.getClass().getName().equals("javax.inject.Named")) {
 				try {
 					Method mvalue = annotation.getClass().getMethod("value");
@@ -490,11 +526,19 @@ public class ApiBuilder {
 				}
 			}
 		}
+
 		if (name == null) {
 			throw new IllegalArgumentException("Cannot determine parameter's name for method " + method.getName()
-					+ " on position " + (index + 1) + ". No annotation found @Param, @Named");
+					+ " on position " + (index + 1) + ". No annotation found @Param, @Named,...");
+		} else if (name.isEmpty()) {
+			throw new IllegalArgumentException("Blank parameter's name for method '" + method.getName() + "' on position "
+					+ (index + 1));
 		}
-		return name;
+
+		ParamTarget target = name.equals(BODY) ? ParamTarget.BODY : ParamTarget.QUERY;
+		MetaParam meta = new MetaParam(index, name, type, setter, target);
+		meta.variable = variable;
+		return meta;
 	}
 
 	static class MetaMethod {
@@ -526,12 +570,12 @@ public class ApiBuilder {
 
 		private final String name;
 		private final String value;
-		private final boolean parametrized;
+		private final boolean templated;
 
-		public MetaHeader(String name, String value, boolean parametrized) {
+		public MetaHeader(String name, String value, boolean templated) {
 			this.name = name;
 			this.value = value;
-			this.parametrized = parametrized;
+			this.templated = templated;
 		}
 
 	}
@@ -541,13 +585,15 @@ public class ApiBuilder {
 		private final int index;
 		private final String name;
 		private final Type type;
+		private final ParamSetter setter;
 		private ParamTarget target;
-		private String headerName;
+		private String variable;
 
-		public MetaParam(int index, String name, Type type, ParamTarget target) {
+		public MetaParam(int index, String name, Type type, ParamSetter setter, ParamTarget target) {
 			this.index = index;
 			this.name = name;
 			this.type = type;
+			this.setter = setter;
 			this.target = target;
 		}
 
@@ -556,7 +602,7 @@ public class ApiBuilder {
 		}
 
 		void setTargetHeader(String headerName) {
-			this.headerName = headerName;
+			this.variable = headerName;
 			this.target = ParamTarget.HEADER;
 		}
 

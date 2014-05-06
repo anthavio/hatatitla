@@ -5,6 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import net.anthavio.httl.SenderRequest;
+
 /**
  * 
  * @author martin.vanek
@@ -15,16 +17,14 @@ import java.lang.annotation.Target;
 public @interface Param {
 
 	String value();
-	/*
-		Class<? extends ParamSetter> set() default ToStringSetter.class;
 
-		static class ToStringSetter<T> implements ParamSetter<T> {
+	Class<? extends ParamSetter> setter() default DefaultParamSetter.class;
 
-			@Override
-			public void set(SenderRequest request, String name, T value) {
-				// TODO Auto-generated method stub
+	static class DefaultParamSetter<T> implements ParamSetter<T> {
 
-			}
+		@Override
+		public void set(T value, String name, SenderRequest request) {
+			//nothing at all -  targets for params are calculated from annotations
 		}
-	*/
+	}
 }
