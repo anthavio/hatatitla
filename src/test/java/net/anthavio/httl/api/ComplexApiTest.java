@@ -8,10 +8,13 @@ import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.SenderRequest.Method;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.GsonExtractorFactory;
+import net.anthavio.httl.inout.Jackson2RequestMarshaller;
 import net.anthavio.httl.util.MockSender;
 
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
+
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * 
@@ -74,20 +77,23 @@ public class ComplexApiTest {
 
 	@Test
 	public void testSomeApiPostBody() {
+		//Given
 		MockSender sender = new MockSender();
-		// Build
+		Jackson2RequestMarshaller jrm = (Jackson2RequestMarshaller) sender.getRequestMarshaller("application/json");
+		jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
+
 		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
-
 		SomeBean input = new SomeBean("Kvído Vymětal", new Date(), 999);
-		// Invoke
-		SomeBean asXml = api.postBody("application/xml", "application/xml", input);
-		// Assert
-		Assertions.assertThat(asXml).isEqualsToByComparingFields(input);
 
-		// Invoke
+		// When
+		SomeBean asXml = api.postBody("application/xml", "application/xml", input);
+		// Then
+		Assertions.assertThat(asXml).isEqualToComparingFieldByField(input);
+
+		// When
 		SomeBean asJson = api.postBody("application/json", "application/json", input);
-		// Assert
-		Assertions.assertThat(asJson).isEqualsToByComparingFields(input);
+		// Then
+		Assertions.assertThat(asJson).isEqualToComparingFieldByField(input);
 	}
 
 	@Test

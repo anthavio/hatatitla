@@ -10,12 +10,15 @@ import java.util.Date;
 import net.anthavio.httl.SenderBodyRequest;
 import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.api.ComplexApiTest.SomeBean;
+import net.anthavio.httl.inout.Jackson2RequestMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSender;
 
 import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
+
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * 
@@ -71,12 +74,16 @@ public class BasicApiTest {
 	public void testBeans() throws IOException {
 		// Given
 		MockSender sender = new MockSender();
+		Jackson2RequestMarshaller jrm = (Jackson2RequestMarshaller) sender.getRequestMarshaller("application/json");
+		jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
+
 		String helloPlain = "Hello Inčučuna!";
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
 		SimpleApi api = ApiBuilder.build(SimpleApi.class, sender);
 
 		final SomeBean beanIn = new SomeBean("Kvído Vymětal", new Date(), 369);
 		final String jsonbean = sender.getRequestMarshaller("application/json").marshall(beanIn);
+		System.out.println(jsonbean);
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
 
 		//When
@@ -104,7 +111,7 @@ public class BasicApiTest {
 		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponsePostBean)).isEqualTo(jsonbean);
 
 		SomeBean returnBeanPostBean = api.returnBeanPostBean(beanIn);
-		Assertions.assertThat(returnBeanPostBean).isEqualsToByComparingFields(beanIn);
+		Assertions.assertThat(returnBeanPostBean).isEqualToComparingFieldByField(beanIn);
 
 		api.returnVoidPostString(helloPlain);
 
@@ -112,7 +119,7 @@ public class BasicApiTest {
 		Assertions.assertThat(returnStringPostString).isEqualTo(helloPlain);
 
 		SomeBean returnBeanPostString = api.returnBeanPostString(jsonbean);
-		Assertions.assertThat(returnBeanPostString).isEqualsToByComparingFields(beanIn);
+		Assertions.assertThat(returnBeanPostString).isEqualToComparingFieldByField(beanIn);
 
 	}
 
