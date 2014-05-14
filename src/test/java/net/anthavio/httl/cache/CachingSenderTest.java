@@ -1,6 +1,6 @@
 package net.anthavio.httl.cache;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.FileInputStream;
 import java.io.IOException;

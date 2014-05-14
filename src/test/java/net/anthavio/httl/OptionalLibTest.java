@@ -1,6 +1,6 @@
 package net.anthavio.httl;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import net.anthavio.httl.inout.GsonExtractorFactory;
 import net.anthavio.httl.inout.GsonRequestMarshaller;
 import net.anthavio.httl.inout.GsonResponseExtractor;

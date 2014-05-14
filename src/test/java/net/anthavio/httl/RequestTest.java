@@ -1,6 +1,6 @@
 package net.anthavio.httl;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
@@ -9,20 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.anthavio.httl.Authentication;
-import net.anthavio.httl.GetRequest;
-import net.anthavio.httl.HttpClient4Config;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpURLConfig;
-import net.anthavio.httl.HttpURLSender;
-import net.anthavio.httl.PostRequest;
-import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.Authentication.Scheme;
 import net.anthavio.httl.SenderRequest.Method;
 
-import org.fest.assertions.api.Fail;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
-
 
 /**
  * 
@@ -239,25 +230,25 @@ public class RequestTest {
 		HttpURLSender sender;
 		try {
 			sender = new HttpURLSender((String) null);
-			Fail.fail("Previous statemet must throw IllegalArgumentException");
+			Assertions.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}
 		try {
 			sender = new HttpURLSender((HttpURLConfig) null);
-			Fail.fail("Previous statemet must throw IllegalArgumentException");
+			Assertions.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}
 		try {
 			sender = new HttpURLSender("");
-			Fail.fail("Previous statemet must throw IllegalArgumentException");
+			Assertions.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}
 		try {
 			sender = new HttpURLSender("http:///");
-			Fail.fail("Previous statemet must throw IllegalArgumentException");
+			Assertions.fail("Previous statemet must throw IllegalArgumentException");
 		} catch (IllegalArgumentException iax) {
 			//ok
 		}

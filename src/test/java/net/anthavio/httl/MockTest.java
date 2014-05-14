@@ -6,7 +6,7 @@ import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 import net.anthavio.httl.util.MockResponse;
 import net.anthavio.httl.util.MockSender;
 
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 /**

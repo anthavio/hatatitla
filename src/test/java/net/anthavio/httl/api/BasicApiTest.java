@@ -14,7 +14,7 @@ import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSender;
 
 import org.apache.commons.io.IOUtils;
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 /**

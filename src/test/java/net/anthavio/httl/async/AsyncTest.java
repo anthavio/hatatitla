@@ -1,6 +1,6 @@
 package net.anthavio.httl.async;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutionException;

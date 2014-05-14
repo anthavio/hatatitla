@@ -1,6 +1,6 @@
 package net.anthavio.cache;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -11,14 +11,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.anthavio.cache.CacheBase;
-import net.anthavio.cache.CacheEntry;
-import net.anthavio.cache.CacheLoadRequest;
-import net.anthavio.cache.ConfiguredCacheLoader;
-import net.anthavio.cache.EHCache;
-import net.anthavio.cache.HeapMapCache;
-import net.anthavio.cache.Scheduler;
-import net.anthavio.cache.SpyMemcache;
 import net.anthavio.cache.CacheEntryLoader.CacheLoaderException;
 import net.anthavio.cache.ConfiguredCacheLoader.CacheReturned;
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
@@ -255,8 +247,8 @@ public class CacheTest {
 		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, MissingFailedRecipe.SYNC_NULL,
 				ExpiredFailedRecipe.SYNC_RETURN);
 
-		CacheLoadRequest<String> request = CacheLoadRequest.With(loader).cacheKey("Return")
-				.cache(2, 1, TimeUnit.SECONDS).build();
+		CacheLoadRequest<String> request = CacheLoadRequest.With(loader).cacheKey("Return").cache(2, 1, TimeUnit.SECONDS)
+				.build();
 
 		int rCounter = 0;
 		fetch.setException(exception); // break cache entry updates
@@ -454,8 +446,7 @@ public class CacheTest {
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
 		MissingFailedRecipe amis = new MissingFailedRecipe(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.EXPIRED);
-		ExpiredFailedRecipe aexp = new ExpiredFailedRecipe(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED,
-				CacheReturned.EXPIRED);
+		ExpiredFailedRecipe aexp = new ExpiredFailedRecipe(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED, CacheReturned.EXPIRED);
 		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, amis, aexp);
 		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Eternal").async(true, true)
 				.cache(2, 1, TimeUnit.SECONDS).build();

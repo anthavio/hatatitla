@@ -15,7 +15,7 @@ import net.anthavio.httl.inout.RequestBodyMarshaller;
 import net.anthavio.httl.inout.ResponseBodyExtractor;
 import net.anthavio.httl.util.MockSender;
 
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.testng.annotations.Test;

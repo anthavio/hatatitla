@@ -10,7 +10,7 @@ import net.anthavio.httl.SenderResponse;
 import net.anthavio.httl.inout.GsonExtractorFactory;
 import net.anthavio.httl.util.MockSender;
 
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 /**
