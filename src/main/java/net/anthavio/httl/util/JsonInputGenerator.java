@@ -76,7 +76,7 @@ public class JsonInputGenerator extends JavaCodeGenerator {
 
 	public AstNode parse(String className, Reader reader) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		JsonFactory factory = mapper.getFactory();
+		JsonFactory factory = mapper.getJsonFactory();
 		JsonParser parser = factory.createJsonParser(reader);
 		String xName = className + System.currentTimeMillis();
 		stack.add(new AstNode(xName, (Class<?>) null, false)); //artificial root element - must stay on the top of the Stack
