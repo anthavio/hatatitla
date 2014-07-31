@@ -1,27 +1,22 @@
 package net.anthavio.httl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import net.anthavio.httl.inout.GsonExtractorFactory;
-import net.anthavio.httl.inout.GsonRequestMarshaller;
-import net.anthavio.httl.inout.GsonResponseExtractor;
-import net.anthavio.httl.inout.Jackson1ExtractorFactory;
-import net.anthavio.httl.inout.Jackson1RequestMarshaller;
-import net.anthavio.httl.inout.Jackson1ResponseExtractor;
-import net.anthavio.httl.inout.Jackson2ExtractorFactory;
-import net.anthavio.httl.inout.Jackson2RequestMarshaller;
-import net.anthavio.httl.inout.Jackson2ResponseExtractor;
-import net.anthavio.httl.inout.JaxbExtractorFactory;
-import net.anthavio.httl.inout.JaxbRequestMarshaller;
-import net.anthavio.httl.inout.JaxbResponseExtractor;
-import net.anthavio.httl.inout.SimpleXmlExtractorFactory;
-import net.anthavio.httl.inout.SimpleXmlRequestMarshaller;
-import net.anthavio.httl.inout.SimpleXmlResponseExtractor;
+import net.anthavio.httl.inout.GsonMarshaller;
+import net.anthavio.httl.inout.GsonUnmarshaller;
+import net.anthavio.httl.inout.Jackson1Marshaller;
+import net.anthavio.httl.inout.Jackson1Unmarshaller;
+import net.anthavio.httl.inout.Jackson2Marshaller;
+import net.anthavio.httl.inout.Jackson2Unmarshaller;
+import net.anthavio.httl.inout.JaxbMarshaller;
+import net.anthavio.httl.inout.JaxbUnmarshaller;
+import net.anthavio.httl.inout.SimpleXmlMarshaller;
+import net.anthavio.httl.inout.SimpleXmlUnmarshaller;
 import net.anthavio.httl.util.MockResponse;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Test;
 import org.simpleframework.xml.core.Persister;
 import org.simpleframework.xml.stream.Format;
-import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.Gson;
@@ -41,21 +36,17 @@ public class OptionalLibTest {
 		Format format = new Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>");
 		Persister persister = new Persister(format);
 
-		SimpleXmlRequestMarshaller marshaller = new SimpleXmlRequestMarshaller(persister);
+		SimpleXmlMarshaller marshaller = new SimpleXmlMarshaller(persister);
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
-		SimpleXmlExtractorFactory factory = new SimpleXmlExtractorFactory(persister);
-		SimpleXmlResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
-
-		TestBodyRequest extract = extractor.extract(response);
+		SimpleXmlUnmarshaller extractor = new SimpleXmlUnmarshaller(persister);
+		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
 		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
-
-		assertThat(factory.getCache().size()).isEqualTo(1);
 		assertThat(marshaller.getPersister()).isEqualTo(extractor.getPersister());
 	}
 
@@ -63,21 +54,18 @@ public class OptionalLibTest {
 	public void jackson2Xml() throws Exception {
 		XmlMapper mapper = new XmlMapper();//extends ObjectMapper
 
-		Jackson2RequestMarshaller marshaller = new Jackson2RequestMarshaller(mapper);
+		Jackson2Marshaller marshaller = new Jackson2Marshaller(mapper);
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
-		Jackson2ExtractorFactory factory = new Jackson2ExtractorFactory(mapper);
-		Jackson2ResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
-
-		TestBodyRequest extract = extractor.extract(response);
+		Jackson2Unmarshaller extractor = new Jackson2Unmarshaller(mapper);
+		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
 		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
 
-		assertThat(factory.getCache().size()).isEqualTo(1);
 		assertThat(marshaller.getObjectMapper()).isEqualTo(extractor.getObjectMapper());
 	}
 
@@ -85,21 +73,19 @@ public class OptionalLibTest {
 	public void jackson1Json() throws Exception {
 		ObjectMapper mapper = new ObjectMapper();
 
-		Jackson1RequestMarshaller marshaller = new Jackson1RequestMarshaller(mapper);
+		Jackson1Marshaller marshaller = new Jackson1Marshaller(mapper);
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String json = marshaller.marshall(request);
 
-		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", json);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", json);
 
-		Jackson1ExtractorFactory factory = new Jackson1ExtractorFactory(mapper);
-		Jackson1ResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
+		Jackson1Unmarshaller extractor = new Jackson1Unmarshaller(mapper);
 
-		TestBodyRequest extract = extractor.extract(response);
+		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
 		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
 
-		assertThat(factory.getCache().size()).isEqualTo(1);
 		assertThat(marshaller.getObjectMapper()).isEqualTo(extractor.getObjectMapper());
 	}
 
@@ -107,40 +93,35 @@ public class OptionalLibTest {
 	public void gson() throws Exception {
 		Gson gson = new Gson();
 
-		GsonRequestMarshaller marshaller = new GsonRequestMarshaller(gson);
+		GsonMarshaller marshaller = new GsonMarshaller(gson);
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
-		GsonExtractorFactory factory = new GsonExtractorFactory(gson);
-		GsonResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
+		GsonUnmarshaller extractor = new GsonUnmarshaller(gson);
 
-		TestBodyRequest extract = extractor.extract(response);
-		//System.out.println(extract.getMessage());
+		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
 
 		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
 
-		assertThat(factory.getCache().size()).isEqualTo(1);
 		assertThat(marshaller.getGson()).isEqualTo(extractor.getGson());
 	}
 
 	@Test
 	public void jaxb() throws Exception {
-		JaxbRequestMarshaller marshaller = new JaxbRequestMarshaller();
+		JaxbMarshaller marshaller = new JaxbMarshaller();
 		TestBodyRequest request = new TestBodyRequest("Hello čobole");
 		String xml = marshaller.marshall(request);
 
-		SenderResponse response = new MockResponse(200, "application/xml; charset=utf-8", xml);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
-		JaxbExtractorFactory factory = new JaxbExtractorFactory();
-		JaxbResponseExtractor<TestBodyRequest> extractor = factory.getExtractor(response, TestBodyRequest.class);
+		JaxbUnmarshaller extractor = new JaxbUnmarshaller();
 
-		TestBodyRequest extract = extractor.extract(response);
+		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
 		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
-		assertThat(factory.getCache().size()).isEqualTo(1);
 	}
 
 }

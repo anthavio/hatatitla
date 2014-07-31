@@ -12,7 +12,7 @@ import net.anthavio.httl.util.JsonBuilder;
 import net.anthavio.httl.util.JsonInputGenerator;
 import net.anthavio.httl.util.MockResponse;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -71,7 +71,7 @@ public class UtilTest {
 		}
 
 		CodeGeneratingHandler handler = new CodeGeneratingHandler();
-		SenderResponse response = new MockResponse(200, "application/json; charset=utf-8", json);
-		handler.onResponse(response);
+		HttlResponse response = new MockResponse(null, 200, "application/json; charset=utf-8", json);
+		handler.onResponse(null, response);
 	}
 }

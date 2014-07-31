@@ -5,20 +5,26 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Date;
 
-import net.anthavio.httl.Constants;
-import net.anthavio.httl.RequestInterceptor;
-import net.anthavio.httl.ResponseInterceptor;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.api.ComplexApiTest.SomeBean;
-import net.anthavio.httl.inout.RequestBodyMarshaller;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.util.MockSender;
+import net.anthavio.httl.HttlBuilderInterceptor;
+import net.anthavio.httl.HttlConstants;
+import net.anthavio.httl.HttlExecutionChain;
+import net.anthavio.httl.HttlExecutionInterceptor;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestInterceptor;
+import net.anthavio.httl.ResponseExtractor;
+import net.anthavio.httl.HttlResponseInterceptor;
+import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
+import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
+import org.junit.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.testng.annotations.Test;
 
 /**
  * 
@@ -31,21 +37,22 @@ public class SpecialApiTest {
 	public void interceptors() throws IOException {
 
 		// Given
-		MockSender sender = new MockSender();
-		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
+		MockTransport transport = new MockTransport();
+		HttlSender sender = new MockSenderConfig(transport).build();
+		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 
-		SomeBean bean = new SomeBean("Kvído Vymětal", new Date(), 999);
-		String json = sender.getRequestMarshaller("application/json").marshall(bean);
+		SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
+		String json = sender.getConfig().getRequestMarshaller("application/json").marshall(bean);
 		// When
-		MockRequestInterceptor reqinc = new MockRequestInterceptor();
-		MockResponseInterceptor resinc = new MockResponseInterceptor();
-		String returned = api.intercept(bean, reqinc, resinc);
+		MockBuilderInterceptor bldinc = new MockBuilderInterceptor();
+		MockExecutionInterceptor exeinc = new MockExecutionInterceptor();
+		String returned = api.intercept(bean, bldinc, exeinc);
 		// Then
-		Assertions.assertThat(reqinc.getLastRequest()).isEqualTo(sender.getLastRequest());
-		Assertions.assertThat(resinc.getLastResponse()).isEqualTo(sender.getLastResponse());
-		Assertions.assertThat(sender.getLastRequest().getFirstHeader(Constants.Content_Type))
-				.startsWith("application/json");
-		Assertions.assertThat(sender.getLastResponse().getFirstHeader(Constants.Content_Type)).startsWith(
+		//Assertions.assertThat(bldinc.getLastRequest()).isEqualTo(transport.getLastRequest());
+		Assertions.assertThat(exeinc.getLastResponse()).isEqualTo(transport.getLastResponse());
+		Assertions.assertThat(transport.getLastRequest().getFirstHeader(HttlConstants.Content_Type)).startsWith(
+				"application/json");
+		Assertions.assertThat(transport.getLastResponse().getFirstHeader(HttlConstants.Content_Type)).startsWith(
 				"application/json");
 
 		Assertions.assertThat(returned).isEqualTo(json);
@@ -54,36 +61,43 @@ public class SpecialApiTest {
 	@Test
 	public void customSetter() {
 		// Given
-		MockSender sender = new MockSender();
-		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
+		MockTransport transport = new MockTransport();
+		HttlSender sender = new MockSenderConfig(transport).build();
+		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 
 		// When
-		SenderResponse response = api.customSetter(new PageRequest(3, 13));
+		HttlResponse response = api.customSetter(new PageRequest(3, 13));
 
 		// Then
-		Assertions.assertThat(response).isEqualTo(sender.getLastResponse());
-		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.number")).isEqualTo("3");
-		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.size")).isEqualTo("13");
-		Assertions.assertThat(sender.getLastRequest().getParameters().getFirst("xpage.sort")).isNull(); //not present
+		Assertions.assertThat(response).isEqualTo(transport.getLastResponse());
+		Assertions.assertThat(transport.getLastRequest().getParameters().getFirst("xpage.number")).isEqualTo("3");
+		Assertions.assertThat(transport.getLastRequest().getParameters().getFirst("xpage.size")).isEqualTo("13");
+		Assertions.assertThat(transport.getLastRequest().getParameters().getFirst("xpage.sort")).isNull(); //not present
 	}
 
 	@Test
 	public void responseExtractor() throws IOException {
 		// Given
-		MockSender sender = new MockSender();
-		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
-		final SomeBean bean = new SomeBean("Kvído Vymětal", new Date(), 999);
-		String bodyXml = sender.getRequestMarshaller("application/xml").marshall(bean);
+		HttlSender sender = new MockSenderConfig().build();
+		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
+		final SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
+		String bodyXml = sender.getConfig().getRequestMarshaller("application/xml").marshall(bean);
 
 		// When
 		final Date dateToCheck = new Date();
-		ResponseBodyExtractor<Date> extractor = new ResponseBodyExtractor<Date>() {
+		ResponseExtractor<Date> extractor = new ResponseExtractor<Date>() {
 
 			@Override
-			public Date extract(SenderResponse response) throws IOException {
+			public Date extract(HttlResponse response) throws IOException {
 				dateToCheck.setTime(bean.getDate().getTime());
 				return bean.getDate();
 			}
+
+			@Override
+			public boolean support(HttlResponse response) {
+				return true;
+			}
+
 		};
 
 		Date returnedDate = api.extractor(extractor, bean);
@@ -91,31 +105,34 @@ public class SpecialApiTest {
 		Assertions.assertThat(returnedDate).isEqualTo(bean.getDate());
 
 		// When
-		String returnedXml = api.extractorSilly(bean, extractor);
-		// Then
-		Assertions.assertThat(returnedXml).isEqualTo(bodyXml);
-		Assertions.assertThat(dateToCheck).isEqualTo(bean.getDate());
+		try {
+			api.extractorWrong(bean, extractor);
+			// Then
+			Assertions.fail("IllegalArgumentException expected");
+		} catch (IllegalArgumentException iax) {
+			Assertions.assertThat(iax.getMessage()).startsWith("Incompatible ResponseExtractor");
+		}
 	}
 
 	@Test
 	public void requestMarshaller() throws IOException {
 		// Given
-		MockSender sender = new MockSender();
-		SpecialApi api = ApiBuilder.with(sender).build(SpecialApi.class);
-		SomeBean bean = new SomeBean("Kvído Vymětal", new Date(), 999);
+		HttlSender sender = new MockSenderConfig().build();
+		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
+		SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
 		//String bodyXml = sender.getRequestMarshaller("application/xml").marshall(bean);
 
 		// When
-		RequestBodyMarshaller marshaller = new RequestBodyMarshaller() {
+		RequestMarshaller marshaller = new RequestMarshaller() {
 
 			@Override
 			public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
-				stream.write(((SomeBean) requestBody).getName().getBytes("utf-8"));
+				stream.write(((SomeBodyBean) requestBody).getName().getBytes("utf-8"));
 			}
 
 			@Override
 			public String marshall(Object requestBody) throws IOException {
-				return ((SomeBean) requestBody).getName();
+				return ((SomeBodyBean) requestBody).getName();
 			}
 		};
 		String returned = api.marshaller(marshaller, bean);
@@ -127,65 +144,103 @@ public class SpecialApiTest {
 
 	static interface SpecialApi {
 
-		@Operation("POST /intercept")
-		String intercept(@Body("application/json") SomeBean bean, RequestInterceptor requestInterceptor,
-				ResponseInterceptor responseInterceptor);
+		@RestCall("POST /intercept")
+		String intercept(@RestBody("application/json") SomeBodyBean bean, HttlBuilderInterceptor builderInterceptor,
+				HttlExecutionInterceptor executionInterceptor);
 
-		@Operation("POST /extractor")
-		Date extractor(ResponseBodyExtractor<Date> extractor, @Body("application/xml") SomeBean bean);
+		@RestCall("POST /extractor")
+		Date extractor(ResponseExtractor<Date> extractor, @RestBody("application/xml") SomeBodyBean bean);
 
-		@Operation("POST /extractorSilly")
-		String extractorSilly(@Body("application/xml") SomeBean bean, ResponseBodyExtractor<Date> extractor);
+		@RestCall("POST /extractorSilly")
+		String extractorWrong(@RestBody("application/xml") SomeBodyBean bean, ResponseExtractor<Date> extractor);
 
-		@Operation("POST /marshaller")
-		@Headers("Content-Type: application/xml")
-		String marshaller(RequestBodyMarshaller marshaller, @Body Object body);
+		@RestCall("POST /marshaller")
+		@RestHeaders("Content-Type: application/xml")
+		String marshaller(RequestMarshaller marshaller, @RestBody Object body);
 
-		@Operation("GET /customSetter")
-		SenderResponse customSetter(@Param(value = "xpage", setter = PageableSetter.class) Pageable pager);
+		@RestCall("GET /customSetter")
+		HttlResponse customSetter(@RestVar(value = "xpage", setter = PageableSetter.class) Pageable pager);
 
-		@Operation("POST /everything")
-		SomeBean everything(@Param(value = "page", setter = PageableSetter.class) Pageable pager,
-				RequestBodyMarshaller marshaller, @Body("application/json") Object body, ResponseBodyExtractor<Date> extractor,
-				RequestInterceptor requestInterceptor, ResponseInterceptor responseInterceptor);
+		@RestCall("POST /everything")
+		SomeBodyBean everything(@RestVar(value = "page", setter = PageableSetter.class) Pageable pager,
+				RequestMarshaller marshaller, @RestBody("application/json") Object body, ResponseExtractor extractor,
+				HttlBuilderInterceptor builderInterceptor, HttlExecutionInterceptor executionInterceptor);
 	}
 
-	static class MockRequestInterceptor implements RequestInterceptor {
+	static class MockRequestInterceptor implements HttlRequestInterceptor {
 
-		private SenderRequest lastRequest;
+		private HttlRequest lastRequest;
 
-		@Override
-		public void onRequest(SenderRequest request) {
-			this.lastRequest = request;
-		}
-
-		public SenderRequest getLastRequest() {
+		public HttlRequest getLastRequest() {
 			return lastRequest;
 		}
-	}
-
-	static class MockResponseInterceptor implements ResponseInterceptor {
-
-		private SenderResponse lastResponse;
 
 		@Override
-		public void onResponse(SenderResponse response) {
-			this.lastResponse = response;
+		public void onSend(HttlRequest request) {
+			this.lastRequest = request;
 		}
+	}
 
-		public SenderResponse getLastResponse() {
+	static class MockResponseInterceptor implements HttlResponseInterceptor {
+
+		private HttlResponse lastResponse;
+
+		public HttlResponse getLastResponse() {
 			return lastResponse;
 		}
 
+		@Override
+		public void onRecieve(HttlResponse response) {
+			this.lastResponse = response;
+		}
+
 	}
 
-	static class PageableSetter implements ParamSetter<Pageable> {
+	static class MockBuilderInterceptor implements HttlBuilderInterceptor {
+
+		private HttlRequestBuilder builder;
+
+		public HttlRequestBuilder getLastBuilder() {
+			return builder;
+		}
 
 		@Override
-		public void set(Pageable value, String name, SenderRequest request) {
-			request.addParameter(name + ".number", value.getPageNumber());
-			request.addParameter(name + ".size", value.getPageSize());
-			request.addParameter(name + ".sort", value.getSort());
+		public void onBuild(HttlRequestBuilder<?> builder) {
+			this.builder = builder;
+		}
+	}
+
+	static class MockExecutionInterceptor implements HttlExecutionInterceptor {
+
+		private HttlRequest lastRequest;
+
+		private HttlResponse lastResponse;
+
+		public HttlRequest getLastRequest() {
+			return lastRequest;
+		}
+
+		public HttlResponse getLastResponse() {
+			return lastResponse;
+		}
+
+		@Override
+		public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException {
+			this.lastRequest = request;
+			HttlResponse response = chain.next(request);
+			this.lastResponse = response;
+			return response;
+		}
+
+	}
+
+	static class PageableSetter implements VarSetter<Pageable> {
+
+		@Override
+		public void set(Pageable value, String name, HttlRequestBuilder<?> request) {
+			request.param(name + ".number", value.getPageNumber());
+			request.param(name + ".size", value.getPageSize());
+			request.param(name + ".sort", value.getSort());
 		}
 
 	}

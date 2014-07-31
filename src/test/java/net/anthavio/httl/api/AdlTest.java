@@ -1,12 +1,12 @@
 package net.anthavio.httl.api;
 
-import net.anthavio.httl.RequestInterceptor;
-import net.anthavio.httl.ResponseInterceptor;
-import net.anthavio.httl.inout.RequestBodyMarshaller;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.inout.ResponseErrorHandler;
-import net.anthavio.httl.inout.ResponseHandler;
-import net.anthavio.httl.util.MockSender;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlRequestInterceptor;
+import net.anthavio.httl.ResponseExtractor;
+import net.anthavio.httl.HttlResponseHandler;
+import net.anthavio.httl.HttlResponseInterceptor;
+import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.util.MockSenderConfig;
 
 /**
  * 
@@ -19,32 +19,31 @@ public class AdlTest {
 		// http://square.github.io/retrofit/
 		// https://github.com/Netflix/feign
 
-		MockSender sender = new MockSender();
-		GitHubApi api = ApiBuilder.build(GitHubApi.class, sender);
+		HttlSender sender = new MockSenderConfig().build();
+		GitHubApi api = HttlApiBuilder.build(GitHubApi.class, sender);
 
-		RequestBodyMarshaller marshaller;
-		RequestInterceptor requestInterceptor;
-		ResponseInterceptor responseInterceptor;
-		ResponseHandler reponseHandler;
-		ResponseErrorHandler errorHandler;
-		ResponseBodyExtractor<String> extractor;
+		RequestMarshaller marshaller;
+		HttlRequestInterceptor requestInterceptor;
+		HttlResponseInterceptor responseInterceptor;
+		HttlResponseHandler reponseHandler;
+		ResponseExtractor extractor;
 
 		String response = api.something("anthavio", "zxzx", new int[] { 999, 333 });
 		System.out.println(response);
 	}
 
-	@Headers("Content-type: application/json; charset=utf-8")
+	@RestHeaders("Content-type: application/json; charset=utf-8")
 	public static interface GitHubApi {
 
-		@Operation(method = HttpMethod.GET, value = "/something/{awful}")
-		@Headers("Custom: {custom}")
-		public String something(@Param("awful") String awful, @Param("custom") String custom, @Param("number") int[] number);
+		@RestCall(method = HttpMethod.GET, value = "/something/{awful}")
+		@RestHeaders("Custom: {custom}")
+		public String something(@RestVar("awful") String awful, @RestVar("custom") String custom, @RestVar("number") int[] number);
 
-		@Operation("POST /entity/{id}")
-		public String post(@Param("id") String id, @Body String body/*, @Body Integer another*/);
+		@RestCall("POST /entity/{id}")
+		public String post(@RestVar("id") String id, @RestBody String body/*, @Body Integer another*/);
 
-		@Operation("GET /repos/{owner}/{repo}/contributors")
-		public String contributors(@Param("owner") String owner, @Param("repo") String repo);
+		@RestCall("GET /repos/{owner}/{repo}/contributors")
+		public String contributors(@RestVar("owner") String owner, @RestVar("repo") String repo);
 
 	}
 }

@@ -313,7 +313,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		CacheEntryLoadResult<V> entry;
 		switch (settings.cacheAs) {
 		case DONT:
-			entry = new CacheEntryLoadResult<V>(false, value, expiredEntry.getEvictTtl(), expiredEntry.getExpiryTtl());
+			entry = new CacheEntryLoadResult<V>(false, value, expiredEntry.getEvictTtl(), expiredEntry.getStaleTtl());
 			entry.setCached(expiredEntry.getCached());
 			break;
 		case EXPIRED:

@@ -1,5 +1,6 @@
 package net.anthavio.httl.util;
 
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -16,10 +17,13 @@ import java.util.TimeZone;
  */
 public final class HttpDateUtil {
 
+	private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 	/**
 	* Date format pattern used to parse HTTP date headers in RFC 1123 format.
 	*/
 	public static final String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss zzz";
+
+	private static final SimpleDateFormat FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123);
 
 	/**
 	 * Date format pattern used to parse HTTP date headers in RFC 1036 format.
@@ -41,9 +45,9 @@ public final class HttpDateUtil {
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(2000, Calendar.JANUARY, 1, 0, 0);
 		DEFAULT_TWO_DIGIT_YEAR_START = calendar.getTime();
-	}
 
-	private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
+		FORMAT_RFC1123.setTimeZone(GMT);
+	}
 
 	/**
 	 * This class should not be instantiated.
@@ -136,7 +140,20 @@ public final class HttpDateUtil {
 	 * @see #PATTERN_RFC1123
 	 */
 	public static String formatDate(Date date) {
-		return formatDate(date, PATTERN_RFC1123);
+		return formatDate(date, FORMAT_RFC1123);
+	}
+
+	/**
+	 * Formats the given date according to the RFC 1123 pattern.
+	 */
+	public static String formatDate(Date date, DateFormat format) {
+		if (date == null) {
+			throw new IllegalArgumentException("date is null");
+		}
+		if (format == null) {
+			throw new IllegalArgumentException("format is null");
+		}
+		return format.format(date);
 	}
 
 	/**

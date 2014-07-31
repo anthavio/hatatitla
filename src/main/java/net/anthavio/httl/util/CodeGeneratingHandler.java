@@ -2,10 +2,9 @@ package net.anthavio.httl.util;
 
 import java.io.IOException;
 
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.inout.ResponseHandler;
-
+import net.anthavio.httl.HttlResponseHandler;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponse;
 
 /**
  * Jackson2 required
@@ -13,10 +12,10 @@ import net.anthavio.httl.inout.ResponseHandler;
  * @author martin.vanek
  *
  */
-public class CodeGeneratingHandler implements ResponseHandler {
+public class CodeGeneratingHandler implements HttlResponseHandler {
 
 	@Override
-	public void onResponse(SenderResponse response) throws IOException {
+	public void onResponse(HttlRequest request, HttlResponse response) throws IOException {
 		String mediaType = response.getMediaType();
 		if (mediaType.indexOf("javascript") != -1 || mediaType.indexOf("json") != -1) {
 			JsonInputGenerator generator = new JsonInputGenerator();
@@ -30,12 +29,7 @@ public class CodeGeneratingHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void onRequestError(SenderRequest request, Exception exception) {
-		exception.printStackTrace();
-	}
-
-	@Override
-	public void onResponseError(SenderResponse response, Exception exception) {
+	public void onFailure(HttlRequest request, Exception exception) {
 		exception.printStackTrace();
 	}
 

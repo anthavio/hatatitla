@@ -6,21 +6,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.Date;
 
 import net.anthavio.cache.CacheEntry;
-import net.anthavio.httl.HttpSender.Multival;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.cache.CachedResponse;
 
 public class HttpHeaderUtil {
 
-	public static CacheEntry<CachedResponse> buildCacheEntry(SenderRequest request, SenderResponse response) {
+	public static CacheEntry<CachedResponse> buildCacheEntry(HttlRequest request, HttlResponse response) {
 
-		Multival headers = response.getHeaders();
+		HttpHeaders headers = response.getHeaders();
 
 		long softTtl = 0; //seconds
 		long maxAge = 0; //seconds
@@ -198,7 +200,7 @@ public class HttpHeaderUtil {
 	/**
 	 * Try to detect if content type is textual or binary
 	 */
-	public static boolean isTextContent(SenderResponse response) {
+	public static boolean isTextContent(HttlResponse response) {
 		boolean istext = false;
 		String contentType = response.getFirstHeader("Content-Type");
 		if (contentType != null) {
@@ -229,7 +231,7 @@ public class HttpHeaderUtil {
 		return istext;
 	}
 
-	public static String readAsString(SenderResponse response) throws IOException {
+	public static String readAsString(HttlResponse response) throws IOException {
 		if (response instanceof CachedResponse) {
 			return ((CachedResponse) response).getAsString();
 		}
@@ -252,7 +254,7 @@ public class HttpHeaderUtil {
 		return output.toString();
 	}
 
-	public static byte[] readAsBytes(SenderResponse response) throws IOException {
+	public static byte[] readAsBytes(HttlResponse response) throws IOException {
 		if (response instanceof CachedResponse) {
 			return ((CachedResponse) response).getAsBytes();
 		}
@@ -279,7 +281,7 @@ public class HttpHeaderUtil {
 
 	private static final int KILO64 = 64 * KILO;
 
-	private static int getBufferLength(SenderResponse response) {
+	private static int getBufferLength(HttlResponse response) {
 		int blength = 1024;
 		String sclength = response.getFirstHeader("Content-Length");
 		if (sclength != null) {
@@ -296,5 +298,29 @@ public class HttpHeaderUtil {
 		//String strans = response.getFirstHeader("Transfer-Encoding"); //chunked
 
 		return blength;
+	}
+
+	public static String joinUrlParts(String left, String right) {
+		if (right.startsWith("/")) {
+			if (left.endsWith("/")) {
+				return left + right.substring(1);
+			} else {
+				return left + right;
+			}
+		} else {
+			if (left.endsWith("/")) {
+				return left + right;
+			} else {
+				return left + "/" + right;
+			}
+		}
+	}
+
+	public static String urlencode(String string) {
+		try {
+			return URLEncoder.encode(string, "utf-8");
+		} catch (UnsupportedEncodingException uex) {
+			throw new IllegalStateException("utf-8 is gone", uex);
+		}
 	}
 }

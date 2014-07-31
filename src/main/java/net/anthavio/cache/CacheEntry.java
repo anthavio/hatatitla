@@ -3,6 +3,7 @@ package net.anthavio.cache;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -11,7 +12,7 @@ import java.util.Date;
  */
 public class CacheEntry<V> implements Serializable {
 
-	public static final CacheEntry EMPTY = new CacheEntry(null, -1, -1);
+	public static final CacheEntry EMPTY = new CacheEntry(null, -1, -1, TimeUnit.SECONDS);
 
 	private static final long serialVersionUID = 1L;
 
@@ -21,44 +22,32 @@ public class CacheEntry<V> implements Serializable {
 
 	private final long evictTtl; //seconds - entry will disapear after
 
-	private final long expiryTtl; //seconds - must revalidate after - static value or server expiry 
+	private final long staleTtl; //seconds - must revalidate after - static value or server expiry 
 
 	/**
 	 * TTLs unit is parameter
 	 * 
 	 * @param value - to be cached, can be null
 	 * @param evictTtl - cache entry eviction in seconds
-	 * @param expiryTtl - cache entry become stale in seconds
+	 * @param staleTtl - cache entry become stale in seconds
 	 */
-	public CacheEntry(V value, long evictTtl, long expiryTtl) {
+	public CacheEntry(V value, long evictTtl, long staleTtl, TimeUnit unit) {
 		//can be null
 		this.value = value;
 
 		// can be negative
-		this.evictTtl = evictTtl;
+		this.evictTtl = unit.toSeconds(evictTtl);
 
 		// can be negative
-		this.expiryTtl = expiryTtl;
+		this.staleTtl = unit.toSeconds(staleTtl);
 
-		if (this.expiryTtl > 0 && this.evictTtl < this.expiryTtl) {
-			throw new IllegalArgumentException("evictTtl " + this.evictTtl + " must be > recentTtl " + this.expiryTtl);
+		if (this.staleTtl > 0 && this.evictTtl < this.staleTtl) {
+			throw new IllegalArgumentException("evictTtl " + this.evictTtl + " must be > recentTtl " + this.staleTtl);
 		}
 	}
 
-	public boolean isExpired() {
-		if (cached != null) {
-			return cached.getTime() + (expiryTtl * 1000) < System.currentTimeMillis();
-		} else {
-			return true;
-		}
-	}
-
-	public boolean isEvicted() {
-		if (cached != null) {
-			return cached.getTime() + (evictTtl * 1000) < System.currentTimeMillis();
-		} else {
-			return true;
-		}
+	public CacheEntry(V value, long evictSeconds, long staleSeconds) {
+		this(value, evictSeconds, staleSeconds, TimeUnit.SECONDS);
 	}
 
 	public V getValue() {
@@ -73,6 +62,33 @@ public class CacheEntry<V> implements Serializable {
 		this.cached = cached;
 	}
 
+	public boolean isStale() {
+		if (cached != null) {
+			return cached.getTime() + (staleTtl * 1000) < System.currentTimeMillis();
+		} else {
+			return true;
+		}
+	}
+
+	/**
+	 * @return seconds - after we must revalidate or update value
+	 */
+	public long getStaleTtl() {
+		return staleTtl;
+	}
+
+	public long getStaleTimestamp() {
+		return cached.getTime() + (staleTtl * 1000);
+	}
+
+	public boolean isEvicted() {
+		if (cached != null) {
+			return cached.getTime() + (evictTtl * 1000) < System.currentTimeMillis();
+		} else {
+			return true;
+		}
+	}
+
 	/**
 	 * @return seconds - after entry will disapear
 	 */
@@ -84,24 +100,13 @@ public class CacheEntry<V> implements Serializable {
 		return cached.getTime() + (evictTtl * 1000);
 	}
 
-	/**
-	 * @return seconds - after we must revalidate or update value
-	 */
-	public long getExpiryTtl() {
-		return expiryTtl;
-	}
-
-	public long getExpiryTimestamp() {
-		return cached.getTime() + (expiryTtl * 1000);
-	}
-
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((cached == null) ? 0 : cached.hashCode());
 		result = prime * result + (int) (evictTtl ^ (evictTtl >>> 32));
-		result = prime * result + (int) (expiryTtl ^ (expiryTtl >>> 32));
+		result = prime * result + (int) (staleTtl ^ (staleTtl >>> 32));
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		return result;
 	}
@@ -122,7 +127,7 @@ public class CacheEntry<V> implements Serializable {
 			return false;
 		if (evictTtl != other.evictTtl)
 			return false;
-		if (expiryTtl != other.expiryTtl)
+		if (staleTtl != other.staleTtl)
 			return false;
 		if (value == null) {
 			if (other.value != null)
@@ -142,10 +147,10 @@ public class CacheEntry<V> implements Serializable {
 			value = value.substring(0, 100) + "...";
 		}
 		if (cached != null) {
-			return "CacheEntry [cached=" + sdf.format(cached) + ", evictTtl=" + evictTtl + ", expiryTtl=" + expiryTtl
+			return "CacheEntry [cached=" + sdf.format(cached) + ", evictTtl=" + evictTtl + ", expiryTtl=" + staleTtl
 					+ ", value=" + value + "]";
 		} else {
-			return "CacheEntry [cached=, evictTtl=" + evictTtl + ", expiryTtl=" + expiryTtl + ", value=" + value + "]";
+			return "CacheEntry [cached=, evictTtl=" + evictTtl + ", expiryTtl=" + staleTtl + ", value=" + value + "]";
 		}
 	}
 

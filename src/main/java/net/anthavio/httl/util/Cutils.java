@@ -46,6 +46,7 @@ public class Cutils {
 			try {
 				c.close();
 			} catch (Exception x) {
+				//System.err.println("xxxxxxxxc " + x);
 				//ignore quietly
 			}
 		}
@@ -56,6 +57,7 @@ public class Cutils {
 			try {
 				i.close();
 			} catch (Exception x) {
+				//System.err.println("xxxxxxxxi " + x);
 				//ignore quietly
 			}
 		}

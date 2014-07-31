@@ -3,16 +3,18 @@ package net.anthavio.httl.api;
 import java.util.Date;
 import java.util.List;
 
-import net.anthavio.httl.HttpSender.Multival;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderRequest.Method;
-import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.inout.GsonExtractorFactory;
-import net.anthavio.httl.inout.Jackson2RequestMarshaller;
-import net.anthavio.httl.util.MockSender;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequest.Method;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.inout.GsonUnmarshaller;
+import net.anthavio.httl.inout.Jackson2Marshaller;
+import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -26,36 +28,37 @@ public class ComplexApiTest {
 	@Test
 	public void testSomeApiOptions() {
 
-		MockSender sender = new MockSender();
+		HttlSender sender = new MockSenderConfig().build();
 		// Set api-key header into every passing request
 
 		// Build
-		SomeApi api = ApiBuilder.with(sender).addHeader("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
+		SomeApi api = HttlApiBuilder.with(sender).addHeader("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
 
 		// Invoke
-		SenderResponse response = api.options("trololo", "ISO-8859-4", new int[] { 3, 2, 1 });
+		HttlResponse response = api.options("trololo", "ISO-8859-4", new int[] { 3, 2, 1 });
 
 		// Assert
 		Assertions.assertThat(response.getHttpStatusCode()).isEqualTo(200);
 
-		SenderRequest request = sender.getLastRequest();
+		HttlRequest request = response.getRequest();
 		Assertions.assertThat(request.getMethod()).isEqualTo(Method.OPTIONS);
-		Assertions.assertThat(request.getUrlPath()).isEqualTo("/something/{awful}");
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/something/trololo?numbers=3&numbers=2&numbers=1");
 		Assertions.assertThat(request.getFirstHeader("api-key")).isEqualTo("zxzxzx-zxzxzx-zxzxzx-zxzxzx");
 		Assertions.assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
 		Assertions.assertThat(request.getFirstHeader("Accept-Charset")).isEqualTo("ISO-8859-4"); //replaced global utf-8
 
-		Multival parameters = request.getParameters();
+		Parameters parameters = request.getParameters();
 		Assertions.assertThat(parameters.getFirst("numbers")).isEqualTo("3");
 		Assertions.assertThat(parameters.getLast("numbers")).isEqualTo("1");
 	}
 
 	@Test
 	public void testSomeApiPut() {
-		MockSender sender = new MockSender();
+		MockTransport transport = new MockTransport();
+		HttlSender sender = new MockSenderConfig(transport).build();
 
 		// Build
-		SomeApi api = ApiBuilder.with(sender).addParam("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
+		SomeApi api = HttlApiBuilder.with(sender).addParam("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx").build(SomeApi.class);
 
 		// Invoke
 		String json = "{ \"name\" : \"Kvído Vymětal\" }";
@@ -64,50 +67,52 @@ public class ComplexApiTest {
 		// Assert
 		Assertions.assertThat(response).isEqualTo(json);
 
-		SenderRequest request = sender.getLastRequest();
+		HttlRequest request = transport.getLastRequest();
 		Assertions.assertThat(request.getMethod()).isEqualTo(Method.PUT);
-		Assertions.assertThat(request.getUrlPath()).isEqualTo("/store/{else}");
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/store/whatever?api-key=zxzxzx-zxzxzx-zxzxzx-zxzxzx");
 		Assertions.assertThat(request.getFirstHeader("api-key")).isNull();
 		Assertions.assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
 		Assertions.assertThat(request.getFirstHeader("Accept-Charset")).isEqualTo("utf-8");
 
-		Multival parameters = request.getParameters();
+		Parameters parameters = request.getParameters();
 		Assertions.assertThat(parameters.getFirst("api-key")).isEqualTo("zxzxzx-zxzxzx-zxzxzx-zxzxzx");
 	}
 
 	@Test
 	public void testSomeApiPostBody() {
 		//Given
-		MockSender sender = new MockSender();
-		Jackson2RequestMarshaller jrm = (Jackson2RequestMarshaller) sender.getRequestMarshaller("application/json");
+		Jackson2Marshaller marshaller = new Jackson2Marshaller();
+		HttlSender sender = new MockSenderConfig().build();
+		Jackson2Marshaller jrm = (Jackson2Marshaller) sender.getConfig().getRequestMarshaller("application/json");
 		jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
 
-		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
-		SomeBean input = new SomeBean("Kvído Vymětal", new Date(), 999);
+		SomeApi api = HttlApiBuilder.build(SomeApi.class, sender);
+		SomeBodyBean input = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
 
 		// When
-		SomeBean asXml = api.postBody("application/xml", "application/xml", input);
+		SomeBodyBean asXml = api.postBody("application/xml", "application/xml", input);
 		// Then
 		Assertions.assertThat(asXml).isEqualToComparingFieldByField(input);
 
 		// When
-		SomeBean asJson = api.postBody("application/json", "application/json", input);
+		SomeBodyBean asJson = api.postBody("application/json", "application/json", input);
 		// Then
 		Assertions.assertThat(asJson).isEqualToComparingFieldByField(input);
 	}
 
 	@Test
-	public void testListReturn() {
-		MockSender sender = new MockSender();
+	public void genericListReturn() {
+		MockTransport transport = new MockTransport();
+		HttlSender sender = new MockSenderConfig(transport).build();
 		String json = "[{\"login\":\"anthavio\",\"id\":647317,\"contributions\":119}]";
-		sender.setStaticResponse(200, "application/json; charset=utf-8", json);
+		transport.setStaticResponse(200, "application/json; charset=utf-8", json);
 
 		//HttpURLSender sender = new HttpURLSender("https://api.github.com/");
 		//HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com/");
 
-		sender.setResponseExtractorFactory(new GsonExtractorFactory(), "application/json");
+		sender.getConfig().addResponseUnmarshaller(new GsonUnmarshaller(), "application/json");
 		// Build
-		SomeApi api = ApiBuilder.build(SomeApi.class, sender);
+		SomeApi api = HttlApiBuilder.build(SomeApi.class, sender);
 		// Invoke
 		List<Contributor> contributors = api.contributors("anthavio", "hatatitla");
 		// Assert
@@ -116,7 +121,7 @@ public class ComplexApiTest {
 		Assertions.assertThat(contributors.get(0).contributions).isPositive();
 	}
 
-	@Headers({ //
+	@RestHeaders({ //
 	"Content-Type: application/json; charset=utf-8", //
 			"Accept: application/json", //
 			"Accept-Charset: utf-8",//
@@ -124,21 +129,24 @@ public class ComplexApiTest {
 	})
 	static interface SomeApi {
 
-		@Operation("OPTIONS /something/{awful}")
-		@Headers("Accept-Charset: {acceptCharset}")
-		public SenderResponse options(@Param("awful") String awful, @Param("acceptCharset") String accept,
-				@Param("numbers") int[] numbers);
+		@RestCall("OPTIONS /something/{awful}")
+		@RestHeaders("Accept-Charset: {accept-charset}")
+		public HttlResponse options(@RestVar("awful") String awful, @RestVar("accept-charset") String accept,
+				@RestVar("numbers") int[] numbers);
 
-		@Operation("PUT /store/{else}")
-		public String put(@Param("else") String elseParam, @Body String body);
+		@RestCall("PUT /store/{else}")
+		public String put(@RestVar("else") String elseParam, @RestBody String body);
 
-		@Operation("POST /something")
-		@Headers({ "Content-Type: {contentType}", "Accept: {accept}" })
-		public SomeBean postBody(@Param("contentType") String contentType, @Param("accept") String accept,
-				@Body SomeBean bean);
+		//@RestCall("GET /zzz")
+		//public void complexParam(@RestArg("") ComplexParam param);
 
-		@Operation("GET /repos/{owner}/{repo}/contributors")
-		List<Contributor> contributors(@Param("owner") String owner, @Param("repo") String repo);
+		@RestCall("POST /something")
+		@RestHeaders({ "Content-Type: {content-type}", "Accept: {accept}" })
+		public SomeBodyBean postBody(@RestVar("content-type") String contentType, @RestVar("accept") String accept,
+				@RestBody SomeBodyBean bean);
+
+		@RestCall("GET /repos/{owner}/{repo}/contributors")
+		List<Contributor> contributors(@RestVar("owner") String owner, @RestVar("repo") String repo);
 
 	}
 
@@ -147,7 +155,7 @@ public class ComplexApiTest {
 		int contributions;
 	}
 
-	static class SomeBean {
+	static class SomeBodyBean {
 
 		private String name;
 
@@ -155,11 +163,11 @@ public class ComplexApiTest {
 
 		private Integer number;
 
-		public SomeBean() {
+		public SomeBodyBean() {
 			//jaxb
 		}
 
-		public SomeBean(String name, Date date, Integer number) {
+		public SomeBodyBean(String name, Date date, Integer number) {
 			this.name = name;
 			this.date = date;
 			this.number = number;
@@ -207,7 +215,7 @@ public class ComplexApiTest {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			SomeBean other = (SomeBean) obj;
+			SomeBodyBean other = (SomeBodyBean) obj;
 			if (date == null) {
 				if (other.date != null)
 					return false;

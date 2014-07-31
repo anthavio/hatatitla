@@ -10,22 +10,23 @@ import javax.xml.bind.Marshaller;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.HeapMapCache;
 import net.anthavio.httl.Authentication;
-import net.anthavio.httl.GetRequest;
-import net.anthavio.httl.HttpClient3Config;
-import net.anthavio.httl.HttpClient3Sender;
-import net.anthavio.httl.HttpClient4Config;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpURLConfig;
-import net.anthavio.httl.HttpURLSender;
-import net.anthavio.httl.JettySender;
-import net.anthavio.httl.SenderRequest.ValueStrategy;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlParameterSetter;
+import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
+import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.cache.CachingSender;
 import net.anthavio.httl.cache.CachingSenderRequest;
-import net.anthavio.httl.inout.Jackson2ExtractorFactory;
-import net.anthavio.httl.inout.Jackson2RequestMarshaller;
-import net.anthavio.httl.inout.JaxbRequestMarshaller;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import net.anthavio.httl.impl.HttpClient3Config;
+import net.anthavio.httl.impl.HttpClient4Config;
+import net.anthavio.httl.impl.HttpUrlConfig;
+import net.anthavio.httl.impl.JettySenderConfig;
+import net.anthavio.httl.inout.Jackson2Marshaller;
+import net.anthavio.httl.inout.Jackson2Unmarshaller;
+import net.anthavio.httl.inout.JaxbMarshaller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * We will be using Github API http://developer.github.com/v3/
@@ -38,8 +39,8 @@ public class ExamplesTest {
 	public static void main(String[] args) {
 		//cachingScheduled();
 		try {
-			JettySender sender = new JettySender("http://httpbin.org/");
-			ExtractedBodyResponse<String> extract = sender.GET("/get").param("prdel", "krtel").extract(String.class);
+			HttlSender sender = new JettySenderConfig("http://httpbin.org/").build();
+			ExtractedResponse<String> extract = sender.GET("/get").param("prdel", "krtel").extract(String.class);
 			System.out.println(extract);
 
 			sender.close();
@@ -51,28 +52,11 @@ public class ExamplesTest {
 
 	public static void fluent() {
 		//Create sender with utf-8 encoding, default timeouts and connection pool
-		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
+		HttlSender sender = new HttpUrlConfig("https://api.github.com").build();
 
-		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
+		ExtractedResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
 		System.out.println(extracted1.getBody());
-
-		//Free connection pool
-		sender.close();
-	}
-
-	public static void tradition() {
-		//Sender can be built from Configuration
-		HttpClient4Config config = new HttpClient4Config("https://api.github.com");
-		//Configuration example follows, but here comes sneak peek
-		config.setReadTimeoutMillis(5 * 1000);
-		HttpClient4Sender sender = new HttpClient4Sender(config);
-
-		GetRequest request = new GetRequest("/users");
-		request.setParameter("since", 333);
-		ExtractedBodyResponse<String> extracted = sender.extract(request, String.class);
-		//Just print unprocessed JSON String
-		System.out.println(extracted.getBody());
 
 		//Free connection pool
 		sender.close();
@@ -99,16 +83,16 @@ public class ExamplesTest {
 		config.setAuthentication(Authentication.BASIC("myusername", "mypassword"));
 
 		config.setFollowRedirects(true); //default is false
-		config.setGzipRequest(true); //default is false
 
+		HttlParameterSetter paramHandler = new ConfigurableParamSetter();
 		//What to do with null or "" parameters?
-		config.setNullValueStrategy(ValueStrategy.SKIP); //default is KEEP
-		config.setEmptyValueStrategy(ValueStrategy.SKIP); //default is KEEP
+		//XXX config.setKeepNullParams(true); //default is KEEP
+		//XXX config.setKeepEmptyParams(false); //default is KEEP
 
 		//Tired of setting Accept Header to every request?
-		config.setDefaultAccept("application/json"); //default is none
+		config.setResponseMediaType("application/json"); //default is none
 
-		HttpClient4Sender sender = config.buildSender();
+		HttlSender sender = config.build();
 		//...send send send...
 		sender.close();
 	}
@@ -116,27 +100,27 @@ public class ExamplesTest {
 	public static void senders() {
 		//Easy to start with
 		//No additional dependency - vanilla java 
-		HttpURLConfig urlConfig = new HttpURLConfig("https://graph.facebook.com");
-		HttpURLSender urlSender = urlConfig.buildSender();
+		HttlSender urlSender = HttlSender.Build("https://graph.facebook.com");
 
 		//Recommended choice
 		//Dependency - http://hc.apache.org/httpcomponents-client-ga/
 		//java.lang.NoClassDefFoundError: org/apache/http/client/methods/HttpRequestBase
 		HttpClient4Config http4config = new HttpClient4Config("https://api.twitter.com");
-		HttpClient4Sender http4sender = http4config.buildSender();
+		//HttpSender http4sender = HttpSender.New(http4config);
+		HttlSender http4sender = http4config.build();
 
 		//Legacy choice
 		//Dependency - http://hc.apache.org/httpclient-3.x/
 		//java.lang.NoClassDefFoundError: org/apache/commons/httpclient/HttpMethodBase
 		HttpClient3Config http3config = new HttpClient3Config("https://api.twitter.com");
-		HttpClient3Sender http3sender = http3config.buildSender();
+		HttlSender http3sender = http3config.build();
 	}
 
 	public static void json() {
 		//Precondition is to have Jackson 1 or Jackson 2 on classpath, otherwise following exception will occur
 		//java.lang.IllegalArgumentException: Request body marshaller not found for application/json
 		//java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
-		HttpClient4Sender sender = new HttpClient4Sender("http://httpbin.org");
+		HttlSender sender = HttlSender.Build("http://httpbin.org");
 
 		//Send HttpbinIn instance marshalled as JSON document
 		HttpbinIn binIn = new HttpbinIn();
@@ -144,7 +128,7 @@ public class ExamplesTest {
 		binIn.setSomeString("Hello!");
 
 		//Using extract method will parse returned Httpbin JSON document into HttpbinOut instance
-		ExtractedBodyResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
+		ExtractedResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
 				.extract(HttpbinOut.class);
 
 		HttpbinOut body = extract.getBody(); //voila!
@@ -152,12 +136,12 @@ public class ExamplesTest {
 		sender.close();
 
 		//Tweak existing JSON RequestMarshaller - assume that Jackson 2 is present 
-		Jackson2RequestMarshaller jsonMarshaller = (Jackson2RequestMarshaller) sender
+		Jackson2Marshaller jsonMarshaller = (Jackson2Marshaller) sender.getConfig()
 				.getRequestMarshaller("application/json");
 		jsonMarshaller.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
 
 		//Tweak existing XML RequestMarshaller
-		JaxbRequestMarshaller requestMarshaller = (JaxbRequestMarshaller) sender.getRequestMarshaller("application/xml");
+		JaxbMarshaller requestMarshaller = (JaxbMarshaller) sender.getConfig().getRequestMarshaller("application/xml");
 		//Set indented output
 		requestMarshaller.getMarshallerProperties().put(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
@@ -165,11 +149,10 @@ public class ExamplesTest {
 		//sender.setRequestMarshaller(new MyLovelyGsonMarshaller(), "application/json");
 
 		//Tweak existing JSON ResponseExtractorFactory
-		Jackson2ExtractorFactory jsonExtractorFactory = (Jackson2ExtractorFactory) sender
-				.getResponseExtractorFactory("application/json");
-		jsonExtractorFactory.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-
-		sender.setResponseExtractorFactory(jsonExtractorFactory, "application/json");
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+		Jackson2Unmarshaller jsonExtractor = new Jackson2Unmarshaller(mapper);
+		sender.getConfig().addResponseUnmarshaller(jsonExtractor, "application/json");
 		/*
 		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
 		sender = config.buildSender();
@@ -186,36 +169,35 @@ public class ExamplesTest {
 	 */
 	public static void cachingSender() {
 		//Github uses ETag and Cache control headers nicely
-		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
+		HttlSender sender = HttlSender.Build("https://api.github.com");
 		//Provide cache instance - Simple Heap Hashmap in this case
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		//Create caching sender
 		CachingSender csender = new CachingSender(sender, cache);
 
 		//Create normal request first
-		GetRequest getusers = sender.GET("/users").param("since", 333).build();
+		HttlRequest getusers = sender.GET("/users").param("since", 333).build();
 
 		//Response will be cached for 1 minute. Only first request will reach github
 		//All subsequent requests (with same parameters) will hit the cache 
 
 		//2a Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
-			ExtractedBodyResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES)
-					.extract(String.class);
+			ExtractedResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).extract(String.class);
 			extract.getBody();//Cache hit
 		}
 
 		//2b Create CachingRequest - classic
 		CachingSenderRequest crequest1 = new CachingSenderRequest(getusers, 1, TimeUnit.MINUTES);
 		for (int i = 0; i < 1000; ++i) {
-			ExtractedBodyResponse<String> response = csender.extract(crequest1, String.class);
+			ExtractedResponse<String> response = csender.extract(crequest1, String.class);
 			response.getBody();//Cache hit
 		}
 
 		//2c Create CachingRequest - fluent
 		CachingSenderRequest crequest2 = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).build();
 		for (int i = 0; i < 1000; ++i) {
-			ExtractedBodyResponse<String> response = csender.extract(crequest2, String.class);
+			ExtractedResponse<String> response = csender.extract(crequest2, String.class);
 			response.getBody();//Cache hit
 		}
 

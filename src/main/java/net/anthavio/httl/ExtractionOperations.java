@@ -1,7 +1,6 @@
 package net.anthavio.httl;
 
-import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
 
 /**
  * 
@@ -10,8 +9,8 @@ import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
  */
 public interface ExtractionOperations {
 
-	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, ResponseBodyExtractor<T> extractor)
-			throws SenderException;
+	public <T> ExtractedResponse<T> extract(HttlRequest request, ResponseExtractor<T> extractor)
+			throws HttlException;
 
-	public <T> ExtractedBodyResponse<T> extract(SenderRequest request, Class<T> resultType) throws SenderException;
+	public <T> ExtractedResponse<T> extract(HttlRequest request, Class<T> resultType) throws HttlException;
 }

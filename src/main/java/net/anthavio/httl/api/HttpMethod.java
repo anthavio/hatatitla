@@ -1,7 +1,7 @@
 package net.anthavio.httl.api;
 
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderRequest.Method;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequest.Method;
 
 /**
  * 
@@ -9,21 +9,21 @@ import net.anthavio.httl.SenderRequest.Method;
  *
  */
 public enum HttpMethod {
-	GET(SenderRequest.Method.GET), //
-	POST(SenderRequest.Method.POST), //
-	PUT(SenderRequest.Method.PUT), //
-	DELETE(SenderRequest.Method.DELETE), //
-	HEAD(SenderRequest.Method.HEAD), //
-	OPTIONS(SenderRequest.Method.OPTIONS), //
-	PATH(null);//determine method from path 
+	GET(HttlRequest.Method.GET), //
+	POST(HttlRequest.Method.POST), //
+	PUT(HttlRequest.Method.PUT), //
+	DELETE(HttlRequest.Method.DELETE), //
+	HEAD(HttlRequest.Method.HEAD), //
+	OPTIONS(HttlRequest.Method.OPTIONS), //
+	PATH_DERIVED(null);//determine method from path 
 
-	private final SenderRequest.Method method;
+	private final HttlRequest.Method method;
 
 	private HttpMethod(Method method) {
 		this.method = method;
 	}
 
-	public SenderRequest.Method getMethod() {
+	public HttlRequest.Method getMethod() {
 		return method;
 	}
 

@@ -4,17 +4,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.HttpSender.Multival;
-import net.anthavio.httl.SenderResponse;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlSender.HttpHeaders;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class MockResponse extends SenderResponse {
+public class MockResponse extends HttlResponse {
 
 	private static final long serialVersionUID = 1L;
 
@@ -22,8 +25,8 @@ public class MockResponse extends SenderResponse {
 
 	private final byte[] responseBytes;
 
-	public MockResponse(int httpCode, String httpMessage, Multival headers, InputStream stream) {
-		super(httpCode, httpMessage, headers, null);
+	public MockResponse(int httpCode, String httpMessage, HttpHeaders headers, InputStream stream) {
+		super(null, httpCode, httpMessage, headers, null);
 		try {
 			responseBytes = read(stream);
 		} catch (IOException iox) {
@@ -33,33 +36,38 @@ public class MockResponse extends SenderResponse {
 
 	// binary response test
 	public MockResponse(int httpCode, String contentType, byte[] responseBody) {
-		super(httpCode, "OK", new Multival(), null);
-		super.getHeaders().set("Content-Type", contentType);
+		super(null, httpCode, "OK", buildHeaders(contentType), null);
 		this.responseBytes = responseBody;
 	}
 
-	public MockResponse(int httpCode, String contentType, String responseBody) {
-		this(httpCode, "OK", new Multival(), responseBody);
-
-		super.getHeaders().set("Content-Type", contentType);
-		String[] strings = HttpHeaderUtil.splitContentType(contentType, encoding);
-		super.mediaType = strings[0];
-		super.encoding = strings[1];
+	public MockResponse(HttlRequest request, int httpCode, String contentType, String responseBody) {
+		this(request, httpCode, "OK", buildHeaders(contentType), responseBody);
 	}
 
-	public MockResponse(int httpCode, String httpMessage, Multival headers, String responseBody) {
-		super(httpCode, httpMessage, headers, null);
+	private static HttpHeaders buildHeaders(String contentType) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Content-Type", contentType);
+		return headers;
+	}
+
+	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttpHeaders headers, String responseBody) {
+		super(request, httpCode, httpMessage, headers, null);
 		this.responseBytes = responseBody.getBytes(Charset.forName("utf-8"));
 	}
 
-	public MockResponse(int httpCode, String httpMessage, Multival headers, byte[] responseBody) {
-		super(httpCode, httpMessage, headers, null);
+	public MockResponse(int httpCode, String httpMessage, HttpHeaders headers, byte[] responseBody) {
+		super(null, httpCode, httpMessage, headers, null);
 		this.responseBytes = responseBody;
 	}
 
 	@Override
 	public InputStream getStream() {
 		return new ByteArrayInputStream(responseBytes);
+	}
+
+	@Override
+	public Reader getReader() {
+		return new InputStreamReader(getStream(), getCharset());
 	}
 
 	@Override

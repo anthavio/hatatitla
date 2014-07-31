@@ -95,8 +95,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 
 	@Override
 	public Boolean set(String userKey, V data, long evictTtl, TimeUnit unit) {
-		long ttlSeconds = unit.toSeconds(evictTtl);
-		CacheEntry<V> entry = new CacheEntry<V>(data, ttlSeconds, ttlSeconds);
+		CacheEntry<V> entry = new CacheEntry<V>(data, evictTtl, evictTtl, unit);
 		return set(userKey, entry);
 	}
 
@@ -153,7 +152,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 		String userKey = request.getUserKey();
 		CacheEntry<V> entry = get(userKey);
 		if (entry != null) {
-			if (!entry.isExpired()) {
+			if (!entry.isStale()) {
 				return entry; //fresh hit
 			} else {
 				return load(request, entry);

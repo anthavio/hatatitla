@@ -7,10 +7,10 @@ import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
 
-import net.anthavio.httl.HttpSender.Multival;
-import net.anthavio.httl.SenderException;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
+import net.anthavio.httl.HttlException;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
@@ -22,13 +22,13 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class CachedResponse extends SenderResponse implements Serializable {
+public class CachedResponse extends HttlResponse implements Serializable {
 
 	private static final Logger logger = LoggerFactory.getLogger(CachedResponse.class.getName());
 
 	private static final long serialVersionUID = 1L;
 
-	private transient SenderRequest request; //do NOT store in cache
+	private transient HttlRequest request; //do NOT store in cache
 
 	private byte[] contentBinary;
 
@@ -42,8 +42,8 @@ public class CachedResponse extends SenderResponse implements Serializable {
 			//serialization
 		}
 	*/
-	public CachedResponse(SenderRequest request, SenderResponse response) {
-		super(response.getHttpStatusCode(), response.getHttpStatusMessage(), response.getHeaders(), DUMMY_STREAM);
+	public CachedResponse(HttlRequest request, HttlResponse response) {
+		super(request, response.getHttpStatusCode(), response.getHttpStatusMessage(), response.getHeaders(), DUMMY_STREAM);
 		this.request = request;
 		try {
 			if (response.isBinaryContent()) {
@@ -52,15 +52,16 @@ public class CachedResponse extends SenderResponse implements Serializable {
 				contentString = HttpHeaderUtil.readAsString(response);
 			}
 		} catch (IOException iox) {
-			throw new SenderException(iox);
+			throw new HttlException(iox);
 		} finally {
 			Cutils.close(response);
 		}
 	}
 
 	//for testing purposes only - remove later
-	public CachedResponse(int code, String message, Multival headers, String data) throws IOException {
-		super(code, message, headers, DUMMY_STREAM);
+	public CachedResponse(HttlRequest request, int code, String message, HttpHeaders headers, String data)
+			throws IOException {
+		super(request, code, message, headers, DUMMY_STREAM);
 		this.contentString = data;
 	}
 
@@ -69,11 +70,11 @@ public class CachedResponse extends SenderResponse implements Serializable {
 		//nothing
 	}
 
-	public SenderRequest getRequest() {
+	public HttlRequest getRequest() {
 		return request;
 	}
 
-	public void setRequest(SenderRequest request) {
+	public void setRequest(HttlRequest request) {
 		this.request = request;
 	}
 

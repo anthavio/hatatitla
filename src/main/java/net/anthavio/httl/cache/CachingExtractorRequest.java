@@ -5,8 +5,8 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
 import net.anthavio.cache.ConfiguredCacheLoader.MissingFailedRecipe;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
+import net.anthavio.httl.ResponseExtractor;
+import net.anthavio.httl.HttlRequest;
 
 /**
  * 
@@ -15,14 +15,14 @@ import net.anthavio.httl.inout.ResponseBodyExtractor;
  */
 public class CachingExtractorRequest<T extends Serializable> extends CachingSenderRequest {
 
-	private final ResponseBodyExtractor<T> extractor;
+	private final ResponseExtractor<T> extractor;
 
 	private final Class<T> resultType;
 
 	/**
 	 * Synchronous loading with single TTL
 	 */
-	public CachingExtractorRequest(ResponseBodyExtractor<T> extractor, SenderRequest senderRequest, int evictTtl,
+	public CachingExtractorRequest(ResponseExtractor<T> extractor, HttlRequest senderRequest, int evictTtl,
 			TimeUnit unit) {
 		this(extractor, senderRequest, false, MissingFailedRecipe.SYNC_STRICT, false, ExpiredFailedRecipe.SYNC_RETURN,
 				evictTtl, evictTtl, unit, null);
@@ -31,7 +31,7 @@ public class CachingExtractorRequest<T extends Serializable> extends CachingSend
 	/**
 	 * Synchronous loading with both TTLs
 	 */
-	public CachingExtractorRequest(ResponseBodyExtractor<T> extractor, SenderRequest senderRequest, int evictTtl,
+	public CachingExtractorRequest(ResponseExtractor<T> extractor, HttlRequest senderRequest, int evictTtl,
 			int expiryTtl, TimeUnit unit) {
 		this(extractor, senderRequest, false, MissingFailedRecipe.SYNC_STRICT, false, ExpiredFailedRecipe.SYNC_RETURN,
 				evictTtl, expiryTtl, unit, null);
@@ -50,7 +50,7 @@ public class CachingExtractorRequest<T extends Serializable> extends CachingSend
 	 * @param unit
 	 * @param userKey
 	 */
-	public CachingExtractorRequest(ResponseBodyExtractor<T> extractor, SenderRequest senderRequest,
+	public CachingExtractorRequest(ResponseExtractor<T> extractor, HttlRequest senderRequest,
 			boolean missingLoadAsync, MissingFailedRecipe missingFailRecipe, boolean expiredLoadAsync,
 			ExpiredFailedRecipe expiredFailRecipe, long evictTtl, long expiryTtl, TimeUnit unit, String userKey) {
 		super(senderRequest, missingLoadAsync, missingFailRecipe, expiredLoadAsync, expiredFailRecipe, evictTtl, expiryTtl,
@@ -75,7 +75,7 @@ public class CachingExtractorRequest<T extends Serializable> extends CachingSend
 	 * @param unit
 	 * @param userKey
 	 */
-	public CachingExtractorRequest(Class<T> resultType, SenderRequest senderRequest, boolean missingLoadAsync,
+	public CachingExtractorRequest(Class<T> resultType, HttlRequest senderRequest, boolean missingLoadAsync,
 			MissingFailedRecipe missingFailRecipe, boolean expiredLoadAsync, ExpiredFailedRecipe expiredFailRecipe,
 			long evictTtl, long expiryTtl, TimeUnit unit, String userKey) {
 		super(senderRequest, missingLoadAsync, missingFailRecipe, expiredLoadAsync, expiredFailRecipe, evictTtl, expiryTtl,
@@ -87,7 +87,7 @@ public class CachingExtractorRequest<T extends Serializable> extends CachingSend
 		this.extractor = null;
 	}
 
-	public ResponseBodyExtractor<T> getExtractor() {
+	public ResponseExtractor<T> getExtractor() {
 		return extractor;
 	}
 

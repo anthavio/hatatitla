@@ -11,10 +11,10 @@ import net.anthavio.cache.CachingSettings;
 import net.anthavio.cache.ConfiguredCacheLoader;
 import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.cache.LoadingSettings;
-import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.SenderRequest;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.Builders.ExtractingRequestBuilder;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +34,11 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final HttpSender sender;
+	private final HttlSender sender;
 
 	private final CacheBase<Serializable> cache;
 
-	public CachingExtractor(HttpSender sender, CacheBase<Serializable> cache) {
+	public CachingExtractor(HttlSender sender, CacheBase<Serializable> cache) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -54,7 +54,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	/**
 	 * @return underlying sender
 	 */
-	public HttpSender getSender() {
+	public HttlSender getSender() {
 		return sender;
 	}
 
@@ -69,7 +69,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	 * FIXME - this is silly method name
 	 * Start fluent builder
 	 */
-	public ExtractingRequestBuilder from(SenderRequest request) {
+	public ExtractingRequestBuilder from(HttlRequest request) {
 		return new ExtractingRequestBuilder(this, request);
 	}
 
@@ -87,11 +87,11 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 
 	public static class SimpleHttpSenderExtractor<T extends Serializable> implements SimpleLoader<T> {
 
-		private final HttpSender sender;
+		private final HttlSender sender;
 
 		private final CachingExtractorRequest<T> request;
 
-		public SimpleHttpSenderExtractor(HttpSender sender, CachingExtractorRequest<T> request) {
+		public SimpleHttpSenderExtractor(HttlSender sender, CachingExtractorRequest<T> request) {
 			if (sender == null) {
 				throw new IllegalArgumentException("Null sender");
 			}
@@ -106,7 +106,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 
 		@Override
 		public T load() throws Exception {
-			ExtractedBodyResponse<T> bodyResponse;
+			ExtractedResponse<T> bodyResponse;
 			if (request.getExtractor() != null) {
 				bodyResponse = sender.extract(request.getSenderRequest(), request.getExtractor());
 			} else {
@@ -145,7 +145,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 		CacheEntry<T> entry = (CacheEntry<T>) cache.get(cacheKey);
 		if (entry != null) {
 			//entry.getValue().setRequest(request.getSenderRequest());
-			if (!entry.isExpired()) {
+			if (!entry.isStale()) {
 				return (CacheEntry<T>) entry; //fresh hit
 			} else {
 				CacheLoadRequest<T> cacheRequest = convert(request);
@@ -286,7 +286,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	*/
 	@Override
 	public String toString() {
-		return "CachingSender [url=" + sender.getConfig().getHostUrl() + "]";
+		return "CachingSender [url=" + sender.getConfig().getUrl() + "]";
 	}
 
 }
