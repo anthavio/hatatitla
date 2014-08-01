@@ -72,6 +72,6 @@ public class UtilTest {
 
 		CodeGeneratingHandler handler = new CodeGeneratingHandler();
 		HttlResponse response = new MockResponse(null, 200, "application/json; charset=utf-8", json);
-		handler.onResponse(null, response);
+		handler.onResponse(response);
 	}
 }

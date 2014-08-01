@@ -1,21 +1,21 @@
 package net.anthavio.httl.impl;
 
-import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.HttlSender.HttpHeaders;
-import net.anthavio.httl.PseudoStream;
-import net.anthavio.httl.inout.RequestMarshaller;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.HttlTransport;
+import net.anthavio.httl.util.ReaderInputStream;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -108,7 +108,7 @@ public class JettyTransport implements HttlTransport {
 			exchange.setTimeout(config.getReadTimeoutMillis());
 		}
 
-		if (request.getBodyStream() != null) {
+		if (request.getBody() != null) {
 			String contentType = request.getFirstHeader("Content-Type");
 			if (contentType == null) {
 				throw new IllegalArgumentException("Request with body must have Content-Type header specified");
@@ -136,39 +136,32 @@ public class JettyTransport implements HttlTransport {
 				logHeaders("Request", exchange.getRequestFields());
 			}
 
-			String contentType = request.getFirstHeader("Content-Type");
-			Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
-			String mimeType = (String) type[0];
-			Charset charset = (Charset) type[1];
-			if (request.getBodyStream() != null) {
-				InputStream stream = request.getBodyStream();
-				if (stream instanceof PseudoStream) {
-					PseudoStream fake = (PseudoStream) stream;
-
-					if (fake.getValue() instanceof String) {
-						String string = (String) fake.getValue();
-						byte[] dataBytes = string.getBytes(charset);
-						exchange.setRequestContent(new ByteArrayBuffer(dataBytes));
-					} else {
-						RequestMarshaller marshaller = config.getRequestMarshaller(mimeType);
-						if (marshaller == null) {
-							throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
-						}
-						String requestContent = marshaller.marshall(fake.getValue());
-						exchange.setRequestContentSource(new ByteArrayInputStream(requestContent.getBytes(charset)));
-
-						//if (fake.isStreaming()) {
-						//marshaller.write(fake.getValue(), exchange.getOutputStream(), charset);
-						//} else {
-						//XXX create string first an then write...
-						//marshaller.write(fake.getValue(), exchange.getOutputStream(), charset);
-						//}
-
-					}
-				} else {
-					exchange.setRequestContentSource(stream);
+			if (request.getBody() != null) {
+				HttlBody body = request.getBody();
+				switch (body.getType()) {
+				case MARSHALL:
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					body.getMarshaller().write(body.getPayload(), baos, Charset.forName(request.getCharset()));
+					exchange.setRequestContent(new ByteArrayBuffer(baos.toByteArray()));
+					break;
+				case STRING:
+					String string = (String) body.getPayload();
+					byte[] sbytes = string.getBytes(Charset.forName(request.getCharset()));
+					exchange.setRequestContent(new ByteArrayBuffer(sbytes));
+					break;
+				case BYTES:
+					byte[] abytes = (byte[]) body.getPayload();
+					exchange.setRequestContent(new ByteArrayBuffer(abytes));
+					break;
+				case STREAM:
+					exchange.setRequestContentSource((InputStream) body.getPayload());
+					break;
+				case READER:
+					exchange.setRequestContentSource(new ReaderInputStream((Reader) body.getPayload()));
+					break;
+				default:
+					throw new IllegalStateException("Unsupported HttlBody type: " + body.getType());
 				}
-
 			}
 			break;
 		default:

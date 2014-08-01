@@ -7,15 +7,15 @@ package net.anthavio.httl;
  * When response cannot/failed to be processed/extracted & wrapping IOExceptions
  *
  */
-public class ResponseProcessingException extends HttlException {
+public class HttlProcessingException extends HttlException {
 
 	private static final long serialVersionUID = 1L;
 
-	public ResponseProcessingException(Exception x) {
+	public HttlProcessingException(Exception x) {
 		super(x);
 	}
 
-	public ResponseProcessingException(String message) {
+	public HttlProcessingException(String message) {
 		super(message);
 	}
 

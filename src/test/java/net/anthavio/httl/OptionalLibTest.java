@@ -9,6 +9,7 @@ import net.anthavio.httl.inout.Jackson2Marshaller;
 import net.anthavio.httl.inout.Jackson2Unmarshaller;
 import net.anthavio.httl.inout.JaxbMarshaller;
 import net.anthavio.httl.inout.JaxbUnmarshaller;
+import net.anthavio.httl.inout.Marshallers;
 import net.anthavio.httl.inout.SimpleXmlMarshaller;
 import net.anthavio.httl.inout.SimpleXmlUnmarshaller;
 import net.anthavio.httl.util.MockResponse;
@@ -37,16 +38,16 @@ public class OptionalLibTest {
 		Persister persister = new Persister(format);
 
 		SimpleXmlMarshaller marshaller = new SimpleXmlMarshaller(persister);
-		TestBodyRequest request = new TestBodyRequest("Hello čobole");
-		String xml = marshaller.marshall(request);
+		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
+		String xml = Marshallers.marshall(marshaller, bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
 		SimpleXmlUnmarshaller extractor = new SimpleXmlUnmarshaller(persister);
-		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
+		TestBodyRequest extract = extractor.unmarshall(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
-		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
+		assertThat(bean.getMessage()).isEqualTo(extract.getMessage());
 		assertThat(marshaller.getPersister()).isEqualTo(extractor.getPersister());
 	}
 
@@ -55,16 +56,16 @@ public class OptionalLibTest {
 		XmlMapper mapper = new XmlMapper();//extends ObjectMapper
 
 		Jackson2Marshaller marshaller = new Jackson2Marshaller(mapper);
-		TestBodyRequest request = new TestBodyRequest("Hello čobole");
-		String xml = marshaller.marshall(request);
+		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
+		String xml = Marshallers.marshall(marshaller, bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
 		Jackson2Unmarshaller extractor = new Jackson2Unmarshaller(mapper);
-		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
+		TestBodyRequest extract = extractor.unmarshall(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
-		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
+		assertThat(bean.getMessage()).isEqualTo(extract.getMessage());
 
 		assertThat(marshaller.getObjectMapper()).isEqualTo(extractor.getObjectMapper());
 	}
@@ -74,17 +75,17 @@ public class OptionalLibTest {
 		ObjectMapper mapper = new ObjectMapper();
 
 		Jackson1Marshaller marshaller = new Jackson1Marshaller(mapper);
-		TestBodyRequest request = new TestBodyRequest("Hello čobole");
-		String json = marshaller.marshall(request);
+		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
+		String payload = Marshallers.marshall(marshaller, bean);
 
-		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", json);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", payload);
 
 		Jackson1Unmarshaller extractor = new Jackson1Unmarshaller(mapper);
 
-		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
+		TestBodyRequest extract = extractor.unmarshall(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
-		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
+		assertThat(bean.getMessage()).isEqualTo(extract.getMessage());
 
 		assertThat(marshaller.getObjectMapper()).isEqualTo(extractor.getObjectMapper());
 	}
@@ -94,34 +95,34 @@ public class OptionalLibTest {
 		Gson gson = new Gson();
 
 		GsonMarshaller marshaller = new GsonMarshaller(gson);
-		TestBodyRequest request = new TestBodyRequest("Hello čobole");
-		String xml = marshaller.marshall(request);
+		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
+		String payload = Marshallers.marshall(marshaller, bean);
 
-		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", payload);
 
-		GsonUnmarshaller extractor = new GsonUnmarshaller(gson);
+		GsonUnmarshaller unmarshaller = new GsonUnmarshaller(gson);
 
-		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
+		TestBodyRequest extract = unmarshaller.unmarshall(response, TestBodyRequest.class);
 
-		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
+		assertThat(bean.getMessage()).isEqualTo(extract.getMessage());
 
-		assertThat(marshaller.getGson()).isEqualTo(extractor.getGson());
+		assertThat(marshaller.getGson()).isEqualTo(unmarshaller.getGson());
 	}
 
 	@Test
 	public void jaxb() throws Exception {
 		JaxbMarshaller marshaller = new JaxbMarshaller();
-		TestBodyRequest request = new TestBodyRequest("Hello čobole");
-		String xml = marshaller.marshall(request);
+		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
+		String xml = marshaller.marshall(bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
 		JaxbUnmarshaller extractor = new JaxbUnmarshaller();
 
-		TestBodyRequest extract = extractor.extract(response, TestBodyRequest.class);
+		TestBodyRequest extract = extractor.unmarshall(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
-		assertThat(request.getMessage()).isEqualTo(extract.getMessage());
+		assertThat(bean.getMessage()).isEqualTo(extract.getMessage());
 	}
 
 }

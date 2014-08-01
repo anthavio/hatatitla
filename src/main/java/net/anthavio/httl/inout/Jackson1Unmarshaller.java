@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.ResponseUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.JavaType;
@@ -54,7 +54,7 @@ public class Jackson1Unmarshaller extends ConfigurableUnmarshaller {
 
 	@Override
 	public String toString() {
-		return "Jackson1ResponseExtractor [mapper=" + mapper + "]";
+		return getClass().getSimpleName() + " [mapper=" + mapper + "]";
 	}
 
 }

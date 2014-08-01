@@ -22,11 +22,10 @@ import net.anthavio.httl.HttlExecutionChain.SenderExecutionChain;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.impl.HttpUrlConfig;
 import net.anthavio.httl.inout.Marshallers;
-import net.anthavio.httl.inout.Unmarshallers;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
 
@@ -57,11 +56,7 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	private final Marshallers marshallers;
 
-	private final Unmarshallers unmarshallers;
-
-	private final List<HttlRequestInterceptor> requestInterceptors;
-
-	private final List<HttlResponseInterceptor> responseInterceptors;
+	private final HttlUnmarshaller unmarshaller;
 
 	private final List<HttlExecutionInterceptor> executionInterceptors;
 
@@ -73,10 +68,8 @@ public class HttlSender implements SenderOperations, Closeable {
 		this.transport = transport;
 		this.executor = config.getExecutorService();
 		this.marshallers = config.getMarshallers();
-		this.unmarshallers = config.getUnmarshallers();
+		this.unmarshaller = config.getUnmarshallers();
 		this.executionInterceptors = config.getExecutionInterceptors();
-		this.requestInterceptors = config.getRequestInterceptors();
-		this.responseInterceptors = config.getResponseInterceptors();
 	}
 
 	public HttlTransport getTransport() {
@@ -115,8 +108,6 @@ public class HttlSender implements SenderOperations, Closeable {
 	 */
 	public HttlResponse execute(HttlRequest request) throws HttlRequestException {
 
-		fireRequestInterceptors(request);
-
 		HttlResponse response = null;
 		try {
 			if (executionInterceptors != null && executionInterceptors.size() != 0) {
@@ -124,7 +115,6 @@ public class HttlSender implements SenderOperations, Closeable {
 			} else {
 				response = doExecute(request);
 			}
-			fireResponseInterceptors(response);
 		} catch (Exception x) {
 			Cutils.close(response);
 			if (x instanceof RuntimeException) {
@@ -159,12 +149,12 @@ public class HttlSender implements SenderOperations, Closeable {
 		}
 
 		try {
-			handler.onResponse(request, response);
+			handler.onResponse(response);
 		} catch (Exception x) {
 			if (x instanceof RuntimeException) {
 				throw (RuntimeException) x;
 			} else {
-				throw new ResponseProcessingException(x);
+				throw new HttlProcessingException(x);
 			}
 		} finally {
 			Cutils.close(response);
@@ -200,16 +190,18 @@ public class HttlSender implements SenderOperations, Closeable {
 	 */
 	public <T> ExtractedResponse<T> extract(HttlResponse response, Type resultType) throws HttlException {
 		try {
-			ResponseUnmarshaller unmarshaller = unmarshallers.findUnmarshaller(response, resultType);
-			if (unmarshaller == null) {
-				throw new ResponseProcessingException("No Unmarshaller for response: " + response + " return type: "
+
+			HttlUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
+			if (unmarshaller != null) {
+				Object object = unmarshaller.unmarshall(response, resultType);
+				return new ExtractedResponse<T>(response, (T) object);//XXX this cast may not checked/honored at all!!!
+			} else {
+				throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: "
 						+ resultType);
 			}
-			Object object = unmarshaller.unmarshall(response, resultType);
-			//XXX this cast may not checked/honored at all!!!
-			return new ExtractedResponse<T>(response, (T) object);
+
 		} catch (IOException iox) {
-			throw new HttlException(iox);
+			throw new HttlProcessingException(iox);
 		} finally {
 			Cutils.close(response);
 		}
@@ -220,34 +212,36 @@ public class HttlSender implements SenderOperations, Closeable {
 	 * 
 	 * Response is closed automaticaly.
 	*/
-	public <T> ExtractedResponse<T> extract(HttlRequest request, ResponseExtractor<T> extractor) throws HttlException {
+	public <T> ExtractedResponse<T> extract(HttlRequest request, HttlResponseExtractor<T> extractor) throws HttlException {
 		if (extractor == null) {
-			throw new IllegalArgumentException("Extractor is null");
+			throw new IllegalArgumentException("ResponseExtractor is null");
 		}
 		HttlResponse response = null;
 		try {
 			response = execute(request);
-			if (extractor.support(response)) {
+			extractor = extractor.supports(response);
+			if (extractor != null) {
 				T extracted = (T) extractor.extract(response);
 				return new ExtractedResponse<T>(response, extracted);
-			} else {
-				Class<T> clazz = (Class<T>) ((ParameterizedType) extractor.getClass().getGenericSuperclass())
+			} else { //extractor declared himself unfit for this response
+				Class<T> resultType = (Class<T>) ((ParameterizedType) extractor.getClass().getGenericSuperclass())
 						.getActualTypeArguments()[0];
-				ResponseUnmarshaller extractorx = unmarshallers.findUnmarshaller(response, clazz);
-				if (extractorx != null) {
-					Object extract = extractorx.unmarshall(response, clazz);
+				HttlUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
+				if (unmarshaller != null) {
+					Object extract = unmarshaller.unmarshall(response, resultType);
 					if (extract instanceof RuntimeException) {
 						throw (RuntimeException) extract;
 					} else if (extract instanceof Exception) {
-						throw new HttlException((Exception) extract);
+						throw new HttlProcessingException((Exception) extract);
 					}
 				} else {
-					throw new ResponseStatusException(response);
+					throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: "
+							+ resultType);
 				}
 			}
 			return null;
 		} catch (IOException iox) {
-			throw new HttlException(iox);
+			throw new HttlProcessingException(iox);
 		} finally {
 			Cutils.close(response);
 		}
@@ -256,7 +250,7 @@ public class HttlSender implements SenderOperations, Closeable {
 	/**
 	 * Asynchronous extraction with Future as response
 	 */
-	public <T> Future<ExtractedResponse<T>> start(final HttlRequest request, final ResponseExtractor<T> extractor) {
+	public <T> Future<ExtractedResponse<T>> start(final HttlRequest request, final HttlResponseExtractor<T> extractor) {
 		if (executor == null) {
 			throw new IllegalStateException("Executor for asynchronous requests is not configured");
 		}
@@ -357,18 +351,6 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	public SenderBodyRequestBuilder PATCH(String path) {
 		return new SenderBodyRequestBuilder(this, Method.PATCH, path);
-	}
-
-	protected void fireRequestInterceptors(HttlRequest request) {
-		for (HttlRequestInterceptor interceptor : requestInterceptors) {
-			interceptor.onSend(request);
-		}
-	}
-
-	protected void fireResponseInterceptors(HttlResponse response) {
-		for (HttlResponseInterceptor interceptor : responseInterceptors) {
-			interceptor.onRecieve(response);
-		}
 	}
 
 	@Override

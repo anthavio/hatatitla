@@ -15,10 +15,10 @@ import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.cache.LoadingSettings;
 import net.anthavio.httl.ExtractionOperations;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.ResponseExtractor;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlException;
-import net.anthavio.httl.ResponseStatusException;
+import net.anthavio.httl.HttlStatusException;
 import net.anthavio.httl.SenderOperations;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
@@ -178,7 +178,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations, Cl
 	/**
 	 * Static caching based on specified TTL
 	 */
-	public <T> ExtractedResponse<T> extract(CachingSenderRequest request, ResponseExtractor<T> extractor) {
+	public <T> ExtractedResponse<T> extract(CachingSenderRequest request, HttlResponseExtractor<T> extractor) {
 		HttlResponse response = execute(request).getValue();
 		try {
 			T extracted = extractor.extract(response);
@@ -195,14 +195,14 @@ public class CachingSender implements SenderOperations, ExtractionOperations, Cl
 	 * 
 	 * Extracted response version. Response is extracted, closed and result is returned to caller
 	 */
-	public <T> ExtractedResponse<T> extract(HttlRequest request, ResponseExtractor<T> extractor) {
+	public <T> ExtractedResponse<T> extract(HttlRequest request, HttlResponseExtractor<T> extractor) {
 		if (extractor == null) {
 			throw new IllegalArgumentException("Extractor is null");
 		}
 		HttlResponse response = execute(request);
 		try {
 			if (response.getHttpStatusCode() >= 300) {
-				throw new ResponseStatusException(response);
+				throw new HttlStatusException(response);
 			}
 			T extracted = extractor.extract(response);
 			return new ExtractedResponse<T>(response, extracted);

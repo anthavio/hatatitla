@@ -3,7 +3,6 @@ package net.anthavio.httl.inout;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.nio.charset.Charset;
 
 import org.simpleframework.xml.core.Persister;
@@ -16,7 +15,7 @@ import org.simpleframework.xml.core.Persister;
  * @author martin.vanek
  *
  */
-public class SimpleXmlMarshaller implements RequestMarshaller {
+public class SimpleXmlMarshaller implements HttlMarshaller {
 
 	private final Persister persister;
 
@@ -33,23 +32,6 @@ public class SimpleXmlMarshaller implements RequestMarshaller {
 
 	public Persister getPersister() {
 		return persister;
-	}
-
-	@Override
-	public String marshall(Object requestBody) throws IOException {
-		StringWriter swriter = new StringWriter();
-		try {
-			persister.write(requestBody, swriter);
-		} catch (Exception x) {
-			if (x instanceof RuntimeException) {
-				throw (RuntimeException) x;
-			} else if (x instanceof IOException) {
-				throw (IOException) x;
-			} else {
-				throw new IllegalArgumentException("Marshalling failed", x);
-			}
-		}
-		return swriter.toString();
 	}
 
 	@Override
@@ -70,7 +52,7 @@ public class SimpleXmlMarshaller implements RequestMarshaller {
 
 	@Override
 	public String toString() {
-		return "SimpleXmlRequestMarshaller [persister=" + persister + "]";
+		return getClass().getSimpleName() + " [persister=" + persister + "]";
 	}
 
 }

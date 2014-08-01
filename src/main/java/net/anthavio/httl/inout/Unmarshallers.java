@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.ResponseExtractor;
-import net.anthavio.httl.ResponseStatusException;
-import net.anthavio.httl.ResponseUnmarshaller;
+import net.anthavio.httl.HttlProcessingException;
+import net.anthavio.httl.HttlStatusException;
+import net.anthavio.httl.HttlUnmarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**
@@ -21,93 +21,104 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  * @author martin.vanek
  *
  */
-public class Unmarshallers {
+public class Unmarshallers implements HttlUnmarshaller {
 
-	private Map<String, List<ResponseUnmarshaller>> unmarshallers = new HashMap<String, List<ResponseUnmarshaller>>();
+	private Map<String, List<HttlUnmarshaller>> unmarshallers = new HashMap<String, List<HttlUnmarshaller>>();
 
-	//String and byte[] unmarshaller is special because it does not case about media type
+	//String and byte[] unmarshaller is special because they are not media type dependent
 
-	private ResponseUnmarshaller stringUnmarshaller = STRING_UNMAR;
+	private HttlUnmarshaller stringUnmarshaller = new StringUnmarshaller();
 
-	private ResponseUnmarshaller bytesUnmarshaller = BYTES_UNMAR;
+	private HttlUnmarshaller bytesUnmarshaller = new BytesUnmarshaller();
 
-	public ResponseUnmarshaller getStringUnmarshaller() {
+	public HttlUnmarshaller getStringUnmarshaller() {
 		return stringUnmarshaller;
 	}
 
-	public void setStringUnmarshaller(ResponseUnmarshaller stringUnmarshaller) {
+	public void setStringUnmarshaller(HttlUnmarshaller stringUnmarshaller) {
 		if (stringUnmarshaller == null) {
 			throw new IllegalArgumentException("Null unmarshaller");
 		}
 		this.stringUnmarshaller = stringUnmarshaller;
 	}
 
-	public ResponseUnmarshaller getBytesUnmarshaller() {
+	public HttlUnmarshaller getBytesUnmarshaller() {
 		return bytesUnmarshaller;
 	}
 
-	public void setBytesUnmarshaller(ResponseUnmarshaller bytesUnmarshaller) {
+	public void setBytesUnmarshaller(HttlUnmarshaller bytesUnmarshaller) {
 		if (bytesUnmarshaller == null) {
 			throw new IllegalArgumentException("Null unmarshaller");
 		}
 		this.bytesUnmarshaller = bytesUnmarshaller;
 	}
 
-	public ResponseUnmarshaller findUnmarshaller(HttlResponse response, Type returntype) {
-		// Special Unmars first
-		if (returntype.equals(String.class)) {
+	@Override
+	public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+		// Special Unmarshaller first
+		if (returnType.equals(String.class)) {
 			return stringUnmarshaller;
-		} else if (returntype.equals(byte[].class)) {
+		} else if (returnType.equals(byte[].class)) {
 			return bytesUnmarshaller;
 		}
 		// Scan by mediaType
 		String mediaType = response.getMediaType();
 		if (mediaType != null) {
-			List<ResponseUnmarshaller> list = unmarshallers.get(mediaType);
+			List<HttlUnmarshaller> list = unmarshallers.get(mediaType);
 
 			//Init default
 			if (list == null) {
-				list = new ArrayList<ResponseUnmarshaller>();
+				list = new ArrayList<HttlUnmarshaller>();
 				unmarshallers.put(mediaType, list);
-				ResponseUnmarshaller defaultu = Defaults.getDefaultUnmarshaller(mediaType);
+				HttlUnmarshaller defaultu = Defaults.getDefaultUnmarshaller(mediaType);
 				if (defaultu != null) {
 					list.add(defaultu);
 				}
 			}
 
-			for (ResponseUnmarshaller extractor : list) {
-				if (extractor.support(response, returntype)) {
-					return extractor;
+			for (HttlUnmarshaller unmar : list) {
+				if (unmar.supports(response, returnType) != null) {
+					return unmar;
 				}
 			}
 		}
 		return null;
 	}
 
+	@Override
+	public Object unmarshall(HttlResponse response, Type returnType) throws IOException {
+		HttlUnmarshaller unmarshaller = supports(response, returnType);
+		if (unmarshaller != null) {
+			return unmarshaller.unmarshall(response, returnType);
+		} else {
+			throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: " + returnType);
+		}
+	}
+
 	/**
 	 * Add into first position
 	 */
-	public void addUnmarshaller(ResponseUnmarshaller unmarshaller, String mediaType) {
+	public void addUnmarshaller(HttlUnmarshaller unmarshaller, String mediaType) {
 		getUnmarshallers(mediaType).add(0, unmarshaller);
 	}
 
 	/**
 	 * Returned list is open for changes...
 	 */
-	public List<ResponseUnmarshaller> getUnmarshallers(String mediaType) {
-		List<ResponseUnmarshaller> list = unmarshallers.get(mediaType);
+	public List<HttlUnmarshaller> getUnmarshallers(String mediaType) {
+		List<HttlUnmarshaller> list = unmarshallers.get(mediaType);
 		if (list == null) {
-			list = new ArrayList<ResponseUnmarshaller>();
+			list = new ArrayList<HttlUnmarshaller>();
 			unmarshallers.put(mediaType, list);
 		}
 		return list;
 	}
 
-	public static final ResponseUnmarshaller STRING_UNMAR = new ResponseUnmarshaller() {
+	public static class StringUnmarshaller implements HttlUnmarshaller {
 
 		@Override
-		public boolean support(HttlResponse response, Type returnType) {
-			return returnType == String.class;
+		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+			return returnType == String.class ? this : null;
 		}
 
 		@Override
@@ -115,17 +126,17 @@ public class Unmarshallers {
 			if (response.getHttpStatusCode() >= 200 && response.getHttpStatusCode() <= 299) {
 				return HttpHeaderUtil.readAsString(response);
 			} else {
-				throw new ResponseStatusException(response);
+				throw new HttlStatusException(response);
 			}
 		}
 
 	};
 
-	public static final ResponseUnmarshaller BYTES_UNMAR = new ResponseUnmarshaller() {
+	public static class BytesUnmarshaller implements HttlUnmarshaller {
 
 		@Override
-		public boolean support(HttlResponse response, Type returnType) {
-			return returnType == byte[].class;
+		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+			return returnType == byte[].class ? this : null;
 		}
 
 		@Override
@@ -133,17 +144,17 @@ public class Unmarshallers {
 			if (response.getHttpStatusCode() >= 200 && response.getHttpStatusCode() <= 299) {
 				return HttpHeaderUtil.readAsBytes(response);
 			} else {
-				throw new ResponseStatusException(response);
+				throw new HttlStatusException(response);
 			}
 		}
 
 	};
 
-	public static final ResponseUnmarshaller READER_U = new ResponseUnmarshaller() {
+	public static class ReaderUnmarshaller implements HttlUnmarshaller {
 
 		@Override
-		public boolean support(HttlResponse response, Type returnType) {
-			return returnType == Reader.class;
+		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+			return returnType == Reader.class ? this : null;
 		}
 
 		@Override
@@ -153,24 +164,11 @@ public class Unmarshallers {
 
 	};
 
-	public static final ResponseExtractor<Reader> READER = new ResponseExtractor<Reader>() {
+	public static class StreamUnmarshaller implements HttlUnmarshaller {
 
 		@Override
-		public boolean support(HttlResponse response) {
-			return true;
-		}
-
-		@Override
-		public Reader extract(HttlResponse response) throws IOException {
-			return response.getReader();
-		}
-	};
-
-	public static final ResponseUnmarshaller STREAM_U = new ResponseUnmarshaller() {
-
-		@Override
-		public boolean support(HttlResponse response, Type returnType) {
-			return returnType == InputStream.class;
+		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+			return returnType == InputStream.class ? this : null;
 		}
 
 		@Override
@@ -178,19 +176,6 @@ public class Unmarshallers {
 			return response.getStream();
 		}
 
-	};
-
-	public static final ResponseExtractor<InputStream> STREAM = new ResponseExtractor<InputStream>() {
-
-		@Override
-		public boolean support(HttlResponse response) {
-			return true;
-		}
-
-		@Override
-		public InputStream extract(HttlResponse response) throws IOException {
-			return response.getStream();
-		}
 	};
 
 }

@@ -12,9 +12,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import net.anthavio.httl.HttlRequest.Method;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
 import net.anthavio.httl.util.HttpDateUtil;
@@ -346,8 +347,7 @@ public class HttlRequestBuilders {
 	 * @author martin.vanek
 	 *
 	 */
-	public static abstract class SenderRequestBuilder<X extends SenderRequestBuilder<?>> extends
-			HttlRequestBuilder<X> {
+	public static abstract class SenderRequestBuilder<X extends SenderRequestBuilder<?>> extends HttlRequestBuilder<X> {
 
 		public SenderRequestBuilder(HttlSender httpSender, Method method, String urlPath) {
 			super(httpSender, method, urlPath);
@@ -395,7 +395,7 @@ public class HttlRequestBuilders {
 		 * Execute request and extract response.
 		 * Response is closed automaticaly.
 		 */
-		public <T> ExtractedResponse<T> extract(ResponseExtractor<T> extractor) {
+		public <T> ExtractedResponse<T> extract(HttlResponseExtractor<T> extractor) {
 			HttlRequest request = build();
 			return sender.extract(request, extractor);
 		}
@@ -405,7 +405,7 @@ public class HttlRequestBuilders {
 			return sender.start(request);
 		}
 
-		public <T> Future<ExtractedResponse<T>> start(ResponseExtractor<T> extractor) {
+		public <T> Future<ExtractedResponse<T>> start(HttlResponseExtractor<T> extractor) {
 			HttlRequest request = build();
 			return sender.start(request, extractor);
 		}
@@ -459,52 +459,64 @@ public class HttlRequestBuilders {
 			super(httpSender, method, path);
 		}
 
-		protected InputStream bodyStream;
-
-		/**
-		 * Set String as request body (entity)
-		 */
-		public SenderBodyRequestBuilder body(String body, String contentType) {
-			this.bodyStream = new PseudoStream(body);
-			if (contentType != null) {
-				setHeader(HttlConstants.Content_Type, contentType);
-			}
-			return getX();
-		}
-
-		/**
-		 * Set InputStream as request body (entity)
-		 */
-		public SenderBodyRequestBuilder body(InputStream stream, String contentType) {
-			this.bodyStream = stream;
-			if (contentType != null) {
-				setHeader(HttlConstants.Content_Type, contentType);
-			}
-			return getX();
-		}
+		protected HttlBody body;
 
 		/**
 		 * Set Object as request body (entity)
-		 * Object will be marshalled/serialized to String
+		 * Object will be marshalled/serialized as payload
 		 * 
 		 */
-		public SenderBodyRequestBuilder body(Object body, String contentType) {
+		public SenderBodyRequestBuilder body(Object body, String mediaType) {
 			if (body == null) {
 				throw new HttlRequestException("Body object is null");
 			}
 			if (body instanceof InputStream) {
-				body((InputStream) body, contentType);
+				this.body = new HttlBody((InputStream) body);
 
 			} else if (body instanceof Reader) {
-				body(new ReaderInputStream((Reader) body), contentType);
+				this.body = new HttlBody(new ReaderInputStream((Reader) body));
 
-			} else {
-				PseudoStream stream = new PseudoStream(body);
-				body(stream, contentType);
+			} else if (body instanceof String) {
+				this.body = new HttlBody((String) body);
+
+			} else if (body instanceof byte[]) {
+				this.body = new HttlBody((byte[]) body);
+
+			} else { //marshalling...
+
+				if (mediaType == null) {
+					mediaType = headers.getFirst(HttlConstants.Content_Type);
+					if (mediaType == null) {
+						mediaType = sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type);
+					}
+				}
+
+				if (mediaType == null) {
+					throw new HttlRequestException("Conten-Type header is missing");
+				}
+
+				int indexOf = mediaType.indexOf(';');
+				if (indexOf != -1) {
+					mediaType = mediaType.substring(0, indexOf);
+				}
+
+				HttlMarshaller marshaller = sender.getConfig().getMarshallers().getMarshaller(mediaType);
+				if (marshaller == null) {
+					throw new HttlRequestException("RequestMarshaller not found for media type: '" + mediaType + "'");
+				}
+				this.body = new HttlBody(marshaller, body);
 			}
+
+			if (mediaType != null) {
+				this.headers.set(HttlConstants.Content_Type, mediaType);
+			}
+
 			return getX();
 		}
 
+		/**
+		 * Will make best effort to figure out hwya is body and how it should be sent with request
+		 */
 		public SenderBodyRequestBuilder body(Object body) {
 			return body(body, null);
 		}
@@ -515,7 +527,7 @@ public class HttlRequestBuilders {
 			for (HttlBuilderInterceptor interceptor : interceptors) {
 				interceptor.onBuild(this);
 			}
-			return new HttlRequest(sender, method, urlPath, parameters, headers, bodyStream, readTimeoutMillis);
+			return new HttlRequest(sender, method, urlPath, parameters, headers, body, readTimeoutMillis);
 		}
 
 		@Override

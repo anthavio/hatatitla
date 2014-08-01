@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Date;
 
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.impl.HttpClient4Config;
 
 import org.apache.commons.httpclient.HttpClient;
@@ -22,7 +22,7 @@ public class DeleteMe {
 		sender.getConfig().setParamSetter(handler);
 		ExtractedResponse<String> extract = sender.GET("/get").param("date param", new Date()).extract(String.class);
 
-		System.out.println(extract.getBody());
+		System.out.println(extract.getPayload());
 		sender.close();
 
 		GetMethod get = new GetMethod("http://httpbin.org/get");

@@ -10,16 +10,21 @@ import net.anthavio.httl.util.GenericType;
  * @author martin.vanek
  *
  */
-public interface ResponseUnmarshaller {
+public interface HttlUnmarshaller {
 
-	public abstract boolean support(HttlResponse response, Type returnType);
+	/**
+	 * @return null or instance that will unmarshall response to returnType
+	 */
+	public abstract HttlUnmarshaller supports(HttlResponse response, Type returnType);
 
 	public abstract Object unmarshall(HttlResponse response, Type returnType) throws IOException;
 
 	/**
 	 * Configurable multipurpose extractor
 	 */
-	public static abstract class ConfigurableUnmarshaller implements ResponseUnmarshaller {
+	public static abstract class ConfigurableUnmarshaller implements HttlUnmarshaller {
+
+		public static final String ANY_MEDIA_TYPE = "*/*";
 
 		protected final int minHttpCode;
 
@@ -60,17 +65,17 @@ public interface ResponseUnmarshaller {
 
 		}
 
-		public boolean support(HttlResponse response, Type resultType) {
+		public HttlUnmarshaller supports(HttlResponse response, Type resultType) {
 			boolean isRangeOk = response.getHttpStatusCode() >= minHttpCode && response.getHttpStatusCode() <= maxHttpCode;
-			boolean isMediaOk = mediaType.equals("*/*") || mediaType.equals(response.getMediaType());
-			return isRangeOk && isMediaOk;
+			boolean isMediaOk = mediaType.equals(ANY_MEDIA_TYPE) || mediaType.equals(response.getMediaType());
+			return isRangeOk && isMediaOk ? this : null;
 		}
 
-		public <T> T extract(HttlResponse response, Class<T> resultType) throws IOException {
+		public <T> T unmarshall(HttlResponse response, Class<T> resultType) throws IOException {
 			return (T) unmarshall(response, (Type) resultType);
 		}
 
-		public <T> T extract(HttlResponse response, GenericType<T> resultType) throws IOException {
+		public <T> T unmarshall(HttlResponse response, GenericType<T> resultType) throws IOException {
 			return (T) unmarshall(response, resultType.getParameterizedType());
 		}
 

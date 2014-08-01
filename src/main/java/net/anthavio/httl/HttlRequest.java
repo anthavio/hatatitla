@@ -1,6 +1,5 @@
 package net.anthavio.httl;
 
-import java.io.InputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -59,7 +58,7 @@ public class HttlRequest implements Serializable {
 
 	private final Parameters parameters;
 
-	private final InputStream bodyStream;
+	private final HttlBody body;
 
 	private final Integer readTimeoutMillis; //millis - override config value
 
@@ -68,7 +67,7 @@ public class HttlRequest implements Serializable {
 	}
 
 	public HttlRequest(HttlSender sender, Method method, String urlPath, Parameters parameters, HttpHeaders headers,
-			InputStream bodyStream, Integer readTimeoutMillis) {
+			HttlBody body, Integer readTimeoutMillis) {
 
 		if (sender == null) {
 			throw new IllegalArgumentException("Null sender");
@@ -77,7 +76,7 @@ public class HttlRequest implements Serializable {
 		SenderBuilder config = sender.getConfig();
 
 		if (method == null) {
-			throw new IllegalArgumentException("null method");
+			throw new IllegalArgumentException("Null method");
 		}
 		this.method = method;
 
@@ -115,18 +114,19 @@ public class HttlRequest implements Serializable {
 		String path = HttpHeaderUtil.joinUrlParts(config.getUrl().getPath(), upaq[0]);
 		String query = upaq[1];
 
+		digContentType(defaultHeaders, sender.getConfig());
 		String contentType = headers.getFirst(HttlConstants.Content_Type);
-		this.contentType = pickContentType(contentType,
+		this.contentType = digContentType(contentType,
 				sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type), sender.getConfig().getEncoding());
 
 		//TODO multipart/form-data
 
 		if (method.bodyAllowed) { // POST, PUT
-			if (bodyStream != null) {
+			if (body != null) {
 				if (this.contentType[0] == null) {
 					throw new HttlRequestException("Request with body must have media type");
 				}
-				this.bodyStream = bodyStream;
+				this.body = body;
 				if (query != null) {
 					this.pathAndQuery = path + "?" + query;
 				} else {
@@ -138,19 +138,19 @@ public class HttlRequest implements Serializable {
 				if (this.contentType[0] == null) {
 					this.contentType[0] = "application/x-www-form-urlencoded";
 				}
-				this.bodyStream = new PseudoStream(query);
+				this.body = new HttlBody(query);
 				this.pathAndQuery = path;
 			} else {
 				//no body & no query - Content-Type type needed
-				this.bodyStream = null;
+				this.body = null;
 				this.pathAndQuery = path;
 
 			}
 		} else { // GET, HEAD, ...
-			if (bodyStream != null) {
+			if (body != null) {
 				throw new HttlRequestException("Method " + method + " cannot have body: " + this);
 			}
-			this.bodyStream = null;
+			this.body = null;
 			if (query != null) {
 				this.pathAndQuery = path + "?" + query;
 			} else {
@@ -206,8 +206,8 @@ public class HttlRequest implements Serializable {
 	/**
 	 * Message Body stream or null
 	 */
-	public InputStream getBodyStream() {
-		return bodyStream;
+	public HttlBody getBody() {
+		return body;
 	}
 
 	public HttpHeaders getHeaders() {
@@ -291,13 +291,18 @@ public class HttlRequest implements Serializable {
 		}
 	}
 
+	public static String[] digContentType(HttpHeaders headers, SenderBuilder config) {
+		return digContentType(headers.getFirst(HttlConstants.Content_Type),
+				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getEncoding());
+	}
+
 	/**
 	 * @param requestContentType - can be null
 	 * @param defaultMediaType - can be null
 	 * @param defaultCharset = never null
 	 * @return 
 	 */
-	private static String[] pickContentType(String requestContentType, String defaultContentType, String defaultCharset) {
+	public static String[] digContentType(String requestContentType, String defaultContentType, String defaultCharset) {
 		String mediaType;
 		String charset;
 		if (requestContentType != null) {

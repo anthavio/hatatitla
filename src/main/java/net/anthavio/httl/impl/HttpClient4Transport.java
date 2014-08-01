@@ -5,16 +5,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.HttlSender.HttpHeaders;
-import net.anthavio.httl.PseudoStream;
-import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.HttlTransport;
+import net.anthavio.httl.inout.HttlMarshaller;
+import net.anthavio.httl.util.ReaderInputStream;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -159,34 +161,30 @@ public class HttpClient4Transport implements HttlTransport {
 	}
 
 	protected void setEntity(HttlRequest request, HttpEntityEnclosingRequestBase into) throws IOException {
-		InputStream bodyStream = request.getBodyStream();
-		if (bodyStream != null) {
+		HttlBody body = request.getBody();
+		if (body != null) {
 			HttpEntity entity;
-			if (bodyStream instanceof PseudoStream) {
-				PseudoStream pseudo = (PseudoStream) bodyStream;
-
-				if (pseudo.getValue() instanceof String) {
-					entity = new StringEntity((String) pseudo.getValue(), Charset.forName(request.getCharset()));
-				} else if (pseudo.getValue() instanceof byte[]) {
-					entity = new ByteArrayEntity((byte[]) pseudo.getValue());
-				} else { // marshall object
-					RequestMarshaller marshaller = config.getRequestMarshaller(request.getMediaType());
-					if (marshaller == null) {
-						throw new IllegalArgumentException("Request body marshaller not found for " + request.getMediaType());
-					}
-					entity = new ObjectHttpEntity(pseudo.getValue(), Charset.forName(request.getCharset()), marshaller,
-							pseudo.isStreaming());
-				}
-			} else { //normal InputStream
-				entity = new InputStreamEntity(bodyStream, -1);
+			switch (body.getType()) {
+			case MARSHALL:
+				entity = new ObjectHttpEntity(body.getPayload(), Charset.forName(request.getCharset()), body.getMarshaller());
+				break;
+			case STRING:
+				entity = new StringEntity((String) body.getPayload(), request.getCharset());
+				break;
+			case BYTES:
+				entity = new ByteArrayEntity((byte[]) body.getPayload());
+				break;
+			case STREAM:
+				entity = new InputStreamEntity((InputStream) body.getPayload(), -1);
+				break;
+			case READER:
+				entity = new InputStreamEntity(new ReaderInputStream((Reader) body.getPayload()), -1);
+				break;
+			default:
+				throw new IllegalStateException("Unsupported HttlBody type: " + body.getType());
 			}
 			into.setEntity(entity);
-		} else {
-			//logger.debug("Body request does not have any parameters or body");
-			//entity = new StringEntity("", ContentType.create(URLEncodedUtils.CONTENT_TYPE, config.getCharset()));
-			//throw new IllegalArgumentException("POST request does not have any parameters or body");
 		}
-
 	}
 
 	protected HttpResponse call(HttpRequestBase httpRequest) throws IOException {
@@ -233,25 +231,18 @@ public class HttpClient4Transport implements HttlTransport {
 
 		private final Charset charset;
 
-		private final boolean streaming;
-
 		private byte[] content;
 
-		private final RequestMarshaller marshaller;
+		private final HttlMarshaller marshaller;
 
-		private ObjectHttpEntity(Object objectBody, Charset charset, RequestMarshaller marshaller, boolean streaming)
-				throws IOException {
+		private ObjectHttpEntity(Object objectBody, Charset charset, HttlMarshaller marshaller) throws IOException {
 			this.objectBody = objectBody;
 			this.marshaller = marshaller;
 			this.charset = charset;
-			this.streaming = streaming;
-			if (streaming) {
-				this.content = null;
-			} else {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				marshaller.write(objectBody, baos, charset);
-				this.content = baos.toByteArray();
-			}
+
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			marshaller.write(objectBody, baos, charset);
+			this.content = baos.toByteArray();
 		}
 
 		@Override
@@ -282,7 +273,7 @@ public class HttpClient4Transport implements HttlTransport {
 
 		@Override
 		public boolean isStreaming() {
-			return streaming;
+			return false;
 		}
 
 	}

@@ -10,14 +10,13 @@ import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
-import net.anthavio.httl.HttlRequestInterceptor;
-import net.anthavio.httl.ResponseExtractor;
-import net.anthavio.httl.HttlResponseInterceptor;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
-import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.inout.HttlMarshaller;
+import net.anthavio.httl.inout.Marshallers;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
 
@@ -42,7 +41,7 @@ public class SpecialApiTest {
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 
 		SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
-		String json = sender.getConfig().getRequestMarshaller("application/json").marshall(bean);
+		String json = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/json"), bean);
 		// When
 		MockBuilderInterceptor bldinc = new MockBuilderInterceptor();
 		MockExecutionInterceptor exeinc = new MockExecutionInterceptor();
@@ -81,11 +80,11 @@ public class SpecialApiTest {
 		HttlSender sender = new MockSenderConfig().build();
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 		final SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
-		String bodyXml = sender.getConfig().getRequestMarshaller("application/xml").marshall(bean);
+		String bodyXml = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/xml"), bean);
 
 		// When
 		final Date dateToCheck = new Date();
-		ResponseExtractor<Date> extractor = new ResponseExtractor<Date>() {
+		HttlResponseExtractor<Date> extractor = new HttlResponseExtractor<Date>() {
 
 			@Override
 			public Date extract(HttlResponse response) throws IOException {
@@ -94,8 +93,8 @@ public class SpecialApiTest {
 			}
 
 			@Override
-			public boolean support(HttlResponse response) {
-				return true;
+			public HttlResponseExtractor<Date> supports(HttlResponse response) {
+				return this;
 			}
 
 		};
@@ -123,17 +122,13 @@ public class SpecialApiTest {
 		//String bodyXml = sender.getRequestMarshaller("application/xml").marshall(bean);
 
 		// When
-		RequestMarshaller marshaller = new RequestMarshaller() {
+		HttlMarshaller marshaller = new HttlMarshaller() {
 
 			@Override
 			public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
 				stream.write(((SomeBodyBean) requestBody).getName().getBytes("utf-8"));
 			}
 
-			@Override
-			public String marshall(Object requestBody) throws IOException {
-				return ((SomeBodyBean) requestBody).getName();
-			}
 		};
 		String returned = api.marshaller(marshaller, bean);
 
@@ -149,51 +144,22 @@ public class SpecialApiTest {
 				HttlExecutionInterceptor executionInterceptor);
 
 		@RestCall("POST /extractor")
-		Date extractor(ResponseExtractor<Date> extractor, @RestBody("application/xml") SomeBodyBean bean);
+		Date extractor(HttlResponseExtractor<Date> extractor, @RestBody("application/xml") SomeBodyBean bean);
 
 		@RestCall("POST /extractorSilly")
-		String extractorWrong(@RestBody("application/xml") SomeBodyBean bean, ResponseExtractor<Date> extractor);
+		String extractorWrong(@RestBody("application/xml") SomeBodyBean bean, HttlResponseExtractor<Date> extractor);
 
 		@RestCall("POST /marshaller")
 		@RestHeaders("Content-Type: application/xml")
-		String marshaller(RequestMarshaller marshaller, @RestBody Object body);
+		String marshaller(HttlMarshaller marshaller, @RestBody Object body);
 
 		@RestCall("GET /customSetter")
 		HttlResponse customSetter(@RestVar(value = "xpage", setter = PageableSetter.class) Pageable pager);
 
 		@RestCall("POST /everything")
 		SomeBodyBean everything(@RestVar(value = "page", setter = PageableSetter.class) Pageable pager,
-				RequestMarshaller marshaller, @RestBody("application/json") Object body, ResponseExtractor extractor,
+				HttlMarshaller marshaller, @RestBody("application/json") Object body, HttlResponseExtractor extractor,
 				HttlBuilderInterceptor builderInterceptor, HttlExecutionInterceptor executionInterceptor);
-	}
-
-	static class MockRequestInterceptor implements HttlRequestInterceptor {
-
-		private HttlRequest lastRequest;
-
-		public HttlRequest getLastRequest() {
-			return lastRequest;
-		}
-
-		@Override
-		public void onSend(HttlRequest request) {
-			this.lastRequest = request;
-		}
-	}
-
-	static class MockResponseInterceptor implements HttlResponseInterceptor {
-
-		private HttlResponse lastResponse;
-
-		public HttlResponse getLastResponse() {
-			return lastResponse;
-		}
-
-		@Override
-		public void onRecieve(HttlResponse response) {
-			this.lastResponse = response;
-		}
-
 	}
 
 	static class MockBuilderInterceptor implements HttlBuilderInterceptor {

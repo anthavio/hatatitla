@@ -14,7 +14,7 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlParameterSetter;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.cache.CachingSender;
 import net.anthavio.httl.cache.CachingSenderRequest;
@@ -56,7 +56,7 @@ public class ExamplesTest {
 
 		ExtractedResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
-		System.out.println(extracted1.getBody());
+		System.out.println(extracted1.getPayload());
 
 		//Free connection pool
 		sender.close();
@@ -131,7 +131,7 @@ public class ExamplesTest {
 		ExtractedResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
 				.extract(HttpbinOut.class);
 
-		HttpbinOut body = extract.getBody(); //voila!
+		HttpbinOut body = extract.getPayload(); //voila!
 
 		sender.close();
 
@@ -184,21 +184,21 @@ public class ExamplesTest {
 		//2a Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).extract(String.class);
-			extract.getBody();//Cache hit
+			extract.getPayload();//Cache hit
 		}
 
 		//2b Create CachingRequest - classic
 		CachingSenderRequest crequest1 = new CachingSenderRequest(getusers, 1, TimeUnit.MINUTES);
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedResponse<String> response = csender.extract(crequest1, String.class);
-			response.getBody();//Cache hit
+			response.getPayload();//Cache hit
 		}
 
 		//2c Create CachingRequest - fluent
 		CachingSenderRequest crequest2 = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).build();
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedResponse<String> response = csender.extract(crequest2, String.class);
-			response.getBody();//Cache hit
+			response.getPayload();//Cache hit
 		}
 
 		sender.close();

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.HeapMapCache;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.TestResponse.NameValue;
 import net.anthavio.httl.impl.HttpClient3Config;
 import net.anthavio.httl.impl.HttpClient4Config;
@@ -72,14 +72,14 @@ public class MarshallingExtractingTest {
 		try {
 			sender.GET("/evil").extract(String.class);
 			Assertions.fail("Preceding statement must throw IllegalStateException");
-		} catch (ResponseStatusException rsx) {
+		} catch (HttlStatusException rsx) {
 			//Then - ResponseStatusException
 			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(555);
 		}
 
 		// And 
 
-		ResponseUnmarshaller evilUnmar = new ResponseUnmarshaller.ConfigurableUnmarshaller("application/json", 555) {
+		HttlUnmarshaller evilUnmar = new HttlUnmarshaller.ConfigurableUnmarshaller("application/json", 555) {
 
 			private ObjectMapper mapper = new ObjectMapper();
 
@@ -117,14 +117,14 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<String> extracted1s = sender.GET("/").extract(String.class);
 		// Then
 		Assertions.assertThat(extracted1s.getResponse().getHttpStatusCode()).isEqualTo(200);
-		Assertions.assertThat(extracted1s.getBody()).contains("Hello");
+		Assertions.assertThat(extracted1s.getPayload()).contains("Hello");
 		Assertions.assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When - http 500 
 		try {
 			sender.GET("/").param("dostatus", 500).extract(String.class);
 			Assertions.fail("previoust statement should throw ResponseStatusException");
-		} catch (ResponseStatusException rsx) {
+		} catch (HttlStatusException rsx) {
 			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(500);
 			Assertions.assertThat(rsx.getResponseBody()).contains("Dostatus 500");
 		}
@@ -134,21 +134,21 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<byte[]> extracted1b = sender.GET("/").extract(byte[].class);
 		// Then 
 		Assertions.assertThat(extracted1b.getResponse().getHttpStatusCode()).isEqualTo(200);
-		Assertions.assertThat(new String(extracted1b.getBody(), "utf-8")).contains("Hello");
+		Assertions.assertThat(new String(extracted1b.getPayload(), "utf-8")).contains("Hello");
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When - http 500 
 		ExtractedResponse<byte[]> extracted2b = sender.GET("/").param("dostatus", 500).extract(byte[].class);
 		// Then - No exception
 		Assertions.assertThat(extracted2b.getResponse().getHttpStatusCode()).isEqualTo(500);
-		Assertions.assertThat(new String(extracted2b.getBody(), "utf-8")).contains("Dostatus 500");
+		Assertions.assertThat(new String(extracted2b.getPayload(), "utf-8")).contains("Dostatus 500");
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When
 		try {
 			sender.GET("/").extract(new GenericType<List<String>>() {
 			});
-			Assertions.fail("Preceding statement must throw IllegalStateException");
+			Assertions.fail("Preceding statement must throw " + IllegalStateException.class.getName());
 		} catch (IllegalStateException isx) {
 			Assertions.assertThat(isx.getMessage()).startsWith("No Unmarshaller for type");
 		}
@@ -177,7 +177,7 @@ public class MarshallingExtractingTest {
 		try {
 			sender.GET("/").param("dostatus", 500).extract(String.class);
 			Assert.fail("Preceding statement must throw SenderHttpStatusException");
-		} catch (ResponseStatusException shsx) {
+		} catch (HttlStatusException shsx) {
 			//expected
 			Assertions.assertThat(shsx.getResponse().getHttpStatusCode()).isEqualTo(500);
 			Assertions.assertThat(shsx.getResponse().getMediaType()).isEqualTo("text/html");
@@ -204,14 +204,14 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<String> extract = sender.GET("/").param("dostatus", 500).extract(String.class);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
 		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
-		assertThat(extract.getBody()).isNull(); //extracted body is null
+		assertThat(extract.getPayload()).isNull(); //extracted body is null
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		//same with ResponseBodyExtractor instead of resultType Class
-		extract = sender.GET("/").param("dostatus", 500).extract(ResponseExtractor.STRING);
+		extract = sender.GET("/").param("dostatus", 500).extract(HttlResponseExtractor.STRING);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
 		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
-		assertThat(extract.getBody()).isNull(); //extracted body is null
+		assertThat(extract.getPayload()).isNull(); //extracted body is null
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		//When - Break handler to throw exception from it's handle methods
@@ -229,7 +229,7 @@ public class MarshallingExtractingTest {
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		try {
-			extract = sender.GET("/").param("dostatus", 502).extract(ResponseExtractor.STRING);
+			extract = sender.GET("/").param("dostatus", 502).extract(HttlResponseExtractor.STRING);
 			Assert.fail("Preceding statement must throw " + handleException.getClass().getName());
 		} catch (ArrayIndexOutOfBoundsException aiox) {
 			assertThat(aiox).isEqualTo(handleException);
@@ -279,8 +279,8 @@ public class MarshallingExtractingTest {
 		//System.out.println(request.getParameters().getFirst("pmsg"));
 		ExtractedResponse<TestResponse> extract = sender.extract(request, TestResponse.class);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(201);
-		assertThat(extract.getBody().getRequest().getMessage()).isEqualTo(message); //č character must be preserved!
-		List<NameValue> parameters = extract.getBody().getRequest().getParameters();
+		assertThat(extract.getPayload().getRequest().getMessage()).isEqualTo(message); //č character must be preserved!
+		List<NameValue> parameters = extract.getPayload().getRequest().getParameters();
 
 		for (NameValue nameValue : parameters) {
 			if (nameValue.getName().equals("pmsg")) {
@@ -306,15 +306,15 @@ public class MarshallingExtractingTest {
 	}
 }
 
-class TestResponseBodyExtractor implements ResponseExtractor<String> {
+class TestResponseBodyExtractor implements HttlResponseExtractor<String> {
 
 	public RuntimeException simulatedException; //simulate very bad extractor
 
 	public HttlResponse response;
 
 	@Override
-	public boolean support(HttlResponse response) {
-		return true;
+	public TestResponseBodyExtractor supports(HttlResponse response) {
+		return this;
 	}
 
 	@Override
@@ -329,6 +329,7 @@ class TestResponseBodyExtractor implements ResponseExtractor<String> {
 
 }
 
+/*
 class TestRequestInterceptor implements HttlRequestInterceptor {
 
 	public HttlRequest request;
@@ -360,7 +361,7 @@ class TestResponseInterceptor implements HttlResponseInterceptor {
 	}
 
 }
-
+*/
 class TestResponseHandler implements HttlResponseHandler {
 	private HttlRequest request;
 	private HttlResponse response;
@@ -369,9 +370,8 @@ class TestResponseHandler implements HttlResponseHandler {
 	private AtomicInteger invocationCount = new AtomicInteger(0);
 
 	@Override
-	public void onResponse(HttlRequest request, HttlResponse response) throws IOException {
+	public void onResponse(HttlResponse response) throws IOException {
 		this.invocationCount.incrementAndGet();
-		this.request = request;
 		this.response = response;
 		if (handleException != null) {
 			handleException.fillInStackTrace();

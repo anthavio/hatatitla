@@ -1,11 +1,9 @@
 package net.anthavio.httl.api;
 
-import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlRequestInterceptor;
-import net.anthavio.httl.ResponseExtractor;
 import net.anthavio.httl.HttlResponseHandler;
-import net.anthavio.httl.HttlResponseInterceptor;
-import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.MockSenderConfig;
 
 /**
@@ -22,11 +20,9 @@ public class AdlTest {
 		HttlSender sender = new MockSenderConfig().build();
 		GitHubApi api = HttlApiBuilder.build(GitHubApi.class, sender);
 
-		RequestMarshaller marshaller;
-		HttlRequestInterceptor requestInterceptor;
-		HttlResponseInterceptor responseInterceptor;
+		HttlMarshaller marshaller;
 		HttlResponseHandler reponseHandler;
-		ResponseExtractor extractor;
+		HttlResponseExtractor extractor;
 
 		String response = api.something("anthavio", "zxzx", new int[] { 999, 333 });
 		System.out.println(response);
@@ -37,7 +33,8 @@ public class AdlTest {
 
 		@RestCall(method = HttpMethod.GET, value = "/something/{awful}")
 		@RestHeaders("Custom: {custom}")
-		public String something(@RestVar("awful") String awful, @RestVar("custom") String custom, @RestVar("number") int[] number);
+		public String something(@RestVar("awful") String awful, @RestVar("custom") String custom,
+				@RestVar("number") int[] number);
 
 		@RestCall("POST /entity/{id}")
 		public String post(@RestVar("id") String id, @RestBody String body/*, @Body Integer another*/);

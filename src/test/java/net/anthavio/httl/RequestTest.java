@@ -125,7 +125,7 @@ public class RequestTest {
 		SenderBodyRequestBuilder builder = sender.POST("/x").body("<x></x>", "application/xml");
 		HttlRequest request = builder.build();
 		//Then
-		assertThat(((PseudoStream) request.getBodyStream()).getValue()).isEqualTo("<x></x>");
+		assertThat(request.getBody().getPayload()).isEqualTo("<x></x>");
 		assertThat(request.getMediaType()).isEqualTo("application/xml");
 		assertThat(request.getCharset()).isEqualTo("utf-8");
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/xml; charset=utf-8");
@@ -135,7 +135,7 @@ public class RequestTest {
 		request = builder.build();
 		//Then - parameters = POST body
 		assertThat(request.getPathAndQuery()).isEqualTo("/x");
-		assertThat(((PseudoStream) request.getBodyStream()).getValue()).isEqualTo("p=v");
+		assertThat(request.getBody().getPayload()).isEqualTo("p=v");
 
 		assertThat(request.getMediaType()).isEqualTo("application/x-www-form-urlencoded");
 		assertThat(request.getCharset()).isEqualTo("utf-8");
@@ -146,7 +146,7 @@ public class RequestTest {
 		request = builder.build();
 		//Then
 		assertThat(request.getPathAndQuery()).isEqualTo("/x?p=v");
-		assertThat(((PseudoStream) request.getBodyStream()).getValue()).isEqualTo("[]");
+		assertThat(request.getBody().getPayload()).isEqualTo("[]");
 		assertThat(request.getMediaType()).isEqualTo("application/json");
 		assertThat(request.getCharset()).isEqualTo("Cp1252");
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=Cp1252");
@@ -162,7 +162,7 @@ public class RequestTest {
 		}
 
 		//When - Content-Type passed as separate header
-		request = sender.POST("/x").body("b").header("Content-Type", "text/plain").build();
+		request = sender.POST("/x").header("Content-Type", "text/plain").body("b").build();
 		//Then
 		assertThat(request.getMediaType()).isEqualTo("text/plain");
 		assertThat(request.getCharset()).isEqualTo("utf-8");
@@ -176,7 +176,7 @@ public class RequestTest {
 
 		//Then - ok now
 		request = sender.POST("/x").body("b").build();
-		assertThat(((PseudoStream) request.getBodyStream()).getValue()).isEqualTo("b");
+		assertThat(request.getBody().getPayload()).isEqualTo("b");
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=ISO-8859-2");
 		assertThat(request.getMediaType()).isEqualTo("text/plain");
 		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
@@ -340,7 +340,7 @@ public class RequestTest {
 		HttlRequest request = sender.POST("/x").body("b", "text/plain").build();
 		//Then
 		assertThat(request.getPathAndQuery()).isEqualTo("/x");
-		assertThat(((PseudoStream) request.getBodyStream()).getValue()).isEqualTo("b");
+		assertThat(request.getBody().getPayload()).isEqualTo("b");
 		assertThat(request.getMediaType()).isEqualTo("text/plain");
 		assertThat(request.getCharset()).isEqualTo("utf-8");
 

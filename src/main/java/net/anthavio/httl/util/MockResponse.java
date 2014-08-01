@@ -25,7 +25,7 @@ public class MockResponse extends HttlResponse {
 
 	private final byte[] responseBytes;
 
-	public MockResponse(int httpCode, String httpMessage, HttpHeaders headers, InputStream stream) {
+	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttpHeaders headers, InputStream stream) {
 		super(null, httpCode, httpMessage, headers, null);
 		try {
 			responseBytes = read(stream);
@@ -35,7 +35,7 @@ public class MockResponse extends HttlResponse {
 	}
 
 	// binary response test
-	public MockResponse(int httpCode, String contentType, byte[] responseBody) {
+	public MockResponse(HttlRequest request, int httpCode, String contentType, byte[] responseBody) {
 		super(null, httpCode, "OK", buildHeaders(contentType), null);
 		this.responseBytes = responseBody;
 	}
@@ -55,7 +55,7 @@ public class MockResponse extends HttlResponse {
 		this.responseBytes = responseBody.getBytes(Charset.forName("utf-8"));
 	}
 
-	public MockResponse(int httpCode, String httpMessage, HttpHeaders headers, byte[] responseBody) {
+	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttpHeaders headers, byte[] responseBody) {
 		super(null, httpCode, httpMessage, headers, null);
 		this.responseBytes = responseBody;
 	}

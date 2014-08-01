@@ -1,6 +1,6 @@
 package net.anthavio.httl.inout;
 
-import net.anthavio.httl.ResponseUnmarshaller;
+import net.anthavio.httl.HttlUnmarshaller;
 
 /**
  * 
@@ -21,7 +21,7 @@ public class Defaults {
 
 	private static boolean isGson = isClassPresent("com.google.gson.Gson");
 
-	public static ResponseUnmarshaller getDefaultUnmarshaller(String mediaType) {
+	public static HttlUnmarshaller getDefaultUnmarshaller(String mediaType) {
 		if (mediaType.equals("application/json")) {
 			return getDefaultJsonUnmarshaller();
 		} else if (mediaType.equals("application/xml")) {
@@ -30,7 +30,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static RequestMarshaller getDefaultMarshaller(String mediaType) {
+	public static HttlMarshaller getDefaultMarshaller(String mediaType) {
 		if (mediaType.equals("application/json")) {
 			return getDefaultJsonMarshaller();
 		} else if (mediaType.equals("application/xml")) {
@@ -39,7 +39,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static RequestMarshaller getDefaultJsonMarshaller() {
+	public static HttlMarshaller getDefaultJsonMarshaller() {
 		if (isJackson2) {
 			return new Jackson2Marshaller();
 		} else if (isJackson1) {
@@ -50,7 +50,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static ResponseUnmarshaller getDefaultJsonUnmarshaller() {
+	public static HttlUnmarshaller getDefaultJsonUnmarshaller() {
 		if (isJackson2) {
 			return new Jackson2Unmarshaller();
 		} else if (isJackson1) {
@@ -61,7 +61,7 @@ public class Defaults {
 		return null;
 	}
 
-	private static RequestMarshaller getDefaultXmlMarshaller() {
+	private static HttlMarshaller getDefaultXmlMarshaller() {
 		if (isSimpleXml) {
 			return new SimpleXmlMarshaller();
 		} else if (isJaxbXml) {
@@ -70,7 +70,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static ResponseUnmarshaller getDefaultXmlUnmarshaller() {
+	public static HttlUnmarshaller getDefaultXmlUnmarshaller() {
 		if (isSimpleXml) {
 			return new SimpleXmlUnmarshaller();
 		} else if (isJaxbXml) {

@@ -1,16 +1,20 @@
 package net.anthavio.httl.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.anthavio.httl.HttlConstants;
+import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.HttlSender.HttpHeaders;
-import net.anthavio.httl.PseudoStream;
-import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.HttlTransport;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sometimes we need to test what is sent remote server without actualy sending it...
@@ -19,6 +23,8 @@ import net.anthavio.httl.inout.RequestMarshaller;
  *
  */
 public class MockTransport implements HttlTransport {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private HttlRequest lastRequest; //from last doExecute invocation
 	private HttlResponse lastResponse; //from last doExecute invocation
@@ -75,34 +81,31 @@ public class MockTransport implements HttlTransport {
 		} else {
 			MockResponse response;
 			//copy request into response
-			if (request.getBodyStream() != null) {
-				InputStream stream = request.getBodyStream();
-				if (stream instanceof PseudoStream) {
-					Object value = ((PseudoStream) stream).getValue();
-					if (value instanceof String) {
-						response = new MockResponse(request, 200, "OK", request.getHeaders(), (String) value);
-					} else if (value instanceof byte[]) {
-						response = new MockResponse(200, "OK", request.getHeaders(), (byte[]) value);
-					} else {
-						//object or byte array inside
-						String contentType = request.getFirstHeader(HttlConstants.Content_Type);
-						Object[] type = HttpHeaderUtil.splitContentType(contentType, "utf-8");
-						String mimeType = (String) type[0];
-						//Charset charset = (Charset) type[1];
-						RequestMarshaller marshaller = request.getSender().getConfig().getRequestMarshaller(mimeType);
-						if (marshaller == null) {
-							throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
-						}
-						String marshalled = marshaller.marshall(value);
-						response = new MockResponse(request, 200, "OK", request.getHeaders(), marshalled);
-					}
+			if (request.getBody() != null) {
+				HttlBody body = request.getBody();
+				logger.debug("Payload " + body.getType() + " : " + body.getPayload());
 
-				} else if (stream != null) {
-					response = new MockResponse(200, "OK", request.getHeaders(), stream);
-				} else {
-					String responseBody = "MockResponse to " + request.getMethod() + " " + request.getPathAndQuery()
-							+ " with null body";
-					response = new MockResponse(request, 200, "OK", request.getHeaders(), responseBody);
+				switch (body.getType()) {
+				case MARSHALL:
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					body.getMarshaller().write(body.getPayload(), baos, Charset.forName(request.getCharset()));
+					response = new MockResponse(request, 200, "OK", request.getHeaders(), baos.toByteArray());
+					break;
+				case STRING:
+					response = new MockResponse(request, 200, "OK", request.getHeaders(), (String) body.getPayload());
+					break;
+				case BYTES:
+					response = new MockResponse(request, 200, "OK", request.getHeaders(), (byte[]) body.getPayload());
+					break;
+				case STREAM:
+					response = new MockResponse(request, 200, "OK", request.getHeaders(), (InputStream) body.getPayload());
+					break;
+				case READER:
+					response = new MockResponse(request, 200, "OK", request.getHeaders(), new ReaderInputStream(
+							(Reader) body.getPayload()));
+					break;
+				default:
+					throw new IllegalStateException("Unsupported HttlBody type: " + body.getType());
 				}
 
 			} else {

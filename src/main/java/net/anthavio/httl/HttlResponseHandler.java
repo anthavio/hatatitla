@@ -16,7 +16,7 @@ public interface HttlResponseHandler {
 	/**
 	 * Invoked when response is opened and response ready to be processed by this method.
 	 */
-	public void onResponse(HttlRequest request, HttlResponse response) throws IOException;
+	public void onResponse(HttlResponse response) throws IOException;
 
 	/**
 	 * Invoked when exception occurs during Response processing (including onResponse method)

@@ -3,11 +3,8 @@ package net.anthavio.httl.inout;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.nio.charset.Charset;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
@@ -16,7 +13,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  * @author martin.vanek
  *
  */
-public class Jackson1Marshaller implements RequestMarshaller {
+public class Jackson1Marshaller implements HttlMarshaller {
 
 	private final ObjectMapper objectMapper;
 
@@ -36,22 +33,15 @@ public class Jackson1Marshaller implements RequestMarshaller {
 	}
 
 	@Override
-	public String marshall(Object requestBody) throws IOException, JsonGenerationException, JsonMappingException {
-		StringWriter swriter = new StringWriter();
-		objectMapper.writeValue(swriter, requestBody);
-		return swriter.toString();
-	}
-
-	@Override
 	public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
-		//seems to be impossible to instruct Jacksont to use another character encoding
+		//seems to be impossible to instruct Jackson to use another character encoding
 		OutputStreamWriter writer = new OutputStreamWriter(stream, charset);
 		objectMapper.writeValue(writer, requestBody);
 	}
 
 	@Override
 	public String toString() {
-		return "Jackson1RequestMarshaller [objectMapper=" + objectMapper + "]";
+		return getClass().getSimpleName() + " [objectMapper=" + objectMapper + "]";
 	}
 
 }

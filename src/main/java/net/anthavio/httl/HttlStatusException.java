@@ -10,7 +10,7 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  * @author martin.vanek
  *
  */
-public class ResponseStatusException extends HttlException {
+public class HttlStatusException extends HttlException {
 
 	private static final long serialVersionUID = 1L;
 
@@ -18,14 +18,14 @@ public class ResponseStatusException extends HttlException {
 
 	private final String responseBody;
 
-	public ResponseStatusException(HttlResponse response) {
+	public HttlStatusException(HttlResponse response) {
 		super(response.getHttpStatusCode() + " " + response.getHttpStatusMessage());
 		this.response = response;
 		try {
 			this.responseBody = HttpHeaderUtil.readAsString(response);
 		} catch (IOException iox) {
 			//XXX maybe log some warning...
-			throw new ResponseProcessingException(iox);
+			throw new HttlProcessingException(iox);
 		} finally {
 			response.close();
 		}

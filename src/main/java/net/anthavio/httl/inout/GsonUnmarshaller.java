@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.ResponseUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -56,7 +56,7 @@ public class GsonUnmarshaller extends ConfigurableUnmarshaller {
 
 	@Override
 	public String toString() {
-		return "GsonResponseExtractor [gson=" + gson + "]";
+		return getClass().getSimpleName() + " [gson=" + gson + "]";
 	}
 
 }

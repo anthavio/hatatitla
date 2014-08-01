@@ -4,6 +4,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.net.Authenticator;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
@@ -17,15 +18,14 @@ import java.util.Map.Entry;
 
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.Authentication.Scheme;
+import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.SenderBuilder;
-import net.anthavio.httl.PseudoStream;
-import net.anthavio.httl.inout.RequestMarshaller;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.ReaderInputStream;
 
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public class HttpUrlTransport implements HttlTransport {
 		this.connection = connection;
 
 		connection.setUseCaches(false);
-		connection.setDoOutput(request.getBodyStream() != null); //connection.getOutputStream() will be called
+		connection.setDoOutput(request.getBody() != null); //connection.getOutputStream() will be called
 		connection.setDoInput(true); //connection.getInputStream() will be called
 
 		HttpHeaders headers = request.getHeaders();
@@ -146,35 +146,31 @@ public class HttpUrlTransport implements HttlTransport {
 				logHeaders("Request", connection.getRequestProperties());
 			}
 
-			String contentType = request.getFirstHeader(HttlConstants.Content_Type);
-			Object[] type = HttpHeaderUtil.splitContentType(contentType, config.getCharset());
-			String mimeType = (String) type[0];
-			Charset charset = (Charset) type[1];
-			if (request.getBodyStream() != null) {
-				InputStream stream = request.getBodyStream();
-				if (stream instanceof PseudoStream) {
-					PseudoStream fake = (PseudoStream) stream;
-
-					if (fake.getValue() instanceof String) {
-						String string = (String) fake.getValue();
-						byte[] dataBytes = string.getBytes(charset);
-						writeBytes(connection, dataBytes);
-					} else {
-						RequestMarshaller marshaller = config.getRequestMarshaller(mimeType);
-						if (marshaller == null) {
-							throw new IllegalArgumentException("Request body marshaller not found for " + mimeType);
-						}
-						if (fake.isStreaming()) {
-							marshaller.write(fake.getValue(), connection.getOutputStream(), charset);
-						} else {
-							//XXX create string first an then write...
-							marshaller.write(fake.getValue(), connection.getOutputStream(), charset);
-						}
-					}
-				} else {
-					writeStream(connection, stream);
+			if (request.getBody() != null) {
+				HttlBody body = request.getBody();
+				switch (body.getType()) {
+				case MARSHALL:
+					body.getMarshaller().write(body.getPayload(), connection.getOutputStream(),
+							Charset.forName(request.getCharset()));
+					break;
+				case STRING:
+					String string = (String) body.getPayload();
+					byte[] sbytes = string.getBytes(Charset.forName(request.getCharset()));
+					writeBytes(connection, sbytes);
+					break;
+				case BYTES:
+					byte[] abytes = (byte[]) body.getPayload();
+					writeBytes(connection, abytes);
+					break;
+				case STREAM:
+					writeStream(connection, (InputStream) body.getPayload());
+					break;
+				case READER:
+					writeStream(connection, new ReaderInputStream((Reader) body.getPayload()));
+					break;
+				default:
+					throw new IllegalStateException("Unsupported HttlBody type: " + body.getType());
 				}
-
 			}
 			break;
 		default:

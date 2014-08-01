@@ -2,7 +2,7 @@ package net.anthavio.httl;
 
 import java.io.ByteArrayInputStream;
 
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockResponse;
 import net.anthavio.httl.util.MockTransport;
@@ -28,7 +28,7 @@ public class MockTest {
 				.extract(byte[].class);
 
 		//MockSender should return POST request body data as response body
-		Assertions.assertThat(extract.getBody()).isEqualTo(array);
+		Assertions.assertThat(extract.getPayload()).isEqualTo(array);
 		Assertions.assertThat(extract.getResponse()).isExactlyInstanceOf(MockResponse.class);
 		Assertions.assertThat(extract.getResponse().getMediaType()).isEqualTo("application/octet-stream");
 		Assertions.assertThat(extract.getResponse().getCharset().name()).isEqualTo("UTF-8");
@@ -64,7 +64,7 @@ public class MockTest {
 				.extract(String.class);
 
 		//MockSender should return POST request body data as response body
-		Assertions.assertThat(extract.getBody()).isEqualTo(body);
+		Assertions.assertThat(extract.getPayload()).isEqualTo(body);
 		Assertions.assertThat(extract.getResponse()).isExactlyInstanceOf(MockResponse.class);
 		Assertions.assertThat(extract.getResponse().getMediaType()).isEqualTo("text/plain");
 		Assertions.assertThat(extract.getResponse().getCharset().name()).isEqualTo("UTF-8");
@@ -79,7 +79,7 @@ public class MockTest {
 				.extract(String.class);
 
 		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/text2?param1=buzzoff");
-		Assertions.assertThat(extract2.getBody()).isEqualTo("MockResponse to GET /text2?param1=buzzoff");
+		Assertions.assertThat(extract2.getPayload()).isEqualTo("MockResponse to GET /text2?param1=buzzoff");
 
 		sender.close();
 	}

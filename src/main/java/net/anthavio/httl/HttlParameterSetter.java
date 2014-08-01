@@ -13,7 +13,7 @@ import net.anthavio.httl.HttlSender.Parameters;
 
 /**
  * 
- * Handle/convert request parameters when set into HttlRequest
+ * Handle/convert request parameters when building HttlRequest
  * 
  * @author martin.vanek
  *

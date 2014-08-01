@@ -14,8 +14,8 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.JokerServer;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.ResponseStatusException;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlStatusException;
 import net.anthavio.httl.impl.HttpClient4Config;
 import net.anthavio.httl.impl.HttpClient4Transport;
 
@@ -97,7 +97,7 @@ public class AsyncTest {
 				future4.get();
 				Assert.fail("Previous statement must throw SenderHttpException");
 			} catch (ExecutionException ex) {
-				assertThat(ex.getCause()).isInstanceOf(ResponseStatusException.class);
+				assertThat(ex.getCause()).isInstanceOf(HttlStatusException.class);
 			}
 
 			server.setHttpCode(HttpURLConnection.HTTP_OK);

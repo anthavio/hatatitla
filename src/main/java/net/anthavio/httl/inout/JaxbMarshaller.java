@@ -23,7 +23,7 @@ import javax.xml.namespace.QName;
  * @author martin.vanek
  *
  */
-public class JaxbMarshaller implements RequestMarshaller {
+public class JaxbMarshaller implements HttlMarshaller {
 
 	private static final Map<Class<?>, JAXBContext> cache = new HashMap<Class<?>, JAXBContext>();
 

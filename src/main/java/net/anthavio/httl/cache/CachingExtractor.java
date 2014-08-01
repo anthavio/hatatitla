@@ -13,7 +13,7 @@ import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.cache.LoadingSettings;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.Builders.ExtractingRequestBuilder;
 
 import org.slf4j.Logger;
@@ -112,7 +112,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 			} else {
 				bodyResponse = sender.extract(request.getSenderRequest(), request.getResultType());
 			}
-			return bodyResponse.getBody();
+			return bodyResponse.getPayload();
 		}
 
 	}

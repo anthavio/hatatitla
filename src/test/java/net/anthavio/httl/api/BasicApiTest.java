@@ -11,6 +11,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
 import net.anthavio.httl.inout.Jackson2Marshaller;
+import net.anthavio.httl.inout.Marshallers;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
@@ -82,8 +83,8 @@ public class BasicApiTest {
 		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
 
 		final SomeBodyBean beanIn = new SomeBodyBean("Kvído Vymětal", new Date(), 369);
-		final String jsonbean = sender.getConfig().getRequestMarshaller("application/json").marshall(beanIn);
-		System.out.println(jsonbean);
+		final String jsonbean = Marshallers.marshall(jrm, beanIn);
+
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
 
 		//When
@@ -91,7 +92,7 @@ public class BasicApiTest {
 
 		//Then
 		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/returnVoidPostBean");
-		Assertions.assertThat(transport.getLastRequest().getBodyStream()).isNotNull();
+		Assertions.assertThat(transport.getLastRequest().getBody()).isNotNull();
 
 		//When
 		api.returnVoidPostBean(null);
@@ -104,7 +105,7 @@ public class BasicApiTest {
 		//When
 		String returnStringPostBeanNull = api.returnStringPostBean(null);
 		Assertions.assertThat(returnStringPostBeanNull).startsWith("MockResponse");
-		Assertions.assertThat(transport.getLastRequest().getBodyStream()).isNull();
+		Assertions.assertThat(transport.getLastRequest().getBody()).isNull();
 		HttlResponse returnResponsePostBean = api.returnResponsePostBean(beanIn);
 		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponsePostBean)).isEqualTo(jsonbean);
 
@@ -151,14 +152,14 @@ public class BasicApiTest {
 			HttlApiBuilder.with(HttlSender.Build("www.example.com")).build(WrongApiMissingName.class);
 			Assertions.fail("Previous statement must throw " + HttlApiException.class.getSimpleName());
 		} catch (HttlApiException abx) {
-			Assertions.assertThat(abx.getMessage()).startsWith("Cannot determine parameter's name on position 1");
+			Assertions.assertThat(abx.getMessage()).startsWith("Missing parameter's name on position 1");
 		}
 
 		try {
 			HttlApiBuilder.with(HttlSender.Build("www.example.com")).build(WrongApiEmptyName.class);
 			Assertions.fail("Previous statement must throw " + HttlApiException.class.getSimpleName());
 		} catch (HttlApiException abx) {
-			Assertions.assertThat(abx.getMessage()).startsWith("Cannot determine parameter's name on position 1");
+			Assertions.assertThat(abx.getMessage()).startsWith("Missing parameter's name on position 1");
 		}
 
 	}

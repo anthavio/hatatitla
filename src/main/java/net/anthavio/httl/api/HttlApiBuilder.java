@@ -18,12 +18,12 @@ import net.anthavio.httl.HttlExecutionInterceptor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.ResponseExtractor;
+import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.api.RestBody.NoopRequestMarshaller;
 import net.anthavio.httl.api.RestVar.NoopParamSetter;
 import net.anthavio.httl.api.VarSetter.ComplexMetaVarSetter;
 import net.anthavio.httl.api.VarSetter.FieldApiVarMeta;
-import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**
@@ -174,7 +174,7 @@ public class HttlApiBuilder {
 				}
 
 			} else { // @Body param does not exist
-				if (paramMap.get("#" + RequestMarshaller.class.getSimpleName()) != null) {
+				if (paramMap.get("#" + HttlMarshaller.class.getSimpleName()) != null) {
 					throw new HttlApiException("@Body parameter is required when using RequestBodyMarshaller", method);
 				}
 			}
@@ -323,18 +323,18 @@ public class HttlApiBuilder {
 				meta = new ApiParamMeta(i, name, true, type, null, null, ParamTarget.RES_INTERCEPTOR);
 				metaList.add(meta);
 				*/
-			} else if (RequestMarshaller.class.isAssignableFrom(type)) {
-				name = "#" + RequestMarshaller.class.getSimpleName();
+			} else if (HttlMarshaller.class.isAssignableFrom(type)) {
+				name = "#" + HttlMarshaller.class.getSimpleName();
 				if (map.containsKey(name)) {
 					throw new HttlApiException("Multiple RequestMarshaller parameters found", method);
 				}
 				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.REQ_MARSHALLER);
 				metaList.add(meta);
 
-			} else if (ResponseExtractor.class.isAssignableFrom(type)) {
+			} else if (HttlResponseExtractor.class.isAssignableFrom(type)) {
 				// unfortunately type check of method return type and ResponseExtractor generic parameter
 				// cannot be performed here...because of generic type erasure
-				name = "#" + ResponseExtractor.class.getSimpleName();
+				name = "#" + HttlResponseExtractor.class.getSimpleName();
 				if (map.containsKey(name)) {
 					throw new HttlApiException("Multiple ResponseExtractor parameters found", method);
 				}
@@ -371,7 +371,7 @@ public class HttlApiBuilder {
 		boolean required = false;
 		String nullval = null;
 		VarSetter<Object> setter = null;
-		RequestMarshaller marshaller = null;
+		HttlMarshaller marshaller = null;
 		String variable = null;
 		VarTarget target = VarTarget.QUERY;
 
@@ -608,12 +608,12 @@ public class HttlApiBuilder {
 		final String nullval;
 		final Type type;
 		final VarSetter<Object> setter;
-		final RequestMarshaller marshaller; //only for @Body
+		final HttlMarshaller marshaller; //only for @Body
 		VarTarget target;
 		String variable; //@Body content type or placeholder for urlpath
 
 		public ApiVarMeta(int index, Type type, String name, boolean killnull, String nullval, VarSetter<Object> setter,
-				RequestMarshaller marshaller, VarTarget target) {
+				HttlMarshaller marshaller, VarTarget target) {
 			this.index = index;
 			this.type = type;
 			this.name = name;

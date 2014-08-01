@@ -6,10 +6,10 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.Builders.BaseCacheRequestBuilder;
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
 import net.anthavio.cache.ConfiguredCacheLoader.MissingFailedRecipe;
-import net.anthavio.httl.ResponseExtractor;
+import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.ResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 
 /**
  * Fluent builders for CachingSender Requests
@@ -129,7 +129,7 @@ public class Builders {
 		/**
 		 * Execute request and extract response. Response is closed automaticaly.
 		 */
-		public <V> ExtractedResponse<V> extract(ResponseExtractor<V> extractor) {
+		public <V> ExtractedResponse<V> extract(HttlResponseExtractor<V> extractor) {
 			if (hardTtl != 0) {
 				return csender.extract(build(), extractor);
 			} else {
@@ -197,7 +197,7 @@ public class Builders {
 		/**
 		 * Finish fluent builder flow and return CachingExtractorRequest
 		 */
-		public <T extends Serializable> CachingExtractorRequest<T> build(ResponseExtractor<T> extractor) {
+		public <T extends Serializable> CachingExtractorRequest<T> build(HttlResponseExtractor<T> extractor) {
 			if (extractor == null) {
 				throw new IllegalArgumentException("response extractor is null");
 			}

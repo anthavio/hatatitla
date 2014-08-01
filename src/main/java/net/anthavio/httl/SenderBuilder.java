@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.inout.Marshallers;
-import net.anthavio.httl.inout.RequestMarshaller;
+import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.inout.Unmarshallers;
 import net.anthavio.httl.util.Cutils;
 
@@ -27,7 +27,7 @@ public abstract class SenderBuilder {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final URL hostUrl; //only protocol, hostname, port (NO path/file/query/anchor)
+	private final URL url;
 
 	private Authentication authentication;
 
@@ -51,10 +51,6 @@ public abstract class SenderBuilder {
 
 	private HttlParameterSetter paramSetter = new ConfigurableParamSetter();
 
-	private final List<HttlRequestInterceptor> requestInterceptors = new ArrayList<HttlRequestInterceptor>();
-
-	private final List<HttlResponseInterceptor> responseInterceptors = new ArrayList<HttlResponseInterceptor>();
-
 	private final List<HttlExecutionInterceptor> executionInterceptors = new ArrayList<HttlExecutionInterceptor>();
 
 	private final List<HttlBuilderInterceptor> builderInterceptors = new ArrayList<HttlBuilderInterceptor>();
@@ -64,7 +60,7 @@ public abstract class SenderBuilder {
 	private final Unmarshallers unmarshallers = new Unmarshallers();
 
 	public SenderBuilder(URL url) {
-		this.hostUrl = digHostUrl(url);
+		this.url = digHostUrl(url);
 	}
 
 	public SenderBuilder(String urlString) {
@@ -84,7 +80,7 @@ public abstract class SenderBuilder {
 		if (Cutils.isBlank(url.getHost())) {
 			throw new IllegalArgumentException("URL has no host " + urlString);
 		}
-		this.hostUrl = digHostUrl(url);
+		this.url = digHostUrl(url);
 	}
 
 	private URL digHostUrl(URL url) {
@@ -108,7 +104,7 @@ public abstract class SenderBuilder {
 	public abstract HttlTransport getTransport();
 
 	public URL getUrl() {
-		return this.hostUrl;
+		return this.url;
 	}
 
 	public String getEncoding() {
@@ -235,53 +231,22 @@ public abstract class SenderBuilder {
 		return defaultParameters;
 	}
 
-	public RequestMarshaller getRequestMarshaller(String mediaType) {
+	public HttlMarshaller getRequestMarshaller(String mediaType) {
 		return marshallers.getMarshaller(mediaType);
 	}
 
 	/**
 	 * Sets RequestBodyMarshaller for specified request mediaType (from Content-Type header)
 	 */
-	public void setRequestMarshaller(RequestMarshaller marshaller, String mediaType) {
+	public void setRequestMarshaller(HttlMarshaller marshaller, String mediaType) {
 		marshallers.setMarshaller(marshaller, mediaType);
 	}
 
 	/**
 	 * Sets ResponseUnmarshaller for specified response mediaType (from Content-Type header)
 	 */
-	public void addResponseUnmarshaller(ResponseUnmarshaller unmarshaller, String mediaType) {
+	public void addResponseUnmarshaller(HttlUnmarshaller unmarshaller, String mediaType) {
 		unmarshallers.addUnmarshaller(unmarshaller, mediaType);
-	}
-
-	public List<HttlRequestInterceptor> getRequestInterceptors() {
-		return requestInterceptors;
-	}
-
-	/**
-	 * Interceptor also works as Listener of course
-	 * @return added or not
-	 */
-	public boolean addRequestInterceptor(HttlRequestInterceptor interceptor) {
-		if (interceptor == null) {
-			throw new IllegalArgumentException("Null interceptor");
-		}
-		return requestInterceptors.add(interceptor);
-	}
-
-	public List<HttlResponseInterceptor> getResponseInterceptors() {
-		return responseInterceptors;
-	}
-
-	/**
-	 * Interceptor also works as Listener of course
-	 * @return added or not
-	 */
-	public SenderBuilder addResponseInterceptor(HttlResponseInterceptor interceptor) {
-		if (interceptor == null) {
-			throw new IllegalArgumentException("Null interceptor");
-		}
-		responseInterceptors.add(interceptor);
-		return this;
 	}
 
 	public SenderBuilder addExecutionInterceptor(HttlExecutionInterceptor interceptor) {

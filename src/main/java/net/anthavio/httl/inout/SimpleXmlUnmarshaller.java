@@ -6,7 +6,7 @@ import java.text.DateFormat;
 import java.util.Date;
 
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.ResponseUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
 
 import org.simpleframework.xml.core.Persister;
 import org.simpleframework.xml.transform.Transform;
@@ -73,9 +73,8 @@ public class SimpleXmlUnmarshaller extends ConfigurableUnmarshaller {
 
 	@Override
 	public String toString() {
-		return "SimpleXmlResponseExtractor [persister=" + persister + "]";
+		return getClass().getSimpleName() + " [persister=" + persister + "]";
 	}
-
 }
 
 class DateFormatTransformer implements Transform<Date> {

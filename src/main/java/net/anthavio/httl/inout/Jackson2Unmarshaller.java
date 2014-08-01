@@ -3,8 +3,8 @@ package net.anthavio.httl.inout;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-import net.anthavio.httl.ResponseUnmarshaller.ConfigurableUnmarshaller;
 import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,7 +54,7 @@ public class Jackson2Unmarshaller extends ConfigurableUnmarshaller {
 
 	@Override
 	public String toString() {
-		return "Jackson2ResponseExtractor [ mapper=" + mapper + "]";
+		return getClass().getSimpleName() + " [ mapper=" + mapper + "]";
 	}
 
 }

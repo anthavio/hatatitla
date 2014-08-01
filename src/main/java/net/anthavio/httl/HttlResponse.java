@@ -48,7 +48,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 				try {
 					stream = new GZIPInputStream(stream);
 				} catch (IOException iox) {
-					throw new ResponseProcessingException(iox);
+					throw new HttlProcessingException(iox);
 				}
 			} else if (responseEncoding.indexOf("deflate") != -1) {
 				stream = new InflaterInputStream(stream);

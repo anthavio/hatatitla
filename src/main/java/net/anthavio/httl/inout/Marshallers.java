@@ -1,5 +1,8 @@
 package net.anthavio.httl.inout;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,14 +27,21 @@ public class Marshallers {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private Map<String, RequestMarshaller> marshallers = new HashMap<String, RequestMarshaller>();
+	public static String marshall(HttlMarshaller marshaller, Object payload) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		marshaller.write(payload, baos, Charset.forName("utf-8"));
+		baos.flush();
+		return new String(baos.toByteArray());
+	}
+
+	private Map<String, HttlMarshaller> marshallers = new HashMap<String, HttlMarshaller>();
 
 	/**
 	 * Initiate Built in Marshallers
 	 */
 	public Marshallers() {
 
-		RequestMarshaller marshaller = null;
+		HttlMarshaller marshaller = null;
 
 		//First try SimpleXml
 		try {
@@ -98,14 +108,14 @@ public class Marshallers {
 		}
 	}
 
-	public RequestMarshaller getMarshaller(String mediaType) {
+	public HttlMarshaller getMarshaller(String mediaType) {
 		return marshallers.get(mediaType);
 	}
 
 	/**
 	 * Register request body marshaller with provided mediaType
 	 */
-	public void setMarshaller(RequestMarshaller marshaller, String mediaType) {
+	public void setMarshaller(HttlMarshaller marshaller, String mediaType) {
 		if (Cutils.isBlank(mediaType)) {
 			throw new IllegalArgumentException("media type is blank");
 		}

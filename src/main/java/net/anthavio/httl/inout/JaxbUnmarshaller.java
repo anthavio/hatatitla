@@ -10,7 +10,7 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import net.anthavio.httl.ResponseUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
 import net.anthavio.httl.HttlResponse;
 
 /**
