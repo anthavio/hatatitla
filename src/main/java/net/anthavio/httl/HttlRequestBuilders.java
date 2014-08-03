@@ -515,7 +515,7 @@ public class HttlRequestBuilders {
 		}
 
 		/**
-		 * Will make best effort to figure out hwya is body and how it should be sent with request
+		 * Will make best effort to figure out what is body type and how it should be sent with request
 		 */
 		public SenderBodyRequestBuilder body(Object body) {
 			return body(body, null);

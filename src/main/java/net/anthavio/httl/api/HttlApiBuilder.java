@@ -15,10 +15,10 @@ import java.util.Map;
 import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionInterceptor;
+import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.api.RestBody.NoopRequestMarshaller;
 import net.anthavio.httl.api.RestVar.NoopParamSetter;
 import net.anthavio.httl.api.VarSetter.ComplexMetaVarSetter;
@@ -208,7 +208,8 @@ public class HttlApiBuilder {
 			}
 
 			if (method.getReturnType() != builderInterface) {
-				throw new HttlApiException("Invalid return type " + method.getReturnType(), method);
+				throw new HttlApiException("Invalid return: " + method.getReturnType() + " expected: " + builderInterface,
+						method);
 			}
 			//We may support more parameters in future if it makes sense
 			if (method.getParameterTypes().length != 1) {
