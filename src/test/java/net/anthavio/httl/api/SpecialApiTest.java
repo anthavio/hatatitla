@@ -46,8 +46,10 @@ public class SpecialApiTest {
 		MockBuilderInterceptor bldinc = new MockBuilderInterceptor();
 		MockExecutionInterceptor exeinc = new MockExecutionInterceptor();
 		String returned = api.intercept(bean, bldinc, exeinc);
+
 		// Then
-		//Assertions.assertThat(bldinc.getLastRequest()).isEqualTo(transport.getLastRequest());
+		Assertions.assertThat(exeinc.getLastRequest().getParameters().getFirst("dynamic")).isEqualTo("value");
+
 		Assertions.assertThat(exeinc.getLastResponse()).isEqualTo(transport.getLastResponse());
 		Assertions.assertThat(transport.getLastRequest().getFirstHeader(HttlConstants.Content_Type)).startsWith(
 				"application/json");
@@ -80,15 +82,26 @@ public class SpecialApiTest {
 		HttlSender sender = new MockSenderConfig().build();
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 		final SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
-		String bodyXml = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/xml"), bean);
+		//String bodyXml = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/xml"), bean);
 
-		// When
-		final Date dateToCheck = new Date();
+		HttlResponseExtractor<Date> extractor = new DateExtractor(bean.getDate());
+		Date returnedDate = api.extractor(extractor, bean);
+		// Then
+		Assertions.assertThat(returnedDate).isEqualTo(bean.getDate());
+	}
+
+	@Test
+	public void wrongTypeExctractor() {
+		// Given
+		HttlSender sender = new MockSenderConfig().build();
+		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
+		final SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
+
+		// Given - Extractor is anonymous class -> we cannot get actual generic parameter type via reflection
 		HttlResponseExtractor<Date> extractor = new HttlResponseExtractor<Date>() {
 
 			@Override
 			public Date extract(HttlResponse response) throws IOException {
-				dateToCheck.setTime(bean.getDate().getTime());
 				return bean.getDate();
 			}
 
@@ -99,18 +112,51 @@ public class SpecialApiTest {
 
 		};
 
-		Date returnedDate = api.extractor(extractor, bean);
-		// Then
-		Assertions.assertThat(returnedDate).isEqualTo(bean.getDate());
-
-		// When
+		// When - return String + extractor Date
 		try {
-			api.extractorWrong(bean, extractor);
+			String ouchDate = api.wrongExtractorType(bean, extractor);
 			// Then
-			Assertions.fail("IllegalArgumentException expected");
-		} catch (IllegalArgumentException iax) {
-			Assertions.assertThat(iax.getMessage()).startsWith("Incompatible ResponseExtractor");
+			//Assertions.fail("Expected " + HttlProcessingException.class.getName());
+			Assertions.fail("Expected " + ClassCastException.class.getName());
+		} catch (ClassCastException x) {
+			Assertions.assertThat(x.getMessage()).isEqualTo("java.util.Date cannot be cast to java.lang.String");
 		}
+
+		// Given - DateExtractor is normal class
+		// Then - we detect incompatible extractor and return type when building API
+		try {
+			HttlApiBuilder.with(sender).build(WrongExtractorApi.class);
+			Assertions.fail("Expected " + HttlApiException.class.getName());
+		} catch (HttlApiException x) {
+			Assertions.assertThat(x.getMessage()).startsWith("Incompatible Extractor type:");
+		}
+
+	}
+
+	static interface WrongExtractorApi {
+
+		@RestCall("POST /extractorWrong")
+		String wrongExtractorType(@RestBody("application/xml") SomeBodyBean bean, DateExtractor extractor);
+	}
+
+	static class DateExtractor implements HttlResponseExtractor<Date> {
+
+		private Date date;
+
+		public DateExtractor(Date date) {
+			this.date = date;
+		}
+
+		@Override
+		public HttlResponseExtractor<Date> supports(HttlResponse response) {
+			return this;
+		}
+
+		@Override
+		public Date extract(HttlResponse response) throws IOException {
+			return date;
+		}
+
 	}
 
 	@Test
@@ -147,17 +193,17 @@ public class SpecialApiTest {
 		Date extractor(HttlResponseExtractor<Date> extractor, @RestBody("application/xml") SomeBodyBean bean);
 
 		@RestCall("POST /extractorSilly")
-		String extractorWrong(@RestBody("application/xml") SomeBodyBean bean, HttlResponseExtractor<Date> extractor);
+		String wrongExtractorType(@RestBody("application/xml") SomeBodyBean bean, HttlResponseExtractor<Date> extractor);
 
 		@RestCall("POST /marshaller")
 		@RestHeaders("Content-Type: application/xml")
 		String marshaller(HttlMarshaller marshaller, @RestBody Object body);
 
 		@RestCall("GET /customSetter")
-		HttlResponse customSetter(@RestVar(value = "xpage", setter = PageableSetter.class) Pageable pager);
+		HttlResponse customSetter(@RestVar(name = "xpage", setter = PageableSetter.class) Pageable pager);
 
 		@RestCall("POST /everything")
-		SomeBodyBean everything(@RestVar(value = "page", setter = PageableSetter.class) Pageable pager,
+		SomeBodyBean everything(@RestVar(name = "page", setter = PageableSetter.class) Pageable pager,
 				HttlMarshaller marshaller, @RestBody("application/json") Object body, HttlResponseExtractor extractor,
 				HttlBuilderInterceptor builderInterceptor, HttlExecutionInterceptor executionInterceptor);
 	}
@@ -172,6 +218,7 @@ public class SpecialApiTest {
 
 		@Override
 		public void onBuild(HttlRequestBuilder<?> builder) {
+			builder.param("dynamic", "value");
 			this.builder = builder;
 		}
 	}

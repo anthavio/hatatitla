@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import net.anthavio.httl.HttlException;
 
 /**
+ * API build exception actually
  * 
  * @author martin.vanek
  *

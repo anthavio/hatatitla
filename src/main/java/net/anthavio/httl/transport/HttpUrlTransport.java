@@ -99,6 +99,9 @@ public class HttpUrlTransport implements HttlTransport {
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		this.connection = connection;
 
+		//http://hc.apache.org/httpclient-3.x/sslguide.html
+		//TODO connection.setSSLSocketFactory(sslFactory); 
+
 		connection.setUseCaches(false);
 		connection.setDoOutput(request.getBody() != null); //connection.getOutputStream() will be called
 		connection.setDoInput(true); //connection.getInputStream() will be called

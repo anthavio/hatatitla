@@ -73,11 +73,11 @@ public class HttlApiBuilder {
 		return this;
 	}
 
-	public <T> T build(Class<T> apiInterface) {
+	public <T> T build(Class<T> apiInterface) throws HttlApiException {
 		return build(apiInterface, sender, headers, params);
 	}
 
-	public static <T> T build(Class<T> apiInterface, HttlSender sender) {
+	public static <T> T build(Class<T> apiInterface, HttlSender sender) throws HttlApiException {
 		return build(apiInterface, sender, null, null);
 	}
 
@@ -180,7 +180,7 @@ public class HttlApiBuilder {
 			}
 			// parameters not found as path or header placeholder are left as query parameters
 
-			//return type is OperationBuilder subinterface
+			//return type is Builder subinterface
 			BuilderMeta builderMeta = null;
 			if (method.getReturnType().isInterface() && method.getReturnType().getInterfaces().length > 0
 					&& method.getReturnType().getInterfaces()[0] == HttlCallBuilder.class) {
@@ -333,6 +333,15 @@ public class HttlApiBuilder {
 				metaList.add(meta);
 
 			} else if (HttlResponseExtractor.class.isAssignableFrom(type)) {
+				//When parameter is declared as HttlResponseExtractor<Date>, generic information is erased...
+				if (type.getGenericInterfaces().length != 0) { //real implementation like DateExtractor
+					Type typeArg = ((ParameterizedType) type.getGenericInterfaces()[0]).getActualTypeArguments()[0];
+					if (typeArg != method.getReturnType()) {
+						throw new HttlApiException("Incompatible Extractor type: " + typeArg + " method returns : "
+								+ method.getReturnType(), method);
+					}
+				}
+				// versus method.getReturnType();
 				// unfortunately type check of method return type and ResponseExtractor generic parameter
 				// cannot be performed here...because of generic type erasure
 				name = "#" + HttlResponseExtractor.class.getSimpleName();

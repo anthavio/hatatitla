@@ -6,6 +6,13 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.Cache;
 import net.anthavio.cache.CacheEntry;
 
+/**
+ * Comapring to HttlBuilderInterceptor, this interceptor cannot change HttlRequest, 
+ * but can wrap it or return surrogate HttlResponse instead of execution
+ * 
+ * @author martin.vanek
+ *
+ */
 public interface HttlExecutionInterceptor {
 
 	public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException;

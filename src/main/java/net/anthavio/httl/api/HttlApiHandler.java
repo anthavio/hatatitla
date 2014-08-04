@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
@@ -218,13 +217,23 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 		//custom extractor parameter to process body...
 		if (responseExtractor != null) {
-			//This will work only for direct ResponseExtractor interface implemenation...
+			/*
+			Object extract = responseExtractor.extract(response);
+			if(extract!=null) {
+				if(extract.getClass().isAssignableFrom(metaMethod.returnType)) {
+					//damnit!!!
+				}
+			}
+			*/
+			//This will work only for direct ResponseExtractor interface implementation...
+			/*
 			Type typeArg = ((ParameterizedType) responseExtractor.getClass().getGenericInterfaces()[0])
 					.getActualTypeArguments()[0];
 			if (typeArg != metaMethod.returnType) {
-				throw new IllegalArgumentException("Incompatible ResponseExtractor product: " + typeArg + " for return type: "
+				throw new HttlProcessingException("Incompatible ResponseExtractor product: " + typeArg + " for return type: "
 						+ metaMethod.returnType);
 			}
+			*/
 			return responseExtractor.extract(response);
 		}
 
