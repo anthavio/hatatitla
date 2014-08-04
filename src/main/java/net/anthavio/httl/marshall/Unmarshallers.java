@@ -12,7 +12,7 @@ import java.util.Map;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlProcessingException;
 import net.anthavio.httl.HttlStatusException;
-import net.anthavio.httl.HttlUnmarshaller;
+import net.anthavio.httl.HttlBodyUnmarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**
@@ -21,32 +21,32 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  * @author martin.vanek
  *
  */
-public class Unmarshallers implements HttlUnmarshaller {
+public class Unmarshallers implements HttlBodyUnmarshaller {
 
-	private Map<String, List<HttlUnmarshaller>> unmarshallers = new HashMap<String, List<HttlUnmarshaller>>();
+	private Map<String, List<HttlBodyUnmarshaller>> unmarshallers = new HashMap<String, List<HttlBodyUnmarshaller>>();
 
 	//String and byte[] unmarshaller is special because they are not media type dependent
 
-	private HttlUnmarshaller stringUnmarshaller = new StringUnmarshaller();
+	private HttlBodyUnmarshaller stringUnmarshaller = new StringUnmarshaller();
 
-	private HttlUnmarshaller bytesUnmarshaller = new BytesUnmarshaller();
+	private HttlBodyUnmarshaller bytesUnmarshaller = new BytesUnmarshaller();
 
-	public HttlUnmarshaller getStringUnmarshaller() {
+	public HttlBodyUnmarshaller getStringUnmarshaller() {
 		return stringUnmarshaller;
 	}
 
-	public void setStringUnmarshaller(HttlUnmarshaller stringUnmarshaller) {
+	public void setStringUnmarshaller(HttlBodyUnmarshaller stringUnmarshaller) {
 		if (stringUnmarshaller == null) {
 			throw new IllegalArgumentException("Null unmarshaller");
 		}
 		this.stringUnmarshaller = stringUnmarshaller;
 	}
 
-	public HttlUnmarshaller getBytesUnmarshaller() {
+	public HttlBodyUnmarshaller getBytesUnmarshaller() {
 		return bytesUnmarshaller;
 	}
 
-	public void setBytesUnmarshaller(HttlUnmarshaller bytesUnmarshaller) {
+	public void setBytesUnmarshaller(HttlBodyUnmarshaller bytesUnmarshaller) {
 		if (bytesUnmarshaller == null) {
 			throw new IllegalArgumentException("Null unmarshaller");
 		}
@@ -54,7 +54,7 @@ public class Unmarshallers implements HttlUnmarshaller {
 	}
 
 	@Override
-	public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+	public HttlBodyUnmarshaller supports(HttlResponse response, Type returnType) {
 		// Special Unmarshaller first
 		if (returnType.equals(String.class)) {
 			return stringUnmarshaller;
@@ -64,19 +64,19 @@ public class Unmarshallers implements HttlUnmarshaller {
 		// Scan by mediaType
 		String mediaType = response.getMediaType();
 		if (mediaType != null) {
-			List<HttlUnmarshaller> list = unmarshallers.get(mediaType);
+			List<HttlBodyUnmarshaller> list = unmarshallers.get(mediaType);
 
 			//Init default
 			if (list == null) {
-				list = new ArrayList<HttlUnmarshaller>();
+				list = new ArrayList<HttlBodyUnmarshaller>();
 				unmarshallers.put(mediaType, list);
-				HttlUnmarshaller defaultu = Defaults.getDefaultUnmarshaller(mediaType);
+				HttlBodyUnmarshaller defaultu = Defaults.getDefaultUnmarshaller(mediaType);
 				if (defaultu != null) {
 					list.add(defaultu);
 				}
 			}
 
-			for (HttlUnmarshaller unmar : list) {
+			for (HttlBodyUnmarshaller unmar : list) {
 				if (unmar.supports(response, returnType) != null) {
 					return unmar;
 				}
@@ -87,7 +87,7 @@ public class Unmarshallers implements HttlUnmarshaller {
 
 	@Override
 	public Object unmarshall(HttlResponse response, Type returnType) throws IOException {
-		HttlUnmarshaller unmarshaller = supports(response, returnType);
+		HttlBodyUnmarshaller unmarshaller = supports(response, returnType);
 		if (unmarshaller != null) {
 			return unmarshaller.unmarshall(response, returnType);
 		} else {
@@ -98,26 +98,26 @@ public class Unmarshallers implements HttlUnmarshaller {
 	/**
 	 * Add into first position
 	 */
-	public void addUnmarshaller(HttlUnmarshaller unmarshaller, String mediaType) {
+	public void addUnmarshaller(HttlBodyUnmarshaller unmarshaller, String mediaType) {
 		getUnmarshallers(mediaType).add(0, unmarshaller);
 	}
 
 	/**
 	 * Returned list is open for changes...
 	 */
-	public List<HttlUnmarshaller> getUnmarshallers(String mediaType) {
-		List<HttlUnmarshaller> list = unmarshallers.get(mediaType);
+	public List<HttlBodyUnmarshaller> getUnmarshallers(String mediaType) {
+		List<HttlBodyUnmarshaller> list = unmarshallers.get(mediaType);
 		if (list == null) {
-			list = new ArrayList<HttlUnmarshaller>();
+			list = new ArrayList<HttlBodyUnmarshaller>();
 			unmarshallers.put(mediaType, list);
 		}
 		return list;
 	}
 
-	public static class StringUnmarshaller implements HttlUnmarshaller {
+	public static class StringUnmarshaller implements HttlBodyUnmarshaller {
 
 		@Override
-		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+		public HttlBodyUnmarshaller supports(HttlResponse response, Type returnType) {
 			return returnType == String.class ? this : null;
 		}
 
@@ -132,10 +132,10 @@ public class Unmarshallers implements HttlUnmarshaller {
 
 	};
 
-	public static class BytesUnmarshaller implements HttlUnmarshaller {
+	public static class BytesUnmarshaller implements HttlBodyUnmarshaller {
 
 		@Override
-		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+		public HttlBodyUnmarshaller supports(HttlResponse response, Type returnType) {
 			return returnType == byte[].class ? this : null;
 		}
 
@@ -150,10 +150,10 @@ public class Unmarshallers implements HttlUnmarshaller {
 
 	};
 
-	public static class ReaderUnmarshaller implements HttlUnmarshaller {
+	public static class ReaderUnmarshaller implements HttlBodyUnmarshaller {
 
 		@Override
-		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+		public HttlBodyUnmarshaller supports(HttlResponse response, Type returnType) {
 			return returnType == Reader.class ? this : null;
 		}
 
@@ -164,10 +164,10 @@ public class Unmarshallers implements HttlUnmarshaller {
 
 	};
 
-	public static class StreamUnmarshaller implements HttlUnmarshaller {
+	public static class StreamUnmarshaller implements HttlBodyUnmarshaller {
 
 		@Override
-		public HttlUnmarshaller supports(HttlResponse response, Type returnType) {
+		public HttlBodyUnmarshaller supports(HttlResponse response, Type returnType) {
 			return returnType == InputStream.class ? this : null;
 		}
 

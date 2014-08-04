@@ -1,6 +1,6 @@
 package net.anthavio.httl.api;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlResponseHandler;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlResponseExtractor;
@@ -20,7 +20,7 @@ public class AdlTest {
 		HttlSender sender = new MockSenderConfig().build();
 		GitHubApi api = HttlApiBuilder.build(GitHubApi.class, sender);
 
-		HttlMarshaller marshaller;
+		HttlBodyMarshaller marshaller;
 		HttlResponseHandler reponseHandler;
 		HttlResponseExtractor extractor;
 

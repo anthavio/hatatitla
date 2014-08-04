@@ -15,7 +15,7 @@ import java.util.Map;
 import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionInterceptor;
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.HttpHeaders;
@@ -174,7 +174,7 @@ public class HttlApiBuilder {
 				}
 
 			} else { // @Body param does not exist
-				if (paramMap.get("#" + HttlMarshaller.class.getSimpleName()) != null) {
+				if (paramMap.get("#" + HttlBodyMarshaller.class.getSimpleName()) != null) {
 					throw new HttlApiException("@Body parameter is required when using RequestBodyMarshaller", method);
 				}
 			}
@@ -311,8 +311,8 @@ public class HttlApiBuilder {
 				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.EXE_INTERCEPTOR);
 				metaList.add(meta);
 
-			} else if (HttlMarshaller.class.isAssignableFrom(type)) {
-				name = "#" + HttlMarshaller.class.getSimpleName();
+			} else if (HttlBodyMarshaller.class.isAssignableFrom(type)) {
+				name = "#" + HttlBodyMarshaller.class.getSimpleName();
 				if (map.containsKey(name)) {
 					throw new HttlApiException("Multiple RequestMarshaller parameters found", method);
 				}
@@ -368,7 +368,7 @@ public class HttlApiBuilder {
 		boolean required = false;
 		String nullval = null;
 		VarSetter<Object> setter = null;
-		HttlMarshaller marshaller = null;
+		HttlBodyMarshaller marshaller = null;
 		String variable = null;
 		VarTarget target = VarTarget.QUERY;
 
@@ -605,12 +605,12 @@ public class HttlApiBuilder {
 		final String nullval;
 		final Type type;
 		final VarSetter<Object> setter;
-		final HttlMarshaller marshaller; //only for @Body
+		final HttlBodyMarshaller marshaller; //only for @Body
 		VarTarget target;
 		String variable; //@Body content type or placeholder for urlpath
 
 		public ApiVarMeta(int index, Type type, String name, boolean killnull, String nullval, VarSetter<Object> setter,
-				HttlMarshaller marshaller, VarTarget target) {
+				HttlBodyMarshaller marshaller, VarTarget target) {
 			this.index = index;
 			this.type = type;
 			this.name = name;

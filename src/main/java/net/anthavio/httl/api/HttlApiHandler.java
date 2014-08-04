@@ -15,7 +15,7 @@ import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestException;
@@ -89,7 +89,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			}
 		}
 
-		HttlMarshaller marshaller = null;
+		HttlBodyMarshaller marshaller = null;
 		HttlResponseExtractor<?> extractor = null;
 
 		//TODO Multiple BuilderInterceptor parameters is ok - just use different name
@@ -150,7 +150,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 						break;
 					*/
 					case REQ_MARSHALLER:
-						marshaller = (HttlMarshaller) arg;
+						marshaller = (HttlBodyMarshaller) arg;
 						break;
 					case RES_EXTRACTOR:
 						extractor = (HttlResponseExtractor<?>) arg;

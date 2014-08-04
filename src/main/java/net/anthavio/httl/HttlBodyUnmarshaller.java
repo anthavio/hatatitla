@@ -10,19 +10,19 @@ import net.anthavio.httl.util.GenericType;
  * @author martin.vanek
  *
  */
-public interface HttlUnmarshaller {
+public interface HttlBodyUnmarshaller {
 
 	/**
 	 * @return null or instance that will unmarshall response to returnType
 	 */
-	public abstract HttlUnmarshaller supports(HttlResponse response, Type returnType);
+	public abstract HttlBodyUnmarshaller supports(HttlResponse response, Type returnType);
 
 	public abstract Object unmarshall(HttlResponse response, Type returnType) throws IOException;
 
 	/**
 	 * Configurable multipurpose Unmarshaller
 	 */
-	public static abstract class ConfigurableUnmarshaller implements HttlUnmarshaller {
+	public static abstract class ConfigurableUnmarshaller implements HttlBodyUnmarshaller {
 
 		public static final String ANY_MEDIA_TYPE = "*/*";
 
@@ -65,7 +65,7 @@ public interface HttlUnmarshaller {
 
 		}
 
-		public HttlUnmarshaller supports(HttlResponse response, Type resultType) {
+		public HttlBodyUnmarshaller supports(HttlResponse response, Type resultType) {
 			boolean isRangeOk = response.getHttpStatusCode() >= minHttpCode && response.getHttpStatusCode() <= maxHttpCode;
 			boolean isMediaOk = mediaType.equals(ANY_MEDIA_TYPE) || mediaType.equals(response.getMediaType());
 			return isRangeOk && isMediaOk ? this : null;

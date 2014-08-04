@@ -230,21 +230,21 @@ public abstract class SenderBuilder {
 		return defaultParameters;
 	}
 
-	public HttlMarshaller getRequestMarshaller(String mediaType) {
+	public HttlBodyMarshaller getRequestMarshaller(String mediaType) {
 		return marshallers.getMarshaller(mediaType);
 	}
 
 	/**
 	 * Sets RequestBodyMarshaller for specified request mediaType (from Content-Type header)
 	 */
-	public void setRequestMarshaller(HttlMarshaller marshaller, String mediaType) {
+	public void setRequestMarshaller(HttlBodyMarshaller marshaller, String mediaType) {
 		marshallers.setMarshaller(marshaller, mediaType);
 	}
 
 	/**
 	 * Sets ResponseUnmarshaller for specified response mediaType (from Content-Type header)
 	 */
-	public void addResponseUnmarshaller(HttlUnmarshaller unmarshaller, String mediaType) {
+	public void addResponseUnmarshaller(HttlBodyUnmarshaller unmarshaller, String mediaType) {
 		unmarshallers.addUnmarshaller(unmarshaller, mediaType);
 	}
 

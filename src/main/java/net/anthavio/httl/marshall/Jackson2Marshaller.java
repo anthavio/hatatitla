@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author martin.vanek
  *
  */
-public class Jackson2Marshaller implements HttlMarshaller {
+public class Jackson2Marshaller implements HttlBodyMarshaller {
 
 	private final ObjectMapper objectMapper;
 

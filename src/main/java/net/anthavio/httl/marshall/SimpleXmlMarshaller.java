@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 
 import org.simpleframework.xml.core.Persister;
 
@@ -17,7 +17,7 @@ import org.simpleframework.xml.core.Persister;
  * @author martin.vanek
  *
  */
-public class SimpleXmlMarshaller implements HttlMarshaller {
+public class SimpleXmlMarshaller implements HttlBodyMarshaller {
 
 	private final Persister persister;
 

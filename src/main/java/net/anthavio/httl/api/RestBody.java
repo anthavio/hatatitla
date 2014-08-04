@@ -8,7 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 
 /**
  * 
@@ -27,9 +27,9 @@ public @interface RestBody {
 	/**
 	 * @return Optional RequestMarshaller to serialize request body
 	 */
-	Class<? extends HttlMarshaller> marshaller() default NoopRequestMarshaller.class;
+	Class<? extends HttlBodyMarshaller> marshaller() default NoopRequestMarshaller.class;
 
-	static class NoopRequestMarshaller<T> implements HttlMarshaller {
+	static class NoopRequestMarshaller<T> implements HttlBodyMarshaller {
 
 		@Override
 		public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlBodyUnmarshaller.ConfigurableUnmarshaller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

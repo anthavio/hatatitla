@@ -6,7 +6,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.util.Cutils;
 
 import org.slf4j.Logger;
@@ -28,21 +28,21 @@ public class Marshallers {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public static String marshall(HttlMarshaller marshaller, Object payload) throws IOException {
+	public static String marshall(HttlBodyMarshaller marshaller, Object payload) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		marshaller.write(payload, baos, Charset.forName("utf-8"));
 		baos.flush();
 		return new String(baos.toByteArray());
 	}
 
-	private Map<String, HttlMarshaller> marshallers = new HashMap<String, HttlMarshaller>();
+	private Map<String, HttlBodyMarshaller> marshallers = new HashMap<String, HttlBodyMarshaller>();
 
 	/**
 	 * Initiate Built in Marshallers
 	 */
 	public Marshallers() {
 
-		HttlMarshaller marshaller = null;
+		HttlBodyMarshaller marshaller = null;
 
 		//First try SimpleXml
 		try {
@@ -109,14 +109,14 @@ public class Marshallers {
 		}
 	}
 
-	public HttlMarshaller getMarshaller(String mediaType) {
+	public HttlBodyMarshaller getMarshaller(String mediaType) {
 		return marshallers.get(mediaType);
 	}
 
 	/**
 	 * Register request body marshaller with provided mediaType
 	 */
-	public void setMarshaller(HttlMarshaller marshaller, String mediaType) {
+	public void setMarshaller(HttlBodyMarshaller marshaller, String mediaType) {
 		if (Cutils.isBlank(mediaType)) {
 			throw new IllegalArgumentException("media type is blank");
 		}

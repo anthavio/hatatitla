@@ -18,14 +18,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.namespace.QName;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class JaxbMarshaller implements HttlMarshaller {
+public class JaxbMarshaller implements HttlBodyMarshaller {
 
 	private static final Map<Class<?>, JAXBContext> cache = new HashMap<Class<?>, JAXBContext>();
 

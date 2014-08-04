@@ -1,7 +1,7 @@
 package net.anthavio.httl.marshall;
 
-import net.anthavio.httl.HttlMarshaller;
-import net.anthavio.httl.HttlUnmarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlBodyUnmarshaller;
 
 /**
  * 
@@ -22,7 +22,7 @@ public class Defaults {
 
 	private static boolean isGson = isClassPresent("com.google.gson.Gson");
 
-	public static HttlUnmarshaller getDefaultUnmarshaller(String mediaType) {
+	public static HttlBodyUnmarshaller getDefaultUnmarshaller(String mediaType) {
 		if (mediaType.equals("application/json")) {
 			return getDefaultJsonUnmarshaller();
 		} else if (mediaType.equals("application/xml")) {
@@ -31,7 +31,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static HttlMarshaller getDefaultMarshaller(String mediaType) {
+	public static HttlBodyMarshaller getDefaultMarshaller(String mediaType) {
 		if (mediaType.equals("application/json")) {
 			return getDefaultJsonMarshaller();
 		} else if (mediaType.equals("application/xml")) {
@@ -40,7 +40,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static HttlMarshaller getDefaultJsonMarshaller() {
+	public static HttlBodyMarshaller getDefaultJsonMarshaller() {
 		if (isJackson2) {
 			return new Jackson2Marshaller();
 		} else if (isJackson1) {
@@ -51,7 +51,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static HttlUnmarshaller getDefaultJsonUnmarshaller() {
+	public static HttlBodyUnmarshaller getDefaultJsonUnmarshaller() {
 		if (isJackson2) {
 			return new Jackson2Unmarshaller();
 		} else if (isJackson1) {
@@ -62,7 +62,7 @@ public class Defaults {
 		return null;
 	}
 
-	private static HttlMarshaller getDefaultXmlMarshaller() {
+	private static HttlBodyMarshaller getDefaultXmlMarshaller() {
 		if (isSimpleXml) {
 			return new SimpleXmlMarshaller();
 		} else if (isJaxbXml) {
@@ -71,7 +71,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static HttlUnmarshaller getDefaultXmlUnmarshaller() {
+	public static HttlBodyUnmarshaller getDefaultXmlUnmarshaller() {
 		if (isSimpleXml) {
 			return new SimpleXmlUnmarshaller();
 		} else if (isJaxbXml) {

@@ -9,7 +9,7 @@ import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponse;
@@ -168,7 +168,7 @@ public class SpecialApiTest {
 		//String bodyXml = sender.getRequestMarshaller("application/xml").marshall(bean);
 
 		// When
-		HttlMarshaller marshaller = new HttlMarshaller() {
+		HttlBodyMarshaller marshaller = new HttlBodyMarshaller() {
 
 			@Override
 			public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
@@ -197,14 +197,14 @@ public class SpecialApiTest {
 
 		@RestCall("POST /marshaller")
 		@RestHeaders("Content-Type: application/xml")
-		String marshaller(HttlMarshaller marshaller, @RestBody Object body);
+		String marshaller(HttlBodyMarshaller marshaller, @RestBody Object body);
 
 		@RestCall("GET /customSetter")
 		HttlResponse customSetter(@RestVar(name = "xpage", setter = PageableSetter.class) Pageable pager);
 
 		@RestCall("POST /everything")
 		SomeBodyBean everything(@RestVar(name = "page", setter = PageableSetter.class) Pageable pager,
-				HttlMarshaller marshaller, @RestBody("application/json") Object body, HttlResponseExtractor extractor,
+				HttlBodyMarshaller marshaller, @RestBody("application/json") Object body, HttlResponseExtractor extractor,
 				HttlBuilderInterceptor builderInterceptor, HttlExecutionInterceptor executionInterceptor);
 	}
 

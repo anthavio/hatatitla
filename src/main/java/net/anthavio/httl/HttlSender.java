@@ -56,7 +56,7 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	private final Marshallers marshallers;
 
-	private final HttlUnmarshaller unmarshaller;
+	private final HttlBodyUnmarshaller unmarshaller;
 
 	private final List<HttlExecutionInterceptor> executionInterceptors;
 
@@ -191,7 +191,7 @@ public class HttlSender implements SenderOperations, Closeable {
 	public <T> ExtractedResponse<T> extract(HttlResponse response, Type resultType) throws HttlException {
 		try {
 
-			HttlUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
+			HttlBodyUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
 			if (unmarshaller != null) {
 				Object object = unmarshaller.unmarshall(response, resultType);
 				return new ExtractedResponse<T>(response, (T) object);//XXX this cast may not checked/honored at all!!!
@@ -226,7 +226,7 @@ public class HttlSender implements SenderOperations, Closeable {
 			} else { //extractor declared himself unfit for this response
 				Class<T> resultType = (Class<T>) ((ParameterizedType) extractor.getClass().getGenericSuperclass())
 						.getActualTypeArguments()[0];
-				HttlUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
+				HttlBodyUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
 				if (unmarshaller != null) {
 					Object extract = unmarshaller.unmarshall(response, resultType);
 					if (extract instanceof RuntimeException) {

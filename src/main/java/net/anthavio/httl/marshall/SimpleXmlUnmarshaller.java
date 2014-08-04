@@ -6,7 +6,7 @@ import java.text.DateFormat;
 import java.util.Date;
 
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlBodyUnmarshaller.ConfigurableUnmarshaller;
 
 import org.simpleframework.xml.core.Persister;
 import org.simpleframework.xml.transform.Transform;

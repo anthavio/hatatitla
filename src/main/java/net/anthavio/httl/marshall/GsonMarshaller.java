@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 
 import com.google.gson.Gson;
 
@@ -17,7 +17,7 @@ import com.google.gson.Gson;
  * @author martin.vanek
  *
  */
-public class GsonMarshaller implements HttlMarshaller {
+public class GsonMarshaller implements HttlBodyMarshaller {
 
 	private final Gson gson;
 

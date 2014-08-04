@@ -79,7 +79,7 @@ public class MarshallingExtractingTest {
 
 		// And 
 
-		HttlUnmarshaller evilUnmar = new HttlUnmarshaller.ConfigurableUnmarshaller("application/json", 555) {
+		HttlBodyUnmarshaller evilUnmar = new HttlBodyUnmarshaller.ConfigurableUnmarshaller("application/json", 555) {
 
 			private ObjectMapper mapper = new ObjectMapper();
 

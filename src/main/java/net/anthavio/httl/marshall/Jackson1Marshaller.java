@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -15,7 +15,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  * @author martin.vanek
  *
  */
-public class Jackson1Marshaller implements HttlMarshaller {
+public class Jackson1Marshaller implements HttlBodyMarshaller {
 
 	private final ObjectMapper objectMapper;
 

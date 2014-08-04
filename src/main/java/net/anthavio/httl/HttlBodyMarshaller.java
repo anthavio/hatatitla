@@ -9,7 +9,7 @@ import java.nio.charset.Charset;
  * @author martin.vanek
  *
  */
-public interface HttlMarshaller {
+public interface HttlBodyMarshaller {
 
 	/**
 	 * Marshall Request payload object directly into OutputStream. Do not close the stream.

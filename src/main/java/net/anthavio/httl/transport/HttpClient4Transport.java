@@ -12,7 +12,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody;
-import net.anthavio.httl.HttlMarshaller;
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlTransport;
@@ -233,9 +233,9 @@ public class HttpClient4Transport implements HttlTransport {
 
 		private byte[] content;
 
-		private final HttlMarshaller marshaller;
+		private final HttlBodyMarshaller marshaller;
 
-		private ObjectHttpEntity(Object objectBody, Charset charset, HttlMarshaller marshaller) throws IOException {
+		private ObjectHttpEntity(Object objectBody, Charset charset, HttlBodyMarshaller marshaller) throws IOException {
 			this.objectBody = objectBody;
 			this.marshaller = marshaller;
 			this.charset = charset;

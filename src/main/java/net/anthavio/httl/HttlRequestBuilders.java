@@ -499,7 +499,7 @@ public class HttlRequestBuilders {
 					mediaType = mediaType.substring(0, indexOf);
 				}
 
-				HttlMarshaller marshaller = sender.getConfig().getMarshallers().getMarshaller(mediaType);
+				HttlBodyMarshaller marshaller = sender.getConfig().getMarshallers().getMarshaller(mediaType);
 				if (marshaller == null) {
 					throw new HttlRequestException("RequestMarshaller not found for media type: '" + mediaType + "'");
 				}

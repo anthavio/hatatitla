@@ -19,7 +19,7 @@ public class HttlBody {
 
 	private final Type type;
 
-	private final HttlMarshaller marshaller;
+	private final HttlBodyMarshaller marshaller;
 
 	public HttlBody(String string) {
 		this.payload = string;
@@ -48,7 +48,7 @@ public class HttlBody {
 	/**
 	 * Sky is the limit! Just implement RequestMarshaller and you can send even JDBC connections
 	 */
-	public HttlBody(HttlMarshaller marshaller, Object marshallable) {
+	public HttlBody(HttlBodyMarshaller marshaller, Object marshallable) {
 		if (marshaller == null) {
 			throw new HttlRequestException("Null marshaller");
 		}
@@ -70,7 +70,7 @@ public class HttlBody {
 		return type;
 	}
 
-	public HttlMarshaller getMarshaller() {
+	public HttlBodyMarshaller getMarshaller() {
 		return marshaller;
 	}
 
