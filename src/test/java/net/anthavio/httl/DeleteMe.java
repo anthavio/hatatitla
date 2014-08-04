@@ -5,7 +5,7 @@ import java.util.Date;
 
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.impl.HttpClient4Config;
+import net.anthavio.httl.transport.HttpClient4Config;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;

@@ -7,13 +7,13 @@ import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.httl.impl.HttpClient3Config;
-import net.anthavio.httl.impl.HttpClient3Response;
-import net.anthavio.httl.impl.HttpClient3Transport;
-import net.anthavio.httl.impl.HttpClient4Config;
-import net.anthavio.httl.impl.HttpClient4Response;
-import net.anthavio.httl.impl.HttpClient4Transport;
-import net.anthavio.httl.impl.HttpUrlConfig;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient3Response;
+import net.anthavio.httl.transport.HttpClient3Transport;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpClient4Response;
+import net.anthavio.httl.transport.HttpClient4Transport;
+import net.anthavio.httl.transport.HttpUrlConfig;
 
 import org.apache.commons.httpclient.HttpMethodBase;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;

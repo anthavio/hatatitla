@@ -15,6 +15,7 @@ import java.util.Map;
 import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionInterceptor;
+import net.anthavio.httl.HttlMarshaller;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.HttpHeaders;
@@ -23,7 +24,6 @@ import net.anthavio.httl.api.RestBody.NoopRequestMarshaller;
 import net.anthavio.httl.api.RestVar.NoopParamSetter;
 import net.anthavio.httl.api.VarSetter.ComplexMetaVarSetter;
 import net.anthavio.httl.api.VarSetter.FieldApiVarMeta;
-import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**

@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.CacheLoadRequest;
-import net.anthavio.cache.HeapMapCache;
 import net.anthavio.cache.Scheduler;
+import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
@@ -25,7 +25,7 @@ import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
-import net.anthavio.httl.impl.HttpClient4Config;
+import net.anthavio.httl.transport.HttpClient4Config;
 
 import org.apache.commons.codec.binary.Base64;
 import org.junit.After;

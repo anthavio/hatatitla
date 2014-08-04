@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.CacheLoadRequest;
-import net.anthavio.cache.HeapMapCache;
 import net.anthavio.cache.Scheduler;
+import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlSender;
@@ -21,7 +21,7 @@ import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlStatusException;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
-import net.anthavio.httl.impl.HttpClient4Config;
+import net.anthavio.httl.transport.HttpClient4Config;
 
 import org.junit.After;
 import org.junit.Assert;

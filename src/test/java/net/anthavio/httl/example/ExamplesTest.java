@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.bind.Marshaller;
 
 import net.anthavio.cache.CacheBase;
-import net.anthavio.cache.HeapMapCache;
+import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlSender;
@@ -18,13 +18,13 @@ import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.cache.CachingSender;
 import net.anthavio.httl.cache.CachingSenderRequest;
-import net.anthavio.httl.impl.HttpClient3Config;
-import net.anthavio.httl.impl.HttpClient4Config;
-import net.anthavio.httl.impl.HttpUrlConfig;
-import net.anthavio.httl.impl.JettySenderConfig;
-import net.anthavio.httl.inout.Jackson2Marshaller;
-import net.anthavio.httl.inout.Jackson2Unmarshaller;
-import net.anthavio.httl.inout.JaxbMarshaller;
+import net.anthavio.httl.marshall.Jackson2Marshaller;
+import net.anthavio.httl.marshall.Jackson2Unmarshaller;
+import net.anthavio.httl.marshall.JaxbMarshaller;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpUrlConfig;
+import net.anthavio.httl.transport.JettySenderConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

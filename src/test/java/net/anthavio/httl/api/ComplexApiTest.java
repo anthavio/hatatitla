@@ -8,8 +8,8 @@ import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.inout.GsonUnmarshaller;
-import net.anthavio.httl.inout.Jackson2Marshaller;
+import net.anthavio.httl.marshall.GsonUnmarshaller;
+import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
 

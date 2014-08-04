@@ -8,7 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.charset.Charset;
 
-import net.anthavio.httl.inout.HttlMarshaller;
+import net.anthavio.httl.HttlMarshaller;
 
 /**
  * 

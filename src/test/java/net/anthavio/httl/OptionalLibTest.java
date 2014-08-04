@@ -1,17 +1,17 @@
 package net.anthavio.httl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import net.anthavio.httl.inout.GsonMarshaller;
-import net.anthavio.httl.inout.GsonUnmarshaller;
-import net.anthavio.httl.inout.Jackson1Marshaller;
-import net.anthavio.httl.inout.Jackson1Unmarshaller;
-import net.anthavio.httl.inout.Jackson2Marshaller;
-import net.anthavio.httl.inout.Jackson2Unmarshaller;
-import net.anthavio.httl.inout.JaxbMarshaller;
-import net.anthavio.httl.inout.JaxbUnmarshaller;
-import net.anthavio.httl.inout.Marshallers;
-import net.anthavio.httl.inout.SimpleXmlMarshaller;
-import net.anthavio.httl.inout.SimpleXmlUnmarshaller;
+import net.anthavio.httl.marshall.GsonMarshaller;
+import net.anthavio.httl.marshall.GsonUnmarshaller;
+import net.anthavio.httl.marshall.Jackson1Marshaller;
+import net.anthavio.httl.marshall.Jackson1Unmarshaller;
+import net.anthavio.httl.marshall.Jackson2Marshaller;
+import net.anthavio.httl.marshall.Jackson2Unmarshaller;
+import net.anthavio.httl.marshall.JaxbMarshaller;
+import net.anthavio.httl.marshall.JaxbUnmarshaller;
+import net.anthavio.httl.marshall.Marshallers;
+import net.anthavio.httl.marshall.SimpleXmlMarshaller;
+import net.anthavio.httl.marshall.SimpleXmlUnmarshaller;
 import net.anthavio.httl.util.MockResponse;
 
 import org.codehaus.jackson.map.ObjectMapper;

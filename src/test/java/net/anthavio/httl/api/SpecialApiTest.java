@@ -9,14 +9,14 @@ import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
+import net.anthavio.httl.HttlMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
-import net.anthavio.httl.inout.HttlMarshaller;
-import net.anthavio.httl.inout.Marshallers;
+import net.anthavio.httl.marshall.Marshallers;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
 

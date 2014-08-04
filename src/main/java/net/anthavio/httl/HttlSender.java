@@ -24,8 +24,8 @@ import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
-import net.anthavio.httl.impl.HttpUrlConfig;
-import net.anthavio.httl.inout.Marshallers;
+import net.anthavio.httl.marshall.Marshallers;
+import net.anthavio.httl.transport.HttpUrlConfig;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
 

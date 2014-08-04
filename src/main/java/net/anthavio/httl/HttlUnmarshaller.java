@@ -20,7 +20,7 @@ public interface HttlUnmarshaller {
 	public abstract Object unmarshall(HttlResponse response, Type returnType) throws IOException;
 
 	/**
-	 * Configurable multipurpose extractor
+	 * Configurable multipurpose Unmarshaller
 	 */
 	public static abstract class ConfigurableUnmarshaller implements HttlUnmarshaller {
 

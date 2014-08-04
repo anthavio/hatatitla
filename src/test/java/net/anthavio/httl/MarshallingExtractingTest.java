@@ -9,12 +9,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.anthavio.cache.CacheBase;
-import net.anthavio.cache.HeapMapCache;
+import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.TestResponse.NameValue;
-import net.anthavio.httl.impl.HttpClient3Config;
-import net.anthavio.httl.impl.HttpClient4Config;
-import net.anthavio.httl.impl.HttpClient4Transport;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpClient4Transport;
 import net.anthavio.httl.util.GenericType;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.JsonBuilder;

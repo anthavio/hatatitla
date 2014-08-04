@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 
-import net.anthavio.httl.impl.HttpClient3Config;
-import net.anthavio.httl.impl.HttpClient4Config;
-import net.anthavio.httl.impl.HttpUrlConfig;
-import net.anthavio.httl.impl.JettySenderConfig;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpUrlConfig;
+import net.anthavio.httl.transport.JettySenderConfig;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

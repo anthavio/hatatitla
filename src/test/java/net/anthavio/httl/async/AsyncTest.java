@@ -16,8 +16,8 @@ import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlStatusException;
-import net.anthavio.httl.impl.HttpClient4Config;
-import net.anthavio.httl.impl.HttpClient4Transport;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpClient4Transport;
 
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.junit.Assert;

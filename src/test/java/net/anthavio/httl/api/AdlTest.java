@@ -1,9 +1,9 @@
 package net.anthavio.httl.api;
 
+import net.anthavio.httl.HttlMarshaller;
 import net.anthavio.httl.HttlResponseHandler;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlResponseExtractor;
-import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.MockSenderConfig;
 
 /**

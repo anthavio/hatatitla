@@ -3,8 +3,6 @@ package net.anthavio.httl;
 import java.io.InputStream;
 import java.io.Reader;
 
-import net.anthavio.httl.inout.HttlMarshaller;
-
 /**
  * This is not nice polymorphic, but every HttlTransport needs different code to handle different body source
  * 

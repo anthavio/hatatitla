@@ -16,6 +16,7 @@ import net.anthavio.httl.HttlBuilderInterceptor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
+import net.anthavio.httl.HttlMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestException;
@@ -27,7 +28,6 @@ import net.anthavio.httl.HttlSender.Parameters;
 import net.anthavio.httl.api.HttlApiBuilder.ApiHeaderMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiMethodMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiVarMeta;
-import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**

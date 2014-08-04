@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
-import net.anthavio.httl.impl.HttpClient3Config;
-import net.anthavio.httl.impl.HttpClient4Config;
-import net.anthavio.httl.impl.HttpUrlConfig;
-import net.anthavio.httl.impl.JettySenderConfig;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpUrlConfig;
+import net.anthavio.httl.transport.JettySenderConfig;
 
 import org.junit.AfterClass;
 import org.junit.Assert;

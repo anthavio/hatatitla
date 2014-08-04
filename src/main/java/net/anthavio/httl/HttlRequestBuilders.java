@@ -15,7 +15,6 @@ import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.inout.HttlMarshaller;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
 import net.anthavio.httl.util.HttpDateUtil;

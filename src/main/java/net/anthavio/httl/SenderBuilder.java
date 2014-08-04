@@ -10,9 +10,8 @@ import java.util.concurrent.ExecutorService;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.inout.Marshallers;
-import net.anthavio.httl.inout.HttlMarshaller;
-import net.anthavio.httl.inout.Unmarshallers;
+import net.anthavio.httl.marshall.Marshallers;
+import net.anthavio.httl.marshall.Unmarshallers;
 import net.anthavio.httl.util.Cutils;
 
 import org.slf4j.Logger;
