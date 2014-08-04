@@ -90,10 +90,12 @@ public class HttlApiHandler<T> implements InvocationHandler {
 		}
 
 		HttlMarshaller marshaller = null;
+		HttlResponseExtractor<?> extractor = null;
 
+		//TODO Multiple BuilderInterceptor parameters is ok - just use different name
+		//TODO Multiple ExecutionInterceptor parameters is ok - just use different name
 		HttlBuilderInterceptor builderInterceptor = null;
 		HttlExecutionInterceptor executionInterceptor = null;
-		HttlResponseExtractor<?> extractor = null;
 
 		Object body = null;
 		if (args != null) {

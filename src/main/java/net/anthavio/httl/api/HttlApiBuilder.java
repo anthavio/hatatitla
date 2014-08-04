@@ -302,28 +302,15 @@ public class HttlApiBuilder {
 			ApiVarMeta meta;
 			// interceptors/marshallers/extractors first - they need no annotation with name
 			if (HttlBuilderInterceptor.class.isAssignableFrom(type)) {
-				//TODO Multiple BuilderInterceptor parameters is ok - just use different name
 				name = "#" + HttlBuilderInterceptor.class.getSimpleName() + "-" + i;
 				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.BLD_INTERCEPTOR);
 				metaList.add(meta);
 
 			} else if (HttlExecutionInterceptor.class.isAssignableFrom(type)) {
-				//TODO Multiple ExecutionInterceptor parameters is ok - just use different name
 				name = "#" + HttlExecutionInterceptor.class.getSimpleName() + "-" + i;
 				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.EXE_INTERCEPTOR);
 				metaList.add(meta);
 
-				/*
-				} else if (RequestInterceptor.class.isAssignableFrom(type)) {
-				name = "#" + RequestInterceptor.class.getSimpleName();
-				meta = new ApiParamMeta(i, name, true, type, null, null, ParamTarget.REQ_INTERCEPTOR);
-				metaList.add(meta);
-
-				} else if (ResponseInterceptor.class.isAssignableFrom(type)) {
-				name = "#" + ResponseInterceptor.class.getSimpleName();
-				meta = new ApiParamMeta(i, name, true, type, null, null, ParamTarget.RES_INTERCEPTOR);
-				metaList.add(meta);
-				*/
 			} else if (HttlMarshaller.class.isAssignableFrom(type)) {
 				name = "#" + HttlMarshaller.class.getSimpleName();
 				if (map.containsKey(name)) {
