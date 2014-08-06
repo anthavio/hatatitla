@@ -56,7 +56,7 @@ public class ExamplesTest {
 
 		ExtractedResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
-		System.out.println(extracted1.getPayload());
+		System.out.println(extracted1.getBody());
 
 		//Free connection pool
 		sender.close();
@@ -131,7 +131,7 @@ public class ExamplesTest {
 		ExtractedResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
 				.extract(HttpbinOut.class);
 
-		HttpbinOut body = extract.getPayload(); //voila!
+		HttpbinOut body = extract.getBody(); //voila!
 
 		sender.close();
 
@@ -184,21 +184,21 @@ public class ExamplesTest {
 		//2a Use fluent interface to execute/extract
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedResponse<String> extract = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).extract(String.class);
-			extract.getPayload();//Cache hit
+			extract.getBody();//Cache hit
 		}
 
 		//2b Create CachingRequest - classic
 		CachingSenderRequest crequest1 = new CachingSenderRequest(getusers, 1, TimeUnit.MINUTES);
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedResponse<String> response = csender.extract(crequest1, String.class);
-			response.getPayload();//Cache hit
+			response.getBody();//Cache hit
 		}
 
 		//2c Create CachingRequest - fluent
 		CachingSenderRequest crequest2 = csender.from(getusers).evictTtl(1, TimeUnit.MINUTES).build();
 		for (int i = 0; i < 1000; ++i) {
 			ExtractedResponse<String> response = csender.extract(crequest2, String.class);
-			response.getPayload();//Cache hit
+			response.getBody();//Cache hit
 		}
 
 		sender.close();

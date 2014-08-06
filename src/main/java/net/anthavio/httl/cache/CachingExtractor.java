@@ -112,7 +112,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 			} else {
 				bodyResponse = sender.extract(request.getSenderRequest(), request.getResultType());
 			}
-			return bodyResponse.getPayload();
+			return bodyResponse.getBody();
 		}
 
 	}

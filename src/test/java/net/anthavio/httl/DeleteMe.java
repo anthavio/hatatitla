@@ -22,7 +22,7 @@ public class DeleteMe {
 		sender.getConfig().setParamSetter(handler);
 		ExtractedResponse<String> extract = sender.GET("/get").param("date param", new Date()).extract(String.class);
 
-		System.out.println(extract.getPayload());
+		System.out.println(extract.getBody());
 		sender.close();
 
 		GetMethod get = new GetMethod("http://httpbin.org/get");

@@ -30,11 +30,11 @@ public interface HttlResponseExtractor<T> {
 
 		private final HttlResponse response;
 
-		private final T payload;
+		private final T body;
 
 		public ExtractedResponse(HttlResponse response, T payload) {
 			this.response = response;
-			this.payload = payload;
+			this.body = payload;
 		}
 
 		/**
@@ -47,13 +47,13 @@ public interface HttlResponseExtractor<T> {
 		/**
 		 * @return Extracted response body
 		 */
-		public T getPayload() {
-			return payload;
+		public T getBody() {
+			return body;
 		}
 
 		@Override
 		public String toString() {
-			return String.valueOf(response + " " + payload);
+			return String.valueOf(response + " " + body);
 		}
 
 	}

@@ -117,7 +117,7 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<String> extracted1s = sender.GET("/").extract(String.class);
 		// Then
 		Assertions.assertThat(extracted1s.getResponse().getHttpStatusCode()).isEqualTo(200);
-		Assertions.assertThat(extracted1s.getPayload()).contains("Hello");
+		Assertions.assertThat(extracted1s.getBody()).contains("Hello");
 		Assertions.assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When - http 500 
@@ -134,14 +134,14 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<byte[]> extracted1b = sender.GET("/").extract(byte[].class);
 		// Then 
 		Assertions.assertThat(extracted1b.getResponse().getHttpStatusCode()).isEqualTo(200);
-		Assertions.assertThat(new String(extracted1b.getPayload(), "utf-8")).contains("Hello");
+		Assertions.assertThat(new String(extracted1b.getBody(), "utf-8")).contains("Hello");
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When - http 500 
 		ExtractedResponse<byte[]> extracted2b = sender.GET("/").param("dostatus", 500).extract(byte[].class);
 		// Then - No exception
 		Assertions.assertThat(extracted2b.getResponse().getHttpStatusCode()).isEqualTo(500);
-		Assertions.assertThat(new String(extracted2b.getPayload(), "utf-8")).contains("Dostatus 500");
+		Assertions.assertThat(new String(extracted2b.getBody(), "utf-8")).contains("Dostatus 500");
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When
@@ -204,14 +204,14 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<String> extract = sender.GET("/").param("dostatus", 500).extract(String.class);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
 		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
-		assertThat(extract.getPayload()).isNull(); //extracted body is null
+		assertThat(extract.getBody()).isNull(); //extracted body is null
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		//same with ResponseBodyExtractor instead of resultType Class
 		extract = sender.GET("/").param("dostatus", 500).extract(HttlResponseExtractor.STRING);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
 		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
-		assertThat(extract.getPayload()).isNull(); //extracted body is null
+		assertThat(extract.getBody()).isNull(); //extracted body is null
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		//When - Break handler to throw exception from it's handle methods
@@ -279,8 +279,8 @@ public class MarshallingExtractingTest {
 		//System.out.println(request.getParameters().getFirst("pmsg"));
 		ExtractedResponse<TestResponse> extract = sender.extract(request, TestResponse.class);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(201);
-		assertThat(extract.getPayload().getRequest().getMessage()).isEqualTo(message); //č character must be preserved!
-		List<NameValue> parameters = extract.getPayload().getRequest().getParameters();
+		assertThat(extract.getBody().getRequest().getMessage()).isEqualTo(message); //č character must be preserved!
+		List<NameValue> parameters = extract.getBody().getRequest().getParameters();
 
 		for (NameValue nameValue : parameters) {
 			if (nameValue.getName().equals("pmsg")) {

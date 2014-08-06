@@ -269,7 +269,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 		} else {
 			//maybe better checking here...
-			return sender.extract(response, returnType).getPayload();
+			return sender.extract(response, returnType).getBody();
 		}
 	}
 
