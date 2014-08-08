@@ -24,7 +24,6 @@ import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
-import net.anthavio.httl.marshall.Marshallers;
 import net.anthavio.httl.transport.HttpUrlConfig;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
@@ -42,8 +41,8 @@ public class HttlSender implements SenderOperations, Closeable {
 	/**
 	 * Build HttpSender with underlying HttpUrlTransport
 	 */
-	public static HttlSender Build(String url) {
-		return new HttpUrlConfig(url).build();
+	public static HttpUrlConfig For(String url) {
+		return new HttpUrlConfig(url);
 	}
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -54,7 +53,7 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	private final ExecutorService executor; //can be null
 
-	private final Marshallers marshallers;
+	private final HttlBodyMarshaller marshaller;
 
 	private final HttlBodyUnmarshaller unmarshaller;
 
@@ -67,8 +66,8 @@ public class HttlSender implements SenderOperations, Closeable {
 		this.config = config;
 		this.transport = transport;
 		this.executor = config.getExecutorService();
-		this.marshallers = config.getMarshallers();
-		this.unmarshaller = config.getUnmarshallers();
+		this.marshaller = config.getMarshaller();
+		this.unmarshaller = config.getUnmarshaller();
 		this.executionInterceptors = config.getExecutionInterceptors();
 	}
 
@@ -196,8 +195,7 @@ public class HttlSender implements SenderOperations, Closeable {
 				Object object = unmarshaller.unmarshall(response, resultType);
 				return new ExtractedResponse<T>(response, (T) object);//XXX this cast may not checked/honored at all!!!
 			} else {
-				throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: "
-						+ resultType);
+				throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: " + resultType);
 			}
 
 		} catch (IOException iox) {
@@ -235,8 +233,7 @@ public class HttlSender implements SenderOperations, Closeable {
 						throw new HttlProcessingException((Exception) extract);
 					}
 				} else {
-					throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: "
-							+ resultType);
+					throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: " + resultType);
 				}
 			}
 			return null;

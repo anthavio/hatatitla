@@ -11,6 +11,22 @@ import java.io.Reader;
  */
 public class HttlBody {
 
+	public static HttlBody For(Object payload) {
+		if (payload == null) {
+			throw new IllegalArgumentException("Null payload");
+		} else if (payload instanceof String) {
+			return new HttlBody((String) payload);
+		} else if (payload instanceof byte[]) {
+			return new HttlBody((byte[]) payload);
+		} else if (payload instanceof InputStream) {
+			return new HttlBody((InputStream) payload);
+		} else if (payload instanceof Reader) {
+			return new HttlBody((Reader) payload);
+		} else {
+			return new HttlBody(payload);
+		}
+	}
+
 	public static enum Type {
 		STRING, BYTES, READER, STREAM, MARSHALL;
 	}
@@ -19,46 +35,31 @@ public class HttlBody {
 
 	private final Type type;
 
-	private final HttlBodyMarshaller marshaller;
-
 	public HttlBody(String string) {
 		this.payload = string;
 		this.type = Type.STRING;
-		this.marshaller = null;
 	}
 
 	public HttlBody(byte[] bytes) {
 		this.payload = bytes;
 		this.type = Type.BYTES;
-		this.marshaller = null;
 	}
 
 	public HttlBody(InputStream stream) {
 		this.payload = stream;
 		this.type = Type.STREAM;
-		this.marshaller = null;
 	}
 
 	public HttlBody(Reader reader) {
 		this.payload = reader;
 		this.type = Type.READER;
-		this.marshaller = null;
 	}
 
 	/**
 	 * Sky is the limit! Just implement RequestMarshaller and you can send even JDBC connections
 	 */
-	public HttlBody(HttlBodyMarshaller marshaller, Object marshallable) {
-		if (marshaller == null) {
-			throw new HttlRequestException("Null marshaller");
-		}
-		this.marshaller = marshaller;
-
-		if (marshallable == null) {
-			throw new HttlRequestException("Null payload");
-		}
-		this.payload = marshallable;
-
+	public HttlBody(Object payload) {
+		this.payload = payload;
 		this.type = Type.MARSHALL;
 	}
 
@@ -68,10 +69,6 @@ public class HttlBody {
 
 	public Type getType() {
 		return type;
-	}
-
-	public HttlBodyMarshaller getMarshaller() {
-		return marshaller;
 	}
 
 }

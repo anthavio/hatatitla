@@ -90,7 +90,7 @@ public class MarshallingExtractingTest {
 			}
 		};
 		// When - Custom ResponseUnmarshaller is used
-		config.addResponseUnmarshaller(evilUnmar, "application/json");
+		config.setUnmarshaller(evilUnmar);
 
 		//Then - Custom IllegalStateException is thrown
 		try {

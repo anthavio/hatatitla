@@ -11,11 +11,12 @@ import org.codehaus.jackson.map.util.ISO8601DateFormat;
 public class Jackson1Util {
 
 	/**
-	 * Builde default Jackson ObjectMapper
+	 * Build default Jackson ObjectMapper
 	 */
 	public static ObjectMapper build() {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setDateFormat(new ISO8601DateFormat());
+		mapper.configure(org.codehaus.jackson.map.DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return mapper;
 	}
 }

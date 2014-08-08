@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -32,6 +33,11 @@ public class Jackson2Marshaller implements HttlBodyMarshaller {
 
 	public ObjectMapper getObjectMapper() {
 		return objectMapper;
+	}
+
+	@Override
+	public Jackson2Marshaller supports(HttlRequest request) {
+		return request.getMediaType().contains("json") ? this : null;
 	}
 
 	@Override

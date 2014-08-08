@@ -11,6 +11,8 @@ import java.nio.charset.Charset;
  */
 public interface HttlBodyMarshaller {
 
+	public abstract HttlBodyMarshaller supports(HttlRequest request);
+
 	/**
 	 * Marshall Request payload object directly into OutputStream. Do not close the stream.
 	 */

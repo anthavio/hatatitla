@@ -33,49 +33,49 @@ public class RequestTest {
 	public void urlPath() {
 		HttlRequest request;
 
-		request = HttlSender.Build("www.example.com").GET("/file").build();
+		request = HttlSender.For("www.example.com").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		request = HttlSender.Build("www.example.com/").GET("/file").build();
+		request = HttlSender.For("www.example.com/").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		request = HttlSender.Build("www.example.com/path").GET("/file").build();
+		request = HttlSender.For("www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When too many /
-		request = HttlSender.Build("www.example.com/path/").GET("/file").build();
+		request = HttlSender.For("www.example.com/path/").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When too little /
-		request = HttlSender.Build("www.example.com/path").GET("file").build();
+		request = HttlSender.For("www.example.com/path").build().GET("file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When port
-		request = HttlSender.Build("www.example.com:8080/path").GET("/file").build();
+		request = HttlSender.For("www.example.com:8080/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
 		//When http
-		request = HttlSender.Build("http://www.example.com/path").GET("/file").build();
+		request = HttlSender.For("http://www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When https
-		request = HttlSender.Build("https://www.example.com/path").GET("/file").build();
+		request = HttlSender.For("https://www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com/path/file");
 
 		//When http + port
-		request = HttlSender.Build("http://www.example.com:8080/path").GET("/file").build();
+		request = HttlSender.For("http://www.example.com:8080/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
 		//When https + port
-		request = HttlSender.Build("https://www.example.com:9696/path").GET("/file").build();
+		request = HttlSender.For("https://www.example.com:9696/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
 		//When username:password in a URL - it is omitted
-		request = HttlSender.Build("https://username:password@www.example.com:9696/path").GET("/file").build();
+		request = HttlSender.For("https://username:password@www.example.com:9696/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
 		//When query in URL - it is omitted
-		request = HttlSender.Build("www.example.com/path;matrix=value?query=value").GET("/file").build();
+		request = HttlSender.For("www.example.com/path;matrix=value?query=value").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path;matrix=value/file");
 
 	}
@@ -324,7 +324,7 @@ public class RequestTest {
 	public void testConfigDefaults() {
 		//Given
 		String url = "http://www.example.com:8080";
-		HttlSender sender = HttlSender.Build(url);
+		HttlSender sender = HttlSender.For(url).build();
 		SenderBuilder config = sender.getConfig();
 		//Then
 		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");

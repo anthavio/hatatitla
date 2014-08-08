@@ -52,11 +52,11 @@ public abstract class SenderBuilder {
 
 	private final List<HttlExecutionInterceptor> executionInterceptors = new ArrayList<HttlExecutionInterceptor>();
 
-	private final List<HttlBuilderInterceptor> builderInterceptors = new ArrayList<HttlBuilderInterceptor>();
+	private final List<HttlBuilderVisitor> builderVisitors = new ArrayList<HttlBuilderVisitor>();
 
-	private final Marshallers marshallers = new Marshallers();
+	private HttlBodyMarshaller marshaller = new Marshallers();
 
-	private final Unmarshallers unmarshallers = new Unmarshallers();
+	private HttlBodyUnmarshaller unmarshaller = new Unmarshallers();
 
 	public SenderBuilder(URL url) {
 		this.url = digHostUrl(url);
@@ -205,8 +205,9 @@ public abstract class SenderBuilder {
 	/**
 	 * Header will be added into every HttlRequest
 	 */
-	public void setHeader(String name, String value) {
+	public SenderBuilder setHeader(String name, String value) {
 		this.defaultHeaders.set(name, value);
+		return this;
 	}
 
 	/**
@@ -219,8 +220,9 @@ public abstract class SenderBuilder {
 	/**
 	 * Parameter will be added into every HttlRequest
 	 */
-	public void setParam(String name, String value) {
+	public SenderBuilder setParam(String name, String value) {
 		this.defaultParameters.set(name, value);
+		return this;
 	}
 
 	/**
@@ -230,23 +232,46 @@ public abstract class SenderBuilder {
 		return defaultParameters;
 	}
 
-	public HttlBodyMarshaller getRequestMarshaller(String mediaType) {
-		return marshallers.getMarshaller(mediaType);
+	public HttlBodyUnmarshaller getUnmarshaller() {
+		return unmarshaller;
+	}
+
+	public SenderBuilder setUnmarshaller(HttlBodyUnmarshaller unmarshaller) {
+		this.unmarshaller = unmarshaller;
+		return this;
+	}
+
+	public HttlBodyMarshaller getMarshaller() {
+		return marshaller;
+	}
+
+	public SenderBuilder setMarshaller(HttlBodyMarshaller marshaller) {
+		this.marshaller = marshaller;
+		return this;
 	}
 
 	/**
 	 * Sets RequestBodyMarshaller for specified request mediaType (from Content-Type header)
-	 */
+	
 	public void setRequestMarshaller(HttlBodyMarshaller marshaller, String mediaType) {
 		marshallers.setMarshaller(marshaller, mediaType);
 	}
-
+	
+	public HttlBodyMarshaller getRequestMarshaller(String mediaType) {
+		return marshallers.getMarshaller(mediaType);
+	}
+	*/
 	/**
 	 * Sets ResponseUnmarshaller for specified response mediaType (from Content-Type header)
-	 */
 	public void addResponseUnmarshaller(HttlBodyUnmarshaller unmarshaller, String mediaType) {
 		unmarshallers.addUnmarshaller(unmarshaller, mediaType);
 	}
+	
+	public Marshallers getMarshallers() {
+		return marshallers;
+	}
+
+	*/
 
 	public SenderBuilder addExecutionInterceptor(HttlExecutionInterceptor interceptor) {
 		if (interceptor == null) {
@@ -260,24 +285,16 @@ public abstract class SenderBuilder {
 		return executionInterceptors;
 	}
 
-	public SenderBuilder addBuilderInterceptor(HttlBuilderInterceptor interceptor) {
+	public SenderBuilder addBuilderInterceptor(HttlBuilderVisitor interceptor) {
 		if (interceptor == null) {
 			throw new IllegalArgumentException("Null interceptor");
 		}
-		builderInterceptors.add(interceptor);
+		builderVisitors.add(interceptor);
 		return this;
 	}
 
-	public List<HttlBuilderInterceptor> getBuilderInterceptors() {
-		return builderInterceptors;
-	}
-
-	public Marshallers getMarshallers() {
-		return marshallers;
-	}
-
-	public Unmarshallers getUnmarshallers() {
-		return unmarshallers;
+	public List<HttlBuilderVisitor> getBuilderVisitors() {
+		return builderVisitors;
 	}
 
 	/**

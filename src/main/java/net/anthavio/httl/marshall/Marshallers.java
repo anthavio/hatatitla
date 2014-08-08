@@ -2,12 +2,15 @@ package net.anthavio.httl.marshall;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.anthavio.httl.HttlBodyMarshaller;
-import net.anthavio.httl.util.Cutils;
+import net.anthavio.httl.HttlRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class Marshallers {
+public class Marshallers implements HttlBodyMarshaller {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -35,11 +38,11 @@ public class Marshallers {
 		return new String(baos.toByteArray());
 	}
 
-	private Map<String, HttlBodyMarshaller> marshallers = new HashMap<String, HttlBodyMarshaller>();
+	private Map<String, List<HttlBodyMarshaller>> marshallers = new HashMap<String, List<HttlBodyMarshaller>>();
 
 	/**
 	 * Initiate Built in Marshallers
-	 */
+	 
 	public Marshallers() {
 
 		HttlBodyMarshaller marshaller = null;
@@ -108,14 +111,44 @@ public class Marshallers {
 			logger.debug("No JSON binding library found. JSON body requests support is disabled");
 		}
 	}
+	*/
+	@Override
+	public HttlBodyMarshaller supports(HttlRequest request) {
+		// Scan by mediaType
+		String mediaType = request.getMediaType();
+		List<HttlBodyMarshaller> list = marshallers.get(mediaType);
 
-	public HttlBodyMarshaller getMarshaller(String mediaType) {
-		return marshallers.get(mediaType);
+		//Init default
+		if (list == null) {
+			list = new ArrayList<HttlBodyMarshaller>();
+			marshallers.put(mediaType, list);
+			HttlBodyMarshaller defaultx = Defaults.getDefaultMarshaller(mediaType);
+			if (defaultx != null) {
+				list.add(defaultx);
+			}
+		}
+
+		for (HttlBodyMarshaller item : list) {
+			if (item.supports(request) != null) {
+				return item;
+			}
+		}
+		return null;
 	}
 
+	@Override
+	public void write(Object payload, OutputStream stream, Charset charset) throws IOException {
+		throw new IllegalStateException("Call support() to get right Marshaller");
+	}
+
+	/*
+		public HttlBodyMarshaller getMarshaller(String mediaType) {
+			return marshallers.get(mediaType);
+		}
+	*/
 	/**
 	 * Register request body marshaller with provided mediaType
-	 */
+	 
 	public void setMarshaller(HttlBodyMarshaller marshaller, String mediaType) {
 		if (Cutils.isBlank(mediaType)) {
 			throw new IllegalArgumentException("media type is blank");
@@ -126,7 +159,7 @@ public class Marshallers {
 		logger.debug("Adding " + marshaller.getClass().getName() + " for " + mediaType);
 		this.marshallers.put(mediaType, marshaller);
 	}
-
+	*/
 	/**
 	 * Shortcut to marshall request body
 	

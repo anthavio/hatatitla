@@ -18,6 +18,7 @@ public class MockSenderConfig extends SenderBuilder {
 
 	public MockSenderConfig(MockTransport transport) {
 		this();
+		transport.setConfig(this);
 		this.transport = transport;
 	}
 
@@ -29,6 +30,7 @@ public class MockSenderConfig extends SenderBuilder {
 	public HttlSender build() {
 		if (transport == null) {
 			transport = new MockTransport();
+			transport.setConfig(this);
 		}
 		return new HttlSender(this, transport);
 	}

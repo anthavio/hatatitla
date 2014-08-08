@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-import net.anthavio.httl.HttlBuilderInterceptor;
+import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
@@ -94,7 +94,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 		//TODO Multiple BuilderInterceptor parameters is ok - just use different name
 		//TODO Multiple ExecutionInterceptor parameters is ok - just use different name
-		HttlBuilderInterceptor builderInterceptor = null;
+		HttlBuilderVisitor builderInterceptor = null;
 		HttlExecutionInterceptor executionInterceptor = null;
 
 		Object body = null;
@@ -136,7 +136,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 						builder.param("{" + metaVar.name + "}", arg);
 						break;
 					case BLD_INTERCEPTOR:
-						builderInterceptor = (HttlBuilderInterceptor) arg;
+						builderInterceptor = (HttlBuilderVisitor) arg;
 						break;
 					case EXE_INTERCEPTOR:
 						executionInterceptor = (HttlExecutionInterceptor) arg;
@@ -201,11 +201,11 @@ public class HttlApiHandler<T> implements InvocationHandler {
 	}
 
 	protected Object complete(SenderBodyRequestBuilder builder, ApiMethodMeta metaMethod,
-			HttlBuilderInterceptor builderInterceptor, HttlExecutionInterceptor executionInterceptor,
+			HttlBuilderVisitor builderInterceptor, HttlExecutionInterceptor executionInterceptor,
 			HttlResponseExtractor<?> responseExtractor) throws IOException {
 
 		if (builderInterceptor != null) {
-			builderInterceptor.onBuild(builder);
+			builderInterceptor.visit(builder);
 		}
 
 		HttlRequest request = builder.build();

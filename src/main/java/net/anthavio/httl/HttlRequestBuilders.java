@@ -355,17 +355,15 @@ public class HttlRequestBuilders {
 		public abstract HttlRequest build();
 
 		/**
-		 * Execute Request and return raw unprocessed Response.
-		 * Response is lefty open and caller is responsibe for closing.
+		 * Buid and execute Request and then return raw unprocessed Response.
+		 * Response is open and caller is responsibe for closing.
 		 */
 		public HttlResponse execute() {
 			HttlRequest request = build();
 			return sender.execute(request);
 		}
 
-		/**
-		 * Execute Request and use ResponseHandler parameter to process Response.
-		 * Response is closed automaticaly.
+		/**Buid and execute Request and then let ResponseHandler parameter to process Response.
 		 */
 		public void execute(HttlResponseHandler handler) {
 			HttlRequest request = build();
@@ -373,8 +371,7 @@ public class HttlRequestBuilders {
 		}
 
 		/**
-		 * Execute Request and extract Response.
-		 * Response is closed automaticaly.
+		 * Buid and execute Request and then extract response.
 		 */
 		public <T> ExtractedResponse<T> extract(Class<T> clazz) {
 			HttlRequest request = build();
@@ -382,8 +379,7 @@ public class HttlRequestBuilders {
 		}
 
 		/**
-		 * Execute Request and extract Response.
-		 * Response is closed automaticaly.
+		 * Buid and execute Request and then extract response.
 		 */
 		public <T> ExtractedResponse<T> extract(GenericType<T> typeReference) {
 			HttlRequest request = build();
@@ -391,8 +387,7 @@ public class HttlRequestBuilders {
 		}
 
 		/**
-		 * Execute request and extract response.
-		 * Response is closed automaticaly.
+		 * Buid and execute Request and then extract response.
 		 */
 		public <T> ExtractedResponse<T> extract(HttlResponseExtractor<T> extractor) {
 			HttlRequest request = build();
@@ -438,9 +433,9 @@ public class HttlRequestBuilders {
 		}
 
 		public HttlRequest build() {
-			List<HttlBuilderInterceptor> interceptors = sender.getConfig().getBuilderInterceptors();
-			for (HttlBuilderInterceptor interceptor : interceptors) {
-				interceptor.onBuild(this);
+			List<HttlBuilderVisitor> interceptors = sender.getConfig().getBuilderVisitors();
+			for (HttlBuilderVisitor interceptor : interceptors) {
+				interceptor.visit(this);
 			}
 			return new HttlRequest(sender, method, urlPath, parameters, headers, null, readTimeoutMillis);
 		}
@@ -499,11 +494,7 @@ public class HttlRequestBuilders {
 					mediaType = mediaType.substring(0, indexOf);
 				}
 
-				HttlBodyMarshaller marshaller = sender.getConfig().getMarshallers().getMarshaller(mediaType);
-				if (marshaller == null) {
-					throw new HttlRequestException("RequestMarshaller not found for media type: '" + mediaType + "'");
-				}
-				this.body = new HttlBody(marshaller, body);
+				this.body = new HttlBody(body);
 			}
 
 			if (mediaType != null) {
@@ -522,9 +513,9 @@ public class HttlRequestBuilders {
 
 		@Override
 		public HttlRequest build() {
-			List<HttlBuilderInterceptor> interceptors = sender.getConfig().getBuilderInterceptors();
-			for (HttlBuilderInterceptor interceptor : interceptors) {
-				interceptor.onBuild(this);
+			List<HttlBuilderVisitor> interceptors = sender.getConfig().getBuilderVisitors();
+			for (HttlBuilderVisitor interceptor : interceptors) {
+				interceptor.visit(this);
 			}
 			return new HttlRequest(sender, method, urlPath, parameters, headers, body, readTimeoutMillis);
 		}

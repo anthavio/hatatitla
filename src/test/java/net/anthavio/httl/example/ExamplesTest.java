@@ -10,15 +10,14 @@ import javax.xml.bind.Marshaller;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.Authentication;
-import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlParameterSetter;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
+import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.cache.CachingSender;
 import net.anthavio.httl.cache.CachingSenderRequest;
-import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.marshall.Jackson2Unmarshaller;
 import net.anthavio.httl.marshall.JaxbMarshaller;
 import net.anthavio.httl.transport.HttpClient3Config;
@@ -100,7 +99,7 @@ public class ExamplesTest {
 	public static void senders() {
 		//Easy to start with
 		//No additional dependency - vanilla java 
-		HttlSender urlSender = HttlSender.Build("https://graph.facebook.com");
+		HttlSender urlSender = HttlSender.For("https://graph.facebook.com").build();
 
 		//Recommended choice
 		//Dependency - http://hc.apache.org/httpcomponents-client-ga/
@@ -120,7 +119,7 @@ public class ExamplesTest {
 		//Precondition is to have Jackson 1 or Jackson 2 on classpath, otherwise following exception will occur
 		//java.lang.IllegalArgumentException: Request body marshaller not found for application/json
 		//java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
-		HttlSender sender = HttlSender.Build("http://httpbin.org");
+		HttlSender sender = HttlSender.For("http://httpbin.org").build();
 
 		//Send HttpbinIn instance marshalled as JSON document
 		HttpbinIn binIn = new HttpbinIn();
@@ -135,24 +134,16 @@ public class ExamplesTest {
 
 		sender.close();
 
-		//Tweak existing JSON RequestMarshaller - assume that Jackson 2 is present 
-		Jackson2Marshaller jsonMarshaller = (Jackson2Marshaller) sender.getConfig()
-				.getRequestMarshaller("application/json");
-		jsonMarshaller.getObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-
-		//Tweak existing XML RequestMarshaller
-		JaxbMarshaller requestMarshaller = (JaxbMarshaller) sender.getConfig().getRequestMarshaller("application/xml");
-		//Set indented output
+		//Configure JAXB xml Marshaller
+		JaxbMarshaller requestMarshaller = new JaxbMarshaller();
+		sender.getConfig().setMarshaller(requestMarshaller);
 		requestMarshaller.getMarshallerProperties().put(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+		//Set indented output
 
-		//Set own JSON RequestMarshaller
-		//sender.setRequestMarshaller(new MyLovelyGsonMarshaller(), "application/json");
-
-		//Tweak existing JSON ResponseExtractorFactory
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+		//Configure Jackson JSON Marshaller
+		ObjectMapper mapper = new ObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
 		Jackson2Unmarshaller jsonExtractor = new Jackson2Unmarshaller(mapper);
-		sender.getConfig().addResponseUnmarshaller(jsonExtractor, "application/json");
+		sender.getConfig().setUnmarshaller(jsonExtractor);
 		/*
 		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
 		sender = config.buildSender();
@@ -169,7 +160,7 @@ public class ExamplesTest {
 	 */
 	public static void cachingSender() {
 		//Github uses ETag and Cache control headers nicely
-		HttlSender sender = HttlSender.Build("https://api.github.com");
+		HttlSender sender = HttlSender.For("https://api.github.com").build();
 		//Provide cache instance - Simple Heap Hashmap in this case
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		//Create caching sender

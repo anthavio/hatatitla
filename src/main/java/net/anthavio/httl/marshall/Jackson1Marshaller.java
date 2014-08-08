@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlRequest;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -32,6 +33,11 @@ public class Jackson1Marshaller implements HttlBodyMarshaller {
 
 	public ObjectMapper getObjectMapper() {
 		return objectMapper;
+	}
+
+	@Override
+	public Jackson1Marshaller supports(HttlRequest request) {
+		return request.getMediaType().contains("json") ? this : null;
 	}
 
 	@Override

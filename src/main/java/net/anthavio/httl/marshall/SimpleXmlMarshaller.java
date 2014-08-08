@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlRequest;
 
 import org.simpleframework.xml.core.Persister;
 
@@ -34,6 +35,11 @@ public class SimpleXmlMarshaller implements HttlBodyMarshaller {
 
 	public Persister getPersister() {
 		return persister;
+	}
+
+	@Override
+	public SimpleXmlMarshaller supports(HttlRequest request) {
+		return request.getMediaType().contains("xml") ? this : null;
 	}
 
 	@Override

@@ -7,6 +7,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.anthavio.httl.HttlBuilderVisitor;
+import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
 
 import org.eclipse.jetty.server.Server;
@@ -63,12 +66,15 @@ public class OAuthServerTest extends HttpServlet {
 	}
 
 	private OAuth2 builder;
+	private HttlSender sender;
 
 	@Override
 	public void init() throws ServletException {
 		super.init();
+		//ObjectMapper mapper = new ObjectMapper();
+		//mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		sender = HttlSender.For("https://github.com").setHeader("Accept", "application/json").build();
 
-		HttlSender sender = HttlSender.Build("https://github.com");
 		builder = new OAuth2Builder(sender).setAuthUrl("https://github.com/login/oauth/authorize")
 				.setTokenUrl("https://github.com/login/oauth/access_token").setClientId("22d827124162f9f9a81b")
 				.setClientSecret("91f27372b6835a31a963be4007c090cdb6b4def3")
@@ -100,9 +106,22 @@ public class OAuthServerTest extends HttpServlet {
 				response.getWriter().println(error);
 				response.getWriter().println(request.getParameter("error_description"));
 			} else {
+				System.out.println("Code callback!");
 				String code = request.getParameter("code");
-				String createTokenData = builder.getAccessToken(code, String.class);
-				response.getWriter().print(createTokenData);
+				HttlBuilderVisitor visitor = new HttlBuilderVisitor() {
+
+					@Override
+					public void visit(HttlRequestBuilder<?> builder) {
+						builder.accept("application/json");
+
+					}
+				};
+				OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, OAuthTokenResponse.class);
+				String access_token = tokenResponse.getAccess_token();
+				ExtractedResponse<String> extract = sender.GET("/user").param("access_token", access_token)
+						.extract(String.class);
+				response.getWriter().print(extract);
+
 			}
 		} else {
 		}

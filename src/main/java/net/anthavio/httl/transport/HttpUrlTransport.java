@@ -153,7 +153,7 @@ public class HttpUrlTransport implements HttlTransport {
 				HttlBody body = request.getBody();
 				switch (body.getType()) {
 				case MARSHALL:
-					body.getMarshaller().write(body.getPayload(), connection.getOutputStream(),
+					config.getMarshaller().write(body.getPayload(), connection.getOutputStream(),
 							Charset.forName(request.getCharset()));
 					break;
 				case STRING:

@@ -70,15 +70,15 @@ public class Unmarshallers implements HttlBodyUnmarshaller {
 			if (list == null) {
 				list = new ArrayList<HttlBodyUnmarshaller>();
 				unmarshallers.put(mediaType, list);
-				HttlBodyUnmarshaller defaultu = Defaults.getDefaultUnmarshaller(mediaType);
-				if (defaultu != null) {
-					list.add(defaultu);
+				HttlBodyUnmarshaller defaultx = Defaults.getDefaultUnmarshaller(mediaType);
+				if (defaultx != null) {
+					list.add(defaultx);
 				}
 			}
 
-			for (HttlBodyUnmarshaller unmar : list) {
-				if (unmar.supports(response, returnType) != null) {
-					return unmar;
+			for (HttlBodyUnmarshaller item : list) {
+				if (item.supports(response, returnType) != null) {
+					return item;
 				}
 			}
 		}

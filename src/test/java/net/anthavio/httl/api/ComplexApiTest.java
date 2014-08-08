@@ -16,6 +16,7 @@ import net.anthavio.httl.util.MockTransport;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
@@ -81,10 +82,9 @@ public class ComplexApiTest {
 	@Test
 	public void testSomeApiPostBody() {
 		//Given
-		Jackson2Marshaller marshaller = new Jackson2Marshaller();
-		HttlSender sender = new MockSenderConfig().build();
-		Jackson2Marshaller jrm = (Jackson2Marshaller) sender.getConfig().getRequestMarshaller("application/json");
-		jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
+		Jackson2Marshaller marshaller = new Jackson2Marshaller(new ObjectMapper().configure(
+				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
+		HttlSender sender = new MockSenderConfig().setMarshaller(marshaller).build();
 
 		SomeApi api = HttlApiBuilder.build(SomeApi.class, sender);
 		SomeBodyBean input = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
@@ -103,14 +103,13 @@ public class ComplexApiTest {
 	@Test
 	public void genericListReturn() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockSenderConfig(transport).setUnmarshaller(new GsonUnmarshaller()).build();
 		String json = "[{\"login\":\"anthavio\",\"id\":647317,\"contributions\":119}]";
 		transport.setStaticResponse(200, "application/json; charset=utf-8", json);
 
 		//HttpURLSender sender = new HttpURLSender("https://api.github.com/");
 		//HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com/");
 
-		sender.getConfig().addResponseUnmarshaller(new GsonUnmarshaller(), "application/json");
 		// Build
 		SomeApi api = HttlApiBuilder.build(SomeApi.class, sender);
 		// Invoke

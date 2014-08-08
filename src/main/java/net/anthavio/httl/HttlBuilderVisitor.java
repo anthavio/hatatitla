@@ -8,7 +8,7 @@ import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
  * @author martin.vanek
  *
  */
-public interface HttlBuilderInterceptor {
+public interface HttlBuilderVisitor {
 
-	public void onBuild(HttlRequestBuilder<?> builder);
+	public void visit(HttlRequestBuilder<?> builder);
 }

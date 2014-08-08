@@ -9,6 +9,7 @@ import java.lang.annotation.Target;
 import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlRequest;
 
 /**
  * 
@@ -34,6 +35,11 @@ public @interface RestBody {
 		@Override
 		public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
 
+		}
+
+		@Override
+		public HttlBodyMarshaller supports(HttlRequest request) {
+			return null;
 		}
 
 	}

@@ -19,6 +19,7 @@ import javax.xml.bind.annotation.XmlType;
 import javax.xml.namespace.QName;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlRequest;
 
 /**
  * 
@@ -74,6 +75,11 @@ public class JaxbMarshaller implements HttlBodyMarshaller {
 
 	public void setMarshallerProperties(Map<String, Object> marshallerProperties) {
 		this.marshallerProperties = marshallerProperties;
+	}
+
+	@Override
+	public JaxbMarshaller supports(HttlRequest request) {
+		return request.getMediaType().contains("xml") ? this : null;
 	}
 
 	@Override

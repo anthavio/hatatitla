@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlRequest;
 
 import com.google.gson.Gson;
 
@@ -23,6 +24,7 @@ public class GsonMarshaller implements HttlBodyMarshaller {
 
 	public GsonMarshaller() {
 		this.gson = new Gson();
+		//this.gson = new GsonBuilder().setDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz").create();
 	}
 
 	public GsonMarshaller(Gson gson) {
@@ -34,6 +36,11 @@ public class GsonMarshaller implements HttlBodyMarshaller {
 
 	public Gson getGson() {
 		return gson;
+	}
+
+	@Override
+	public GsonMarshaller supports(HttlRequest request) {
+		return request.getMediaType().contains("json") ? this : null;
 	}
 
 	@Override

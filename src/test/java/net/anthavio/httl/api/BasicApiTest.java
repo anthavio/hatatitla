@@ -20,6 +20,7 @@ import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
@@ -74,9 +75,12 @@ public class BasicApiTest {
 	public void testBeans() throws IOException {
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
-		Jackson2Marshaller jrm = (Jackson2Marshaller) sender.getConfig().getRequestMarshaller("application/json");
-		jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
+		Jackson2Marshaller jrm = new Jackson2Marshaller(new ObjectMapper().configure(
+				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
+		HttlSender sender = new MockSenderConfig(transport).setMarshaller(jrm).build();
+		//Marshallers marshallers = (Marshallers)sender.getConfig().getMarshaller();
+		//Jackson2Marshaller jrm = (Jackson2Marshaller) marshallers.supports(null, "application/json");
+		//jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
 
 		String helloPlain = "Hello Inčučuna!";
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
@@ -148,15 +152,16 @@ public class BasicApiTest {
 
 	@Test
 	public void wrongsApis() {
+		HttlSender sender = HttlSender.For("www.example.com").build();
 		try {
-			HttlApiBuilder.with(HttlSender.Build("www.example.com")).build(WrongApiMissingName.class);
+			HttlApiBuilder.with(sender).build(WrongApiMissingName.class);
 			Assertions.fail("Previous statement must throw " + HttlApiException.class.getSimpleName());
 		} catch (HttlApiException abx) {
 			Assertions.assertThat(abx.getMessage()).startsWith("Missing parameter's name on position 1");
 		}
 
 		try {
-			HttlApiBuilder.with(HttlSender.Build("www.example.com")).build(WrongApiEmptyName.class);
+			HttlApiBuilder.with(sender).build(WrongApiEmptyName.class);
 			Assertions.fail("Previous statement must throw " + HttlApiException.class.getSimpleName());
 		} catch (HttlApiException abx) {
 			Assertions.assertThat(abx.getMessage()).startsWith("Missing parameter's name on position 1");

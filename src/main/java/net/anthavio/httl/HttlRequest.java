@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.List;
 
+import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
 import net.anthavio.httl.util.Cutils;
@@ -126,11 +127,20 @@ public class HttlRequest implements Serializable {
 				if (this.contentType[0] == null) {
 					throw new HttlRequestException("Request with body must have media type");
 				}
+
 				this.body = body;
 				if (query != null) {
 					this.pathAndQuery = path + "?" + query;
 				} else {
 					this.pathAndQuery = path;
+				}
+				headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
+
+				if (body.getType() == Type.MARSHALL) {
+					HttlBodyMarshaller marshaller = sender.getConfig().getMarshaller().supports(this);
+					if (marshaller == null) {
+						throw new HttlRequestException("Marshaller not found for: " + this + " " + contentType);
+					}
 				}
 
 			} else if (query != null) {
@@ -144,8 +154,9 @@ public class HttlRequest implements Serializable {
 				//no body & no query - Content-Type type needed
 				this.body = null;
 				this.pathAndQuery = path;
-
 			}
+			headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
+
 		} else { // GET, HEAD, ...
 			if (body != null) {
 				throw new HttlRequestException("Method " + method + " cannot have body: " + this);
@@ -156,10 +167,6 @@ public class HttlRequest implements Serializable {
 			} else {
 				this.pathAndQuery = path;
 			}
-		}
-
-		if (this.contentType[0] != null) {
-			headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
 		}
 
 		this.readTimeoutMillis = readTimeoutMillis;

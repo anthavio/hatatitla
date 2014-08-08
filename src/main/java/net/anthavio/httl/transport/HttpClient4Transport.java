@@ -166,7 +166,7 @@ public class HttpClient4Transport implements HttlTransport {
 			HttpEntity entity;
 			switch (body.getType()) {
 			case MARSHALL:
-				entity = new ObjectHttpEntity(body.getPayload(), Charset.forName(request.getCharset()), body.getMarshaller());
+				entity = new ObjectHttpEntity(body.getPayload(), Charset.forName(request.getCharset()), config.getMarshaller());
 				break;
 			case STRING:
 				entity = new StringEntity((String) body.getPayload(), request.getCharset());

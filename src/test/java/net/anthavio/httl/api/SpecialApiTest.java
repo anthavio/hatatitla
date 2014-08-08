@@ -5,11 +5,11 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Date;
 
-import net.anthavio.httl.HttlBuilderInterceptor;
+import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionInterceptor;
-import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponse;
@@ -41,7 +41,7 @@ public class SpecialApiTest {
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 
 		SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
-		String json = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/json"), bean);
+		String json = Marshallers.marshall(sender.getConfig().getMarshaller(), bean);
 		// When
 		MockBuilderInterceptor bldinc = new MockBuilderInterceptor();
 		MockExecutionInterceptor exeinc = new MockExecutionInterceptor();
@@ -175,6 +175,11 @@ public class SpecialApiTest {
 				stream.write(((SomeBodyBean) requestBody).getName().getBytes("utf-8"));
 			}
 
+			@Override
+			public HttlBodyMarshaller supports(HttlRequest request) {
+				return this;
+			}
+
 		};
 		String returned = api.marshaller(marshaller, bean);
 
@@ -186,7 +191,7 @@ public class SpecialApiTest {
 	static interface SpecialApi {
 
 		@RestCall("POST /intercept")
-		String intercept(@RestBody("application/json") SomeBodyBean bean, HttlBuilderInterceptor builderInterceptor,
+		String intercept(@RestBody("application/json") SomeBodyBean bean, HttlBuilderVisitor builderInterceptor,
 				HttlExecutionInterceptor executionInterceptor);
 
 		@RestCall("POST /extractor")
@@ -205,10 +210,10 @@ public class SpecialApiTest {
 		@RestCall("POST /everything")
 		SomeBodyBean everything(@RestVar(name = "page", setter = PageableSetter.class) Pageable pager,
 				HttlBodyMarshaller marshaller, @RestBody("application/json") Object body, HttlResponseExtractor extractor,
-				HttlBuilderInterceptor builderInterceptor, HttlExecutionInterceptor executionInterceptor);
+				HttlBuilderVisitor builderInterceptor, HttlExecutionInterceptor executionInterceptor);
 	}
 
-	static class MockBuilderInterceptor implements HttlBuilderInterceptor {
+	static class MockBuilderInterceptor implements HttlBuilderVisitor {
 
 		private HttlRequestBuilder builder;
 
@@ -217,7 +222,7 @@ public class SpecialApiTest {
 		}
 
 		@Override
-		public void onBuild(HttlRequestBuilder<?> builder) {
+		public void visit(HttlRequestBuilder<?> builder) {
 			builder.param("dynamic", "value");
 			this.builder = builder;
 		}

@@ -1,5 +1,8 @@
 package net.anthavio.httl.auth;
 
+import net.anthavio.httl.HttlBuilderVisitor;
+import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
+import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
@@ -31,6 +34,22 @@ public class OAuth2 {
 
 	public static OAuth2Builder Builder(HttlSender sender) {
 		return new OAuth2Builder(sender);
+	}
+
+	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, HttlResponseExtractor<T> extractor) {
+		String path = config.getTokenUrl().getPath();
+		String body = getAccessTokenQuery(code);
+		SenderBodyRequestBuilder builder = sender.POST(path).body(body, "application/x-www-form-urlencoded");
+		visitor.visit(builder);
+		return builder.extract(extractor).getBody();
+	}
+
+	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, Class<T> tokenClass) {
+		String path = config.getTokenUrl().getPath();
+		String body = getAccessTokenQuery(code);
+		SenderBodyRequestBuilder builder = sender.POST(path).body(body, "application/x-www-form-urlencoded");
+		visitor.visit(builder);
+		return builder.extract(tokenClass).getBody();
 	}
 
 	public <T> T getAccessToken(String code, Class<T> tokenClass) {

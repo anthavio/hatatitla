@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.anthavio.httl.HttlBuilderInterceptor;
+import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionInterceptor;
 import net.anthavio.httl.HttlBodyMarshaller;
@@ -301,8 +301,8 @@ public class HttlApiBuilder {
 			String name;
 			ApiVarMeta meta;
 			// interceptors/marshallers/extractors first - they need no annotation with name
-			if (HttlBuilderInterceptor.class.isAssignableFrom(type)) {
-				name = "#" + HttlBuilderInterceptor.class.getSimpleName() + "-" + i;
+			if (HttlBuilderVisitor.class.isAssignableFrom(type)) {
+				name = "#" + HttlBuilderVisitor.class.getSimpleName() + "-" + i;
 				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.BLD_INTERCEPTOR);
 				metaList.add(meta);
 
