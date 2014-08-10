@@ -8,7 +8,7 @@ import net.anthavio.httl.HttlBodyUnmarshaller;
  * @author martin.vanek
  *
  */
-public class Defaults {
+public class OptinalLibs {
 
 	//private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -22,25 +22,25 @@ public class Defaults {
 
 	private static boolean isGson = isClassPresent("com.google.gson.Gson");
 
-	public static HttlBodyUnmarshaller getDefaultUnmarshaller(String mediaType) {
-		if (mediaType.equals("application/json")) {
-			return getDefaultJsonUnmarshaller();
-		} else if (mediaType.equals("application/xml")) {
-			return getDefaultXmlUnmarshaller();
+	public static HttlBodyUnmarshaller findUnmarshaller(String mediaType) {
+		if (mediaType.contains("json")) {
+			return findJsonUnmarshaller();
+		} else if (mediaType.contains("xml")) {
+			return findXmlUnmarshaller();
 		}
 		return null;
 	}
 
-	public static HttlBodyMarshaller getDefaultMarshaller(String mediaType) {
-		if (mediaType.equals("application/json")) {
-			return getDefaultJsonMarshaller();
-		} else if (mediaType.equals("application/xml")) {
-			return getDefaultXmlMarshaller();
+	public static HttlBodyMarshaller findMarshaller(String mediaType) {
+		if (mediaType.contains("json")) {
+			return findJsonMarshaller();
+		} else if (mediaType.contains("xml")) {
+			return findXmlMarshaller();
 		}
 		return null;
 	}
 
-	public static HttlBodyMarshaller getDefaultJsonMarshaller() {
+	public static HttlBodyMarshaller findJsonMarshaller() {
 		if (isJackson2) {
 			return new Jackson2Marshaller();
 		} else if (isJackson1) {
@@ -51,7 +51,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static HttlBodyUnmarshaller getDefaultJsonUnmarshaller() {
+	public static HttlBodyUnmarshaller findJsonUnmarshaller() {
 		if (isJackson2) {
 			return new Jackson2Unmarshaller();
 		} else if (isJackson1) {
@@ -62,7 +62,7 @@ public class Defaults {
 		return null;
 	}
 
-	private static HttlBodyMarshaller getDefaultXmlMarshaller() {
+	private static HttlBodyMarshaller findXmlMarshaller() {
 		if (isSimpleXml) {
 			return new SimpleXmlMarshaller();
 		} else if (isJaxbXml) {
@@ -71,7 +71,7 @@ public class Defaults {
 		return null;
 	}
 
-	public static HttlBodyUnmarshaller getDefaultXmlUnmarshaller() {
+	public static HttlBodyUnmarshaller findXmlUnmarshaller() {
 		if (isSimpleXml) {
 			return new SimpleXmlUnmarshaller();
 		} else if (isJaxbXml) {

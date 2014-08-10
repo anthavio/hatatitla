@@ -94,7 +94,8 @@ public class MockTransport implements HttlTransport {
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					config.getMarshaller().write(body.getPayload(), baos, Charset.forName(request.getCharset()));
+					config.getMarshaller().supports(request)
+							.write(body.getPayload(), baos, Charset.forName(request.getCharset()));
 					response = new MockResponse(request, 200, "OK", request.getHeaders(), baos.toByteArray());
 					break;
 				case STRING:

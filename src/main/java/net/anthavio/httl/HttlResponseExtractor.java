@@ -13,7 +13,7 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  */
 public interface HttlResponseExtractor<T> {
 
-	public static StringExtractor STRING = new StringExtractor();
+	public static StringExtractor STRING = new StringExtractor(200, 299);
 
 	public HttlResponseExtractor<T> supports(HttlResponse response);
 
@@ -63,6 +63,14 @@ public interface HttlResponseExtractor<T> {
 	 */
 	public static class StringExtractor implements HttlResponseExtractor<String> {
 
+		private int httpMin;
+		private int httpMax;
+
+		public StringExtractor(int httpMin, int httpMax) {
+			this.httpMin = httpMin;
+			this.httpMax = httpMax;
+		}
+
 		@Override
 		public StringExtractor supports(HttlResponse response) {
 			return this;
@@ -70,16 +78,24 @@ public interface HttlResponseExtractor<T> {
 
 		@Override
 		public String extract(HttlResponse response) throws IOException {
-			if (response.getHttpStatusCode() >= 200 && response.getHttpStatusCode() <= 299) {
-				return HttpHeaderUtil.readAsString(response);
-			} else {
+			if (response.getHttpStatusCode() > httpMax || response.getHttpStatusCode() < httpMin) {
 				throw new HttlStatusException(response);
+			} else {
+				return HttpHeaderUtil.readAsString(response);
 			}
 		}
 
 	};
 
 	public static class BytesExtractor implements HttlResponseExtractor<byte[]> {
+
+		private int httpMin;
+		private int httpMax;
+
+		public BytesExtractor(int httpMin, int httpMax) {
+			this.httpMin = httpMin;
+			this.httpMax = httpMax;
+		}
 
 		@Override
 		public BytesExtractor supports(HttlResponse response) {
@@ -88,10 +104,10 @@ public interface HttlResponseExtractor<T> {
 
 		@Override
 		public byte[] extract(HttlResponse response) throws IOException {
-			if (response.getHttpStatusCode() >= 200 && response.getHttpStatusCode() <= 299) {
-				return HttpHeaderUtil.readAsBytes(response);
-			} else {
+			if (response.getHttpStatusCode() > httpMax || response.getHttpStatusCode() < httpMin) {
 				throw new HttlStatusException(response);
+			} else {
+				return HttpHeaderUtil.readAsBytes(response);
 			}
 		}
 	};

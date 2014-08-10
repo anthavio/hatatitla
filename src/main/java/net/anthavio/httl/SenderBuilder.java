@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
+import net.anthavio.httl.HttlResponseExtractor.BytesExtractor;
+import net.anthavio.httl.HttlResponseExtractor.StringExtractor;
 import net.anthavio.httl.HttlSender.HttpHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.marshall.Marshallers;
-import net.anthavio.httl.marshall.Unmarshallers;
+import net.anthavio.httl.marshall.MediaTypeMarshaller;
+import net.anthavio.httl.marshall.MediaTypeUnmarshaller;
 import net.anthavio.httl.util.Cutils;
 
 import org.slf4j.Logger;
@@ -54,9 +56,13 @@ public abstract class SenderBuilder {
 
 	private final List<HttlBuilderVisitor> builderVisitors = new ArrayList<HttlBuilderVisitor>();
 
-	private HttlBodyMarshaller marshaller = new Marshallers();
+	private HttlBodyMarshaller marshaller = new MediaTypeMarshaller();
 
-	private HttlBodyUnmarshaller unmarshaller = new Unmarshallers();
+	private HttlBodyUnmarshaller unmarshaller = new MediaTypeUnmarshaller();
+
+	private HttlResponseExtractor<String> stringExtractor = new StringExtractor(200, 299);
+
+	private HttlResponseExtractor<byte[]> bytesExtractor = new BytesExtractor(200, 299);
 
 	public SenderBuilder(URL url) {
 		this.url = digHostUrl(url);
@@ -250,28 +256,27 @@ public abstract class SenderBuilder {
 		return this;
 	}
 
-	/**
-	 * Sets RequestBodyMarshaller for specified request mediaType (from Content-Type header)
-	
-	public void setRequestMarshaller(HttlBodyMarshaller marshaller, String mediaType) {
-		marshallers.setMarshaller(marshaller, mediaType);
-	}
-	
-	public HttlBodyMarshaller getRequestMarshaller(String mediaType) {
-		return marshallers.getMarshaller(mediaType);
-	}
-	*/
-	/**
-	 * Sets ResponseUnmarshaller for specified response mediaType (from Content-Type header)
-	public void addResponseUnmarshaller(HttlBodyUnmarshaller unmarshaller, String mediaType) {
-		unmarshallers.addUnmarshaller(unmarshaller, mediaType);
-	}
-	
-	public Marshallers getMarshallers() {
-		return marshallers;
+	public HttlResponseExtractor<String> getStringExtractor() {
+		return stringExtractor;
 	}
 
-	*/
+	public void setStringExtractor(HttlResponseExtractor<String> extractor) {
+		if (extractor == null) {
+			throw new IllegalArgumentException("Null extractor");
+		}
+		this.stringExtractor = extractor;
+	}
+
+	public HttlResponseExtractor<byte[]> getBytesExtractor() {
+		return bytesExtractor;
+	}
+
+	public void setBytesExtractor(HttlResponseExtractor<byte[]> extractor) {
+		if (extractor == null) {
+			throw new IllegalArgumentException("Null extractor");
+		}
+		this.bytesExtractor = extractor;
+	}
 
 	public SenderBuilder addExecutionInterceptor(HttlExecutionInterceptor interceptor) {
 		if (interceptor == null) {

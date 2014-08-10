@@ -16,7 +16,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
-import net.anthavio.httl.marshall.Marshallers;
+import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
 
@@ -41,7 +41,7 @@ public class SpecialApiTest {
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 
 		SomeBodyBean bean = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
-		String json = Marshallers.marshall(sender.getConfig().getMarshaller(), bean);
+		String json = MediaTypeMarshaller.marshall(sender.getConfig().getMarshaller(), bean);
 		// When
 		MockBuilderInterceptor bldinc = new MockBuilderInterceptor();
 		MockExecutionInterceptor exeinc = new MockExecutionInterceptor();

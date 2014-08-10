@@ -153,7 +153,7 @@ public class HttlSender implements SenderOperations, Closeable {
 			if (x instanceof RuntimeException) {
 				throw (RuntimeException) x;
 			} else {
-				throw new HttlProcessingException(x);
+				throw new HttlProcessingException(response, x);
 			}
 		} finally {
 			Cutils.close(response);
@@ -189,17 +189,18 @@ public class HttlSender implements SenderOperations, Closeable {
 	 */
 	public <T> ExtractedResponse<T> extract(HttlResponse response, Type resultType) throws HttlException {
 		try {
-
-			HttlBodyUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
-			if (unmarshaller != null) {
-				Object object = unmarshaller.unmarshall(response, resultType);
-				return new ExtractedResponse<T>(response, (T) object);//XXX this cast may not checked/honored at all!!!
+			Object payload;
+			if (resultType.equals(String.class)) {
+				payload = config.getStringExtractor().extract(response);
+			} else if (resultType.equals(byte[].class)) {
+				payload = config.getBytesExtractor().extract(response);
 			} else {
-				throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: " + resultType);
+				payload = this.unmarshaller.unmarshall(response, resultType);
 			}
+			return new ExtractedResponse<T>(response, (T) payload);//XXX this cast is erased!
 
 		} catch (IOException iox) {
-			throw new HttlProcessingException(iox);
+			throw new HttlProcessingException(response, iox);
 		} finally {
 			Cutils.close(response);
 		}
@@ -224,21 +225,17 @@ public class HttlSender implements SenderOperations, Closeable {
 			} else { //extractor declared himself unfit for this response
 				Class<T> resultType = (Class<T>) ((ParameterizedType) extractor.getClass().getGenericSuperclass())
 						.getActualTypeArguments()[0];
-				HttlBodyUnmarshaller unmarshaller = this.unmarshaller.supports(response, resultType);
-				if (unmarshaller != null) {
-					Object extract = unmarshaller.unmarshall(response, resultType);
-					if (extract instanceof RuntimeException) {
-						throw (RuntimeException) extract;
-					} else if (extract instanceof Exception) {
-						throw new HttlProcessingException((Exception) extract);
-					}
+				Object extract = unmarshaller.unmarshall(response, resultType);
+				if (extract instanceof RuntimeException) {
+					throw (RuntimeException) extract;
+				} else if (extract instanceof Exception) {
+					throw new HttlProcessingException(response, (Exception) extract);
 				} else {
-					throw new HttlProcessingException("No Unmarshaller for response: " + response + " return type: " + resultType);
+					return new ExtractedResponse<T>(response, (T) extract);
 				}
 			}
-			return null;
 		} catch (IOException iox) {
-			throw new HttlProcessingException(iox);
+			throw new HttlProcessingException(response, iox);
 		} finally {
 			Cutils.close(response);
 		}

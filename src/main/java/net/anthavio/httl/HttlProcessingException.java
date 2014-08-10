@@ -11,11 +11,11 @@ public class HttlProcessingException extends HttlException {
 
 	private static final long serialVersionUID = 1L;
 
-	public HttlProcessingException(Exception x) {
+	public HttlProcessingException(HttlResponse response, Exception x) {
 		super(x);
 	}
 
-	public HttlProcessingException(String message) {
+	public HttlProcessingException(HttlResponse response, String message) {
 		super(message);
 	}
 

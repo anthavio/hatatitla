@@ -5,12 +5,17 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 
 /**
+ * Work like Factory (supports) and Marshaller (write) in the same time
  * 
  * @author martin.vanek
  *
  */
 public interface HttlBodyMarshaller {
 
+	/**
+	 * Kind of lookup method
+	 * @return null or instance that will marshall request
+	 */
 	public abstract HttlBodyMarshaller supports(HttlRequest request);
 
 	/**

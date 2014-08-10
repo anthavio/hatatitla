@@ -9,7 +9,7 @@ import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.marshall.Jackson2Unmarshaller;
 import net.anthavio.httl.marshall.JaxbMarshaller;
 import net.anthavio.httl.marshall.JaxbUnmarshaller;
-import net.anthavio.httl.marshall.Marshallers;
+import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.marshall.SimpleXmlMarshaller;
 import net.anthavio.httl.marshall.SimpleXmlUnmarshaller;
 import net.anthavio.httl.util.MockResponse;
@@ -39,7 +39,7 @@ public class OptionalLibTest {
 
 		SimpleXmlMarshaller marshaller = new SimpleXmlMarshaller(persister);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String xml = Marshallers.marshall(marshaller, bean);
+		String xml = MediaTypeMarshaller.marshall(marshaller, bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
@@ -57,7 +57,7 @@ public class OptionalLibTest {
 
 		Jackson2Marshaller marshaller = new Jackson2Marshaller(mapper);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String xml = Marshallers.marshall(marshaller, bean);
+		String xml = MediaTypeMarshaller.marshall(marshaller, bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
@@ -76,7 +76,7 @@ public class OptionalLibTest {
 
 		Jackson1Marshaller marshaller = new Jackson1Marshaller(mapper);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String payload = Marshallers.marshall(marshaller, bean);
+		String payload = MediaTypeMarshaller.marshall(marshaller, bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", payload);
 
@@ -96,7 +96,7 @@ public class OptionalLibTest {
 
 		GsonMarshaller marshaller = new GsonMarshaller(gson);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String payload = Marshallers.marshall(marshaller, bean);
+		String payload = MediaTypeMarshaller.marshall(marshaller, bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", payload);
 

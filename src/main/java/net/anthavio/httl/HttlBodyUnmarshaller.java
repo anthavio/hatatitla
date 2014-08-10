@@ -13,11 +13,6 @@ import net.anthavio.httl.util.GenericType;
  */
 public interface HttlBodyUnmarshaller {
 
-	/**
-	 * @return null or instance that will unmarshall response to returnType
-	 */
-	public abstract HttlBodyUnmarshaller supports(HttlResponse response, Type returnType);
-
 	public abstract Object unmarshall(HttlResponse response, Type returnType) throws IOException;
 
 	/**

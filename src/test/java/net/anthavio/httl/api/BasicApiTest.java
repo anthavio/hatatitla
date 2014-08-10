@@ -11,7 +11,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
-import net.anthavio.httl.marshall.Marshallers;
+import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
@@ -87,7 +87,7 @@ public class BasicApiTest {
 		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
 
 		final SomeBodyBean beanIn = new SomeBodyBean("Kvído Vymětal", new Date(), 369);
-		final String jsonbean = Marshallers.marshall(jrm, beanIn);
+		final String jsonbean = MediaTypeMarshaller.marshall(jrm, beanIn);
 
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
 

@@ -25,7 +25,7 @@ public class HttlStatusException extends HttlException {
 			this.responseBody = HttpHeaderUtil.readAsString(response);
 		} catch (IOException iox) {
 			//XXX maybe log some warning...
-			throw new HttlProcessingException(iox);
+			throw new HttlProcessingException(response, iox);
 		} finally {
 			response.close();
 		}

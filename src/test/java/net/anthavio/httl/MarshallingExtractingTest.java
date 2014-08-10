@@ -123,7 +123,7 @@ public class MarshallingExtractingTest {
 		// When - http 500 
 		try {
 			sender.GET("/").param("dostatus", 500).extract(String.class);
-			Assertions.fail("previoust statement should throw ResponseStatusException");
+			Assertions.fail("Previous statement should throw ResponseStatusException");
 		} catch (HttlStatusException rsx) {
 			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(500);
 			Assertions.assertThat(rsx.getResponseBody()).contains("Dostatus 500");

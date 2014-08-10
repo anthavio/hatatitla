@@ -10,6 +10,8 @@ import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.Parameters;
 import net.anthavio.httl.marshall.GsonUnmarshaller;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
+import net.anthavio.httl.marshall.MediaTypeMarshaller;
+import net.anthavio.httl.marshall.SimpleXmlMarshaller;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
 
@@ -82,8 +84,12 @@ public class ComplexApiTest {
 	@Test
 	public void testSomeApiPostBody() {
 		//Given
-		Jackson2Marshaller marshaller = new Jackson2Marshaller(new ObjectMapper().configure(
+		Jackson2Marshaller jsonMarshaller = new Jackson2Marshaller(new ObjectMapper().configure(
 				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
+
+		MediaTypeMarshaller marshaller = new MediaTypeMarshaller();
+		marshaller.setMarshaller(jsonMarshaller, "application/json");
+		marshaller.setMarshaller(new SimpleXmlMarshaller(), "application/xml");
 		HttlSender sender = new MockSenderConfig().setMarshaller(marshaller).build();
 
 		SomeApi api = HttlApiBuilder.build(SomeApi.class, sender);

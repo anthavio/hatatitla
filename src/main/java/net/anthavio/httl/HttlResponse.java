@@ -42,19 +42,6 @@ public abstract class HttlResponse implements Closeable, Serializable {
 		this.httpStatusCode = httpCode;
 		this.httpStatusMessage = message;
 		this.headers = headers;
-		String responseEncoding = headers.getFirst("Content-Encoding");
-		if (stream != null && responseEncoding != null) {
-			if (responseEncoding.indexOf("gzip") != -1) {
-				try {
-					stream = new GZIPInputStream(stream);
-				} catch (IOException iox) {
-					throw new HttlProcessingException(iox);
-				}
-			} else if (responseEncoding.indexOf("deflate") != -1) {
-				stream = new InflaterInputStream(stream);
-			}
-		}
-		this.stream = stream; //null for 304 Not Modified
 
 		String contentType = headers.getFirst("Content-Type");
 		if (contentType != null) {
@@ -65,6 +52,21 @@ public abstract class HttlResponse implements Closeable, Serializable {
 			this.mediaType = null;
 			this.encoding = "utf-8";
 		}
+
+		String responseEncoding = headers.getFirst("Content-Encoding");
+		if (stream != null && responseEncoding != null) {
+			if (responseEncoding.indexOf("gzip") != -1) {
+				try {
+					stream = new GZIPInputStream(stream);
+				} catch (IOException iox) {
+					throw new HttlProcessingException(this, iox);
+				}
+			} else if (responseEncoding.indexOf("deflate") != -1) {
+				stream = new InflaterInputStream(stream);
+			}
+		}
+		this.stream = stream; //null for 304 Not Modified
+
 	}
 
 	public HttlRequest getRequest() {
@@ -134,7 +136,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 	@Override
 	public String toString() {
-		return "SenderResponse {" + httpStatusCode + ", " + httpStatusMessage + ", " + mediaType + "}";
+		return "HttlResponse {" + httpStatusCode + ", " + httpStatusMessage + ", " + mediaType + "}";
 	}
 
 }
