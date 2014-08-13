@@ -22,7 +22,7 @@ import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.SenderBuilder;
 import net.anthavio.httl.util.ReaderInputStream;
@@ -106,7 +106,7 @@ public class HttpUrlTransport implements HttlTransport {
 		connection.setDoOutput(request.getBody() != null); //connection.getOutputStream() will be called
 		connection.setDoInput(true); //connection.getInputStream() will be called
 
-		HttpHeaders headers = request.getHeaders();
+		HttlHeaders headers = request.getHeaders();
 
 		if (headers != null && headers.size() > 0) {
 			for (String name : headers) {
@@ -153,8 +153,7 @@ public class HttpUrlTransport implements HttlTransport {
 				HttlBody body = request.getBody();
 				switch (body.getType()) {
 				case MARSHALL:
-					config.getMarshaller().write(body.getPayload(), connection.getOutputStream(),
-							Charset.forName(request.getCharset()));
+					config.getMarshaller().marshall(request, connection.getOutputStream());
 					break;
 				case STRING:
 					String string = (String) body.getPayload();
@@ -193,7 +192,7 @@ public class HttpUrlTransport implements HttlTransport {
 		if (this.logger.isDebugEnabled()) {
 			logHeaders("Response", headerFields);
 		}
-		HttpHeaders outHeaders = new HttpHeaders();
+		HttlHeaders outHeaders = new HttlHeaders();
 		for (Entry<String, List<String>> header : headerFields.entrySet()) {
 			String hname = header.getKey();
 			if (hname != null) { //http status is returned with null header name

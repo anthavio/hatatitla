@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 
 import org.apache.http.HttpResponse;
 
@@ -20,7 +20,7 @@ public class HttpClient4Response extends HttlResponse {
 
 	private transient HttpResponse httpResponse; //non serializable
 
-	public HttpClient4Response(HttlRequest request, int code, String message, HttpHeaders headers, InputStream stream,
+	public HttpClient4Response(HttlRequest request, int code, String message, HttlHeaders headers, InputStream stream,
 			HttpResponse httpResponse) throws IOException {
 		super(request, code, message, headers, stream);
 		if (httpResponse == null) {

@@ -20,11 +20,11 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.JokerServer;
-import net.anthavio.httl.HttlResponseExtractor;
-import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
+import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.transport.HttpClient4Config;
 
 import org.apache.commons.codec.binary.Base64;
@@ -158,14 +158,14 @@ public class CachingSenderTest {
 
 		//System.out.println("Doing initial request");
 
-		ExtractedResponse<String> extract1 = csender.extract(request, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> extract1 = csender.extract(request, HttlStringExtractor.DEFAULT);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1);//count + 1
 		assertThat(extract1.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract1.getResponse()).isInstanceOf(CachedResponse.class); //is cached
 
 		//System.out.println("Going to the cache");
 
-		ExtractedResponse<String> extract2 = csender.extract(request, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> extract2 = csender.extract(request, HttlStringExtractor.DEFAULT);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1); //count is same as before
 		assertThat(extract2.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract2.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -174,13 +174,13 @@ public class CachingSenderTest {
 
 		Thread.sleep(1300); //let the cache entry expire
 
-		ExtractedResponse<String> extract3 = csender.extract(request, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> extract3 = csender.extract(request, HttlStringExtractor.DEFAULT);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2
 		assertThat(extract3.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract3.getResponse()).isInstanceOf(CachedResponse.class); //is cached
 		assertThat(extract3.getResponse()).isNotSameAs(extract1.getResponse()); //not equal anymore!
 
-		ExtractedResponse<String> extract4 = csender.extract(request, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> extract4 = csender.extract(request, HttlStringExtractor.DEFAULT);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2
 		assertThat(extract4.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract4.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -201,7 +201,7 @@ public class CachingSenderTest {
 
 		//http headers will use ETag
 		HttlRequest request1 = csender.getSender().GET("/").param("doetag").build();
-		ExtractedResponse<String> extract1 = csender.extract(request1, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> extract1 = csender.extract(request1, HttlStringExtractor.DEFAULT);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1);//count + 1
 		assertThat(extract1.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract1.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -211,7 +211,7 @@ public class CachingSenderTest {
 		Thread.sleep(100); //
 
 		HttlRequest request2 = csender.getSender().GET("/").param("doetag").build();
-		ExtractedResponse<String> extract2 = csender.extract(request2, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> extract2 = csender.extract(request2, HttlStringExtractor.DEFAULT);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2 (304 NOT_MODIFIED)
 		assertThat(extract2.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract2.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -241,10 +241,10 @@ public class CachingSenderTest {
 						"AAAAAAITEghMBAOK0zAh6obLGcPm5FuXt3OlqMWPmgudEF9KxrVBiNt6AjccUFCSoZAxRr8ZBvGZBi9sOdZBxebQZBJzVMwRKzIWCLZCjzxGV0cvAMkDjXu")
 				.build();
 		//request.addParameter("fields", "id,name");
-		ExtractedResponse<String> response = csender.extract(request, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> response = csender.extract(request, HttlStringExtractor.DEFAULT);
 		assertThat(response.getResponse()).isInstanceOf(CachedResponse.class);
 
-		ExtractedResponse<String> response2 = csender.extract(request, HttlResponseExtractor.STRING);
+		ExtractedResponse<String> response2 = csender.extract(request, HttlStringExtractor.DEFAULT);
 		assertThat(response2.getResponse()).isInstanceOf(CachedResponse.class);
 		assertThat(response2.getResponse()).isEqualTo(response.getResponse());
 		System.out.println(response.getBody());

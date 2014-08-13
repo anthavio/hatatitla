@@ -1,5 +1,9 @@
 package net.anthavio.httl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -8,7 +12,7 @@ import java.net.URLEncoder;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody.Type;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
@@ -53,13 +57,13 @@ public class HttlRequest implements Serializable {
 
 	private final String pathAndQuery; // path + query
 
-	private final HttpHeaders headers;
+	private final HttlHeaders headers;
 
-	protected final String[] contentType;
+	private final String[] contentType;
 
 	private final Parameters parameters;
 
-	private final HttlBody body;
+	private HttlBody body;
 
 	private final Integer readTimeoutMillis; //millis - override config value
 
@@ -67,7 +71,7 @@ public class HttlRequest implements Serializable {
 		this(sender, method, urlPath, null, null, null, null);
 	}
 
-	public HttlRequest(HttlSender sender, Method method, String urlPath, Parameters parameters, HttpHeaders headers,
+	public HttlRequest(HttlSender sender, Method method, String urlPath, Parameters parameters, HttlHeaders headers,
 			HttlBody body, Integer readTimeoutMillis) {
 
 		if (sender == null) {
@@ -101,10 +105,10 @@ public class HttlRequest implements Serializable {
 		if (headers != null) {
 			this.headers = headers;
 		} else {
-			this.headers = new HttpHeaders();
+			this.headers = new HttlHeaders();
 		}
 
-		HttpHeaders defaultHeaders = config.getDefaultHeaders();
+		HttlHeaders defaultHeaders = config.getDefaultHeaders();
 		for (String name : defaultHeaders) {
 			if (headers.get(name) == null) {
 				headers.set(name, defaultHeaders.get(name));
@@ -128,18 +132,31 @@ public class HttlRequest implements Serializable {
 					throw new HttlRequestException("Request with body must have media type");
 				}
 
-				this.body = body;
 				if (query != null) {
 					this.pathAndQuery = path + "?" + query;
 				} else {
 					this.pathAndQuery = path;
 				}
+				//Set header before asking for Marshaller
 				headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
 
-				if (body.getType() == Type.MARSHALL) {
-					HttlBodyMarshaller marshaller = sender.getConfig().getMarshaller().supports(this);
-					if (marshaller == null) {
-						throw new HttlRequestException("Marshaller not found for: " + this + " " + contentType);
+				this.body = body;
+				if (body.isCache()) {
+					try {
+						if (body.getType() == Type.MARSHALL) {
+							ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+							sender.getConfig().getMarshaller().marshall(this, baos);
+							this.body = new HttlBody(baos.toByteArray());
+						} else if (body.getType() == Type.STREAM) {
+							byte[] bytes = HttpHeaderUtil.readAsBytes((InputStream) body.getPayload(), HttpHeaderUtil.KILO16);
+							this.body = new HttlBody(bytes);
+						} else if (body.getType() == Type.READER) {
+							String string = HttpHeaderUtil.readAsString((Reader) body.getPayload(), HttpHeaderUtil.KILO16);
+							this.body = new HttlBody(string);
+						}
+					} catch (IOException iox) {
+						throw new HttlRequestException(iox);
 					}
 				}
 
@@ -150,12 +167,13 @@ public class HttlRequest implements Serializable {
 				}
 				this.body = new HttlBody(query);
 				this.pathAndQuery = path;
+				headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
+
 			} else {
-				//no body & no query - Content-Type type needed
+				//no body & no query - Content-Type not needed
 				this.body = null;
 				this.pathAndQuery = path;
 			}
-			headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
 
 		} else { // GET, HEAD, ...
 			if (body != null) {
@@ -217,7 +235,7 @@ public class HttlRequest implements Serializable {
 		return body;
 	}
 
-	public HttpHeaders getHeaders() {
+	public HttlHeaders getHeaders() {
 		return this.headers;
 	}
 
@@ -298,7 +316,7 @@ public class HttlRequest implements Serializable {
 		}
 	}
 
-	public static String[] digContentType(HttpHeaders headers, SenderBuilder config) {
+	public static String[] digContentType(HttlHeaders headers, SenderBuilder config) {
 		return digContentType(headers.getFirst(HttlConstants.Content_Type),
 				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getEncoding());
 	}
@@ -436,14 +454,11 @@ public class HttlRequest implements Serializable {
 		StringBuilder sb = new StringBuilder();
 		sb.append(method);
 		sb.append(' ');
-		if (sender != null) {
-			sb.append(sender.getConfig().getUrl() + pathAndQuery);
-		} else {
-			sb.append(pathAndQuery);
+		sb.append(getUrl());
+		if (parameters != null) {
+			sb.append(' ');
+			sb.append(parameters);
 		}
-		sb.append(' ');
-		sb.append(parameters);
 		return sb.toString();
 	}
-
 }

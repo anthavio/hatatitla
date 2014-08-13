@@ -3,10 +3,10 @@ package net.anthavio.httl.marshall;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -36,12 +36,14 @@ public class Jackson1Marshaller implements HttlBodyMarshaller {
 	}
 
 	@Override
-	public Jackson1Marshaller supports(HttlRequest request) {
-		return request.getMediaType().contains("json") ? this : null;
+	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
+		if (!request.getMediaType().contains("json")) {
+			throw new HttlRequestException("Cannot mashall into " + request.getMediaType());
+		}
+		write(request.getBody().getPayload(), stream, request.getCharset());
 	}
 
-	@Override
-	public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
+	public void write(Object requestBody, OutputStream stream, String charset) throws IOException {
 		//seems to be impossible to instruct Jackson to use another character encoding
 		OutputStreamWriter writer = new OutputStreamWriter(stream, charset);
 		objectMapper.writeValue(writer, requestBody);

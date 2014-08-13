@@ -93,15 +93,15 @@ public class ComplexApiTest {
 		HttlSender sender = new MockSenderConfig().setMarshaller(marshaller).build();
 
 		SomeApi api = HttlApiBuilder.build(SomeApi.class, sender);
-		SomeBodyBean input = new SomeBodyBean("Kvído Vymětal", new Date(), 999);
+		TestBodyBean input = new TestBodyBean("Kvído Vymětal", new Date(), 999);
 
 		// When
-		SomeBodyBean asXml = api.postBody("application/xml", "application/xml", input);
+		TestBodyBean asXml = api.postBody("application/xml", "application/xml", input);
 		// Then
 		Assertions.assertThat(asXml).isEqualToComparingFieldByField(input);
 
 		// When
-		SomeBodyBean asJson = api.postBody("application/json", "application/json", input);
+		TestBodyBean asJson = api.postBody("application/json", "application/json", input);
 		// Then
 		Assertions.assertThat(asJson).isEqualToComparingFieldByField(input);
 	}
@@ -147,8 +147,8 @@ public class ComplexApiTest {
 
 		@RestCall("POST /something")
 		@RestHeaders({ "Content-Type: {content-type}", "Accept: {accept}" })
-		public SomeBodyBean postBody(@RestVar("content-type") String contentType, @RestVar("accept") String accept,
-				@RestBody SomeBodyBean bean);
+		public TestBodyBean postBody(@RestVar("content-type") String contentType, @RestVar("accept") String accept,
+				@RestBody TestBodyBean bean);
 
 		@RestCall("GET /repos/{owner}/{repo}/contributors")
 		List<Contributor> contributors(@RestVar("owner") String owner, @RestVar("repo") String repo);
@@ -160,7 +160,7 @@ public class ComplexApiTest {
 		int contributions;
 	}
 
-	static class SomeBodyBean {
+	static class TestBodyBean {
 
 		private String name;
 
@@ -168,11 +168,11 @@ public class ComplexApiTest {
 
 		private Integer number;
 
-		public SomeBodyBean() {
+		public TestBodyBean() {
 			//jaxb
 		}
 
-		public SomeBodyBean(String name, Date date, Integer number) {
+		public TestBodyBean(String name, Date date, Integer number) {
 			this.name = name;
 			this.date = date;
 			this.number = number;
@@ -220,7 +220,7 @@ public class ComplexApiTest {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			SomeBodyBean other = (SomeBodyBean) obj;
+			TestBodyBean other = (TestBodyBean) obj;
 			if (date == null) {
 				if (other.date != null)
 					return false;

@@ -40,6 +40,7 @@ public class HttlException extends RuntimeException {
 	@Override
 	public void printStackTrace() {
 		if (delegate != null) {
+			System.out.println(this);
 			delegate.printStackTrace();
 		} else {
 			super.printStackTrace();
@@ -49,6 +50,7 @@ public class HttlException extends RuntimeException {
 	@Override
 	public void printStackTrace(PrintStream s) {
 		if (delegate != null) {
+			s.println(this);
 			delegate.printStackTrace(s);
 		} else {
 			super.printStackTrace(s);
@@ -58,6 +60,7 @@ public class HttlException extends RuntimeException {
 	@Override
 	public void printStackTrace(PrintWriter s) {
 		if (delegate != null) {
+			s.println(this);
 			delegate.printStackTrace(s);
 		} else {
 			super.printStackTrace(s);

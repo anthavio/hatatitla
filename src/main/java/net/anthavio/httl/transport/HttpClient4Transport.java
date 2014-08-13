@@ -1,20 +1,17 @@
 package net.anthavio.httl.transport;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
-import java.nio.charset.Charset;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -128,7 +125,7 @@ public class HttpClient4Transport implements HttlTransport {
 			throw new IllegalArgumentException("Unsupported method " + request.getMethod());
 		}
 
-		HttpHeaders headers = request.getHeaders();
+		HttlHeaders headers = request.getHeaders();
 		if (headers != null && headers.size() != 0) {
 			for (String name : headers) {
 				List<String> values = headers.get(name);
@@ -145,7 +142,7 @@ public class HttpClient4Transport implements HttlTransport {
 		HttpResponse httpResponse = call(httpRequest);
 
 		Header[] responseHeaders = httpResponse.getAllHeaders();
-		HttpHeaders outHeaders = new HttpHeaders();
+		HttlHeaders outHeaders = new HttlHeaders();
 		for (Header header : responseHeaders) {
 			outHeaders.add(header.getName(), header.getValue());
 		}
@@ -166,7 +163,7 @@ public class HttpClient4Transport implements HttlTransport {
 			HttpEntity entity;
 			switch (body.getType()) {
 			case MARSHALL:
-				entity = new ObjectHttpEntity(body.getPayload(), Charset.forName(request.getCharset()), config.getMarshaller());
+				entity = new MarshallableHttpEntity(request, config.getMarshaller());
 				break;
 			case STRING:
 				entity = new StringEntity((String) body.getPayload(), request.getCharset());
@@ -225,50 +222,34 @@ public class HttpClient4Transport implements HttlTransport {
 		}
 	}
 
-	private static class ObjectHttpEntity extends AbstractHttpEntity {
-
-		private final Object objectBody;
-
-		private final Charset charset;
-
-		private byte[] content;
+	private static class MarshallableHttpEntity extends AbstractHttpEntity {
 
 		private final HttlBodyMarshaller marshaller;
+		private final HttlRequest request;
 
-		private ObjectHttpEntity(Object objectBody, Charset charset, HttlBodyMarshaller marshaller) throws IOException {
-			this.objectBody = objectBody;
+		private MarshallableHttpEntity(HttlRequest request, HttlBodyMarshaller marshaller) throws IOException {
+			this.request = request;
 			this.marshaller = marshaller;
-			this.charset = charset;
-
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			marshaller.write(objectBody, baos, charset);
-			this.content = baos.toByteArray();
 		}
 
 		@Override
 		public boolean isRepeatable() {
-			return this.content != null;
+			return true;
 		}
 
 		@Override
 		public long getContentLength() {
-			return this.content != null ? content.length : -1;
+			return -1;
 		}
 
 		@Override
 		public InputStream getContent() throws IOException, IllegalStateException {
-			return new ByteArrayInputStream(content);
+			throw new IllegalStateException("Only writeTo supported");
 		}
 
 		@Override
-		public void writeTo(OutputStream outstream) throws IOException {
-			if (this.content != null) {
-				outstream.write(content, 0, content.length);
-				outstream.flush();
-			} else {
-				//streaming
-				marshaller.write(objectBody, outstream, charset);
-			}
+		public void writeTo(OutputStream stream) throws IOException {
+			marshaller.marshall(request, stream);
 		}
 
 		@Override

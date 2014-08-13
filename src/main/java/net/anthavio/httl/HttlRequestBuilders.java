@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
@@ -42,7 +42,7 @@ public class HttlRequestBuilders {
 
 		protected final String urlPath;
 
-		protected final HttpHeaders headers;
+		protected final HttlHeaders headers;
 
 		protected final Parameters parameters;
 
@@ -56,7 +56,7 @@ public class HttlRequestBuilders {
 			}
 			this.sender = sender;
 
-			this.headers = new HttpHeaders();
+			this.headers = new HttlHeaders();
 			this.parameters = new Parameters();
 
 			if (method == null) {
@@ -80,7 +80,7 @@ public class HttlRequestBuilders {
 			return method;
 		}
 
-		public HttpHeaders getHeaders() {
+		public HttlHeaders getHeaders() {
 			return headers;
 		}
 
@@ -456,25 +456,24 @@ public class HttlRequestBuilders {
 		protected HttlBody body;
 
 		/**
-		 * Set Object as request body (entity)
-		 * Object will be marshalled/serialized as payload
+		 * payload can be byte[], String, InputStream, Reader or anything that can be marshalled
 		 * 
 		 */
-		public SenderBodyRequestBuilder body(Object body, String mediaType) {
-			if (body == null) {
+		public SenderBodyRequestBuilder body(Object payload, String mediaType, boolean cache) {
+			if (payload == null) {
 				throw new HttlRequestException("Body object is null");
 			}
-			if (body instanceof InputStream) {
-				this.body = new HttlBody((InputStream) body);
+			if (payload instanceof InputStream) {
+				this.body = new HttlBody((InputStream) payload, cache);
 
-			} else if (body instanceof Reader) {
-				this.body = new HttlBody(new ReaderInputStream((Reader) body));
+			} else if (payload instanceof Reader) {
+				this.body = new HttlBody(new ReaderInputStream((Reader) payload), cache);
 
-			} else if (body instanceof String) {
-				this.body = new HttlBody((String) body);
+			} else if (payload instanceof String) {
+				this.body = new HttlBody((String) payload);
 
-			} else if (body instanceof byte[]) {
-				this.body = new HttlBody((byte[]) body);
+			} else if (payload instanceof byte[]) {
+				this.body = new HttlBody((byte[]) payload);
 
 			} else { //marshalling...
 
@@ -486,7 +485,7 @@ public class HttlRequestBuilders {
 				}
 
 				if (mediaType == null) {
-					throw new HttlRequestException("Conten-Type header is missing");
+					throw new HttlRequestException("Content-Type header is missing");
 				}
 
 				int indexOf = mediaType.indexOf(';');
@@ -494,7 +493,7 @@ public class HttlRequestBuilders {
 					mediaType = mediaType.substring(0, indexOf);
 				}
 
-				this.body = new HttlBody(body);
+				this.body = new HttlBody(payload, cache);
 			}
 
 			if (mediaType != null) {
@@ -502,6 +501,10 @@ public class HttlRequestBuilders {
 			}
 
 			return getX();
+		}
+
+		public SenderBodyRequestBuilder body(Object body, String mediaType) {
+			return body(body, mediaType, false);
 		}
 
 		/**

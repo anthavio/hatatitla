@@ -1,6 +1,9 @@
 package net.anthavio.httl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.ByteArrayOutputStream;
+
 import net.anthavio.httl.marshall.GsonMarshaller;
 import net.anthavio.httl.marshall.GsonUnmarshaller;
 import net.anthavio.httl.marshall.Jackson1Marshaller;
@@ -9,7 +12,6 @@ import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.marshall.Jackson2Unmarshaller;
 import net.anthavio.httl.marshall.JaxbMarshaller;
 import net.anthavio.httl.marshall.JaxbUnmarshaller;
-import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.marshall.SimpleXmlMarshaller;
 import net.anthavio.httl.marshall.SimpleXmlUnmarshaller;
 import net.anthavio.httl.util.MockResponse;
@@ -39,7 +41,10 @@ public class OptionalLibTest {
 
 		SimpleXmlMarshaller marshaller = new SimpleXmlMarshaller(persister);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String xml = MediaTypeMarshaller.marshall(marshaller, bean);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		persister.write(bean, baos);
+		String xml = new String(baos.toByteArray(), "utf-8");
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
@@ -57,7 +62,7 @@ public class OptionalLibTest {
 
 		Jackson2Marshaller marshaller = new Jackson2Marshaller(mapper);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String xml = MediaTypeMarshaller.marshall(marshaller, bean);
+		String xml = mapper.writeValueAsString(bean);
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
@@ -76,9 +81,9 @@ public class OptionalLibTest {
 
 		Jackson1Marshaller marshaller = new Jackson1Marshaller(mapper);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String payload = MediaTypeMarshaller.marshall(marshaller, bean);
+		String json = mapper.writeValueAsString(bean);
 
-		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", payload);
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", json);
 
 		Jackson1Unmarshaller extractor = new Jackson1Unmarshaller(mapper);
 
@@ -96,9 +101,10 @@ public class OptionalLibTest {
 
 		GsonMarshaller marshaller = new GsonMarshaller(gson);
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
-		String payload = MediaTypeMarshaller.marshall(marshaller, bean);
 
-		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", payload);
+		String json = gson.toJson(bean);
+
+		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", json);
 
 		GsonUnmarshaller unmarshaller = new GsonUnmarshaller(gson);
 

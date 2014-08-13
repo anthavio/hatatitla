@@ -4,13 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlTransport;
 
 import org.slf4j.Logger;
@@ -94,8 +93,7 @@ public class MockTransport implements HttlTransport {
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					config.getMarshaller().supports(request)
-							.write(body.getPayload(), baos, Charset.forName(request.getCharset()));
+					config.getMarshaller().marshall(request, baos);
 					response = new MockResponse(request, 200, "OK", request.getHeaders(), baos.toByteArray());
 					break;
 				case STRING:
@@ -137,7 +135,7 @@ public class MockTransport implements HttlTransport {
 	 * Set Response returned from doExecute
 	 */
 	public void setStaticResponse(int code, String contentType, String body) {
-		HttpHeaders headers = new HttpHeaders();
+		HttlHeaders headers = new HttlHeaders();
 		headers.set("Content-Type", contentType);
 		this.staticResponse = new MockResponse(null, code, "OK", headers, body);
 	}

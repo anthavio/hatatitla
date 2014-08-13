@@ -8,21 +8,19 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
-import java.nio.charset.Charset;
 import java.util.Map;
 
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
-import net.anthavio.httl.HttlExecutionInterceptor;
-import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
 import net.anthavio.httl.api.HttlApiBuilder.ApiHeaderMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiMethodMeta;
@@ -43,11 +41,11 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 	private final Map<Method, ApiMethodMeta> methodMap;
 
-	private final HttpHeaders headers; //static global headers
+	private final HttlHeaders headers; //static global headers
 
 	private final Parameters params; //static global parameters
 
-	public HttlApiHandler(Class<T> apiInterface, HttlSender sender, HttpHeaders headers, Parameters params,
+	public HttlApiHandler(Class<T> apiInterface, HttlSender sender, HttlHeaders headers, Parameters params,
 			Map<Method, ApiMethodMeta> methods) {
 		this.apiInterface = apiInterface;
 		this.sender = sender;
@@ -89,13 +87,13 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			}
 		}
 
-		HttlBodyMarshaller marshaller = null;
+		HttlBodyWriter<Object> writer = null;
 		HttlResponseExtractor<?> extractor = null;
 
 		//TODO Multiple BuilderInterceptor parameters is ok - just use different name
 		//TODO Multiple ExecutionInterceptor parameters is ok - just use different name
-		HttlBuilderVisitor builderInterceptor = null;
-		HttlExecutionInterceptor executionInterceptor = null;
+		HttlBuilderVisitor builderVisitor = null;
+		HttlExecutionFilter executionFilter = null;
 
 		Object body = null;
 		if (args != null) {
@@ -124,6 +122,9 @@ public class HttlApiHandler<T> implements InvocationHandler {
 						if (metaVar.variable != null) {
 							builder.setHeader(HttlConstants.Content_Type, metaVar.variable); //replace header if exists
 						}
+						if (metaVar.writer != null) {
+							writer = metaVar.writer;
+						}
 						body = arg; //can be null
 						break;
 					case HEADER:
@@ -135,24 +136,16 @@ public class HttlApiHandler<T> implements InvocationHandler {
 					case PATH:
 						builder.param("{" + metaVar.name + "}", arg);
 						break;
-					case BLD_INTERCEPTOR:
-						builderInterceptor = (HttlBuilderVisitor) arg;
+					case BODY_WRITER:
+						writer = (HttlBodyWriter<Object>) arg;
 						break;
-					case EXE_INTERCEPTOR:
-						executionInterceptor = (HttlExecutionInterceptor) arg;
+					case BLDR_VISITOR:
+						builderVisitor = (HttlBuilderVisitor) arg;
 						break;
-					/*
-					case REQ_INTERCEPTOR:
-						requestInterceptor = (RequestInterceptor) arg;
+					case EXEC_FILTER:
+						executionFilter = (HttlExecutionFilter) arg;
 						break;
-					case RES_INTERCEPTOR:
-						responseInterceptor = (ResponseInterceptor) arg;
-						break;
-					*/
-					case REQ_MARSHALLER:
-						marshaller = (HttlBodyMarshaller) arg;
-						break;
-					case RES_EXTRACTOR:
+					case RESP_EXTRACTOR:
 						extractor = (HttlResponseExtractor<?>) arg;
 						break;
 					default:
@@ -179,9 +172,9 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			if (contentType[0] == null) {
 				throw new HttlRequestException("Content-Type header not specified");
 			}
-			if (marshaller != null) { //custom marshaller to build request payload body...
+			if (writer != null) { //custom marshaller to build request payload body...
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				marshaller.write(body, baos, Charset.forName(contentType[1]));
+				writer.write(body, baos);
 				builder.body(baos.toByteArray(), contentType[0] + "; charset=" + contentType[1]);
 			} else {
 				builder.body(body, contentType[0] + "; charset=" + contentType[1]);
@@ -189,11 +182,11 @@ public class HttlApiHandler<T> implements InvocationHandler {
 		}
 
 		if (metaMethod.builder == null) {
-			return complete(builder, metaMethod, builderInterceptor, executionInterceptor, extractor);
+			return complete(builder, metaMethod, builderVisitor, executionFilter, extractor);
 		} else {
-			//return OperationBuilder proxy
-			HttlCallBuilderHandler handler = new HttlCallBuilderHandler(this, metaMethod, builder, builderInterceptor,
-					executionInterceptor, extractor);
+			//return proxy
+			HttlCallBuilderHandler handler = new HttlCallBuilderHandler(this, metaMethod, builder, builderVisitor,
+					executionFilter, extractor);
 			return Proxy.newProxyInstance(metaMethod.builder.interfacee.getClassLoader(),
 					new Class<?>[] { metaMethod.builder.interfacee }, handler);
 		}
@@ -201,24 +194,24 @@ public class HttlApiHandler<T> implements InvocationHandler {
 	}
 
 	protected Object complete(SenderBodyRequestBuilder builder, ApiMethodMeta metaMethod,
-			HttlBuilderVisitor builderInterceptor, HttlExecutionInterceptor executionInterceptor,
-			HttlResponseExtractor<?> responseExtractor) throws IOException {
+			HttlBuilderVisitor builderVisitor, HttlExecutionFilter executionFilter, HttlResponseExtractor<?> extractor)
+			throws IOException {
 
-		if (builderInterceptor != null) {
-			builderInterceptor.visit(builder);
+		if (builderVisitor != null) {
+			builderVisitor.visit(builder);
 		}
 
 		HttlRequest request = builder.build();
 
 		HttlResponse response;
-		if (executionInterceptor != null) {
-			response = new ApiHandlerChain(executionInterceptor).next(request);
+		if (executionFilter != null) {
+			response = new ApiHandlerChain(executionFilter).next(request);
 		} else {
 			response = sender.execute(request);
 		}
 
 		//custom extractor parameter to process body...
-		if (responseExtractor != null) {
+		if (extractor != null) {
 			/*
 			Object extract = responseExtractor.extract(response);
 			if(extract!=null) {
@@ -236,7 +229,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 						+ metaMethod.returnType);
 			}
 			*/
-			return responseExtractor.extract(response);
+			return extractor.extract(response);
 		}
 
 		if (metaMethod.builder != null) {
@@ -275,16 +268,16 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 	private class ApiHandlerChain implements HttlExecutionChain {
 
-		private HttlExecutionInterceptor interceptor;
+		private HttlExecutionFilter interceptor;
 
-		public ApiHandlerChain(HttlExecutionInterceptor interceptor) {
+		public ApiHandlerChain(HttlExecutionFilter interceptor) {
 			this.interceptor = interceptor;
 		}
 
 		@Override
 		public HttlResponse next(HttlRequest request) throws IOException {
 			if (interceptor != null) {
-				HttlExecutionInterceptor interceptor = this.interceptor;
+				HttlExecutionFilter interceptor = this.interceptor;
 				this.interceptor = null;
 				return interceptor.intercept(request, this);
 			} else {

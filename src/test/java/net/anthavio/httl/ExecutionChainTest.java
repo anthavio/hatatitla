@@ -18,7 +18,7 @@ public class ExecutionChainTest {
 	public void test() {
 
 		//Given
-		TestExecutionInterceptor interceptor = new TestExecutionInterceptor();
+		TestExecutionFilter interceptor = new TestExecutionFilter();
 		HttlSender sender = new MockSenderConfig().addExecutionInterceptor(interceptor).build();
 
 		//When
@@ -30,11 +30,11 @@ public class ExecutionChainTest {
 		Assertions.assertThat(interceptor.response).isSameAs(response);
 
 		//When
-		interceptor.exception = new IllegalStateException("What!?!");
+		interceptor.exception = new ArrayIndexOutOfBoundsException("What!?!");
 		try {
 			sender.execute(request);
-			Assertions.fail("IllegalStateException expected");
-		} catch (IllegalStateException isx) {
+			Assertions.fail("Expected " + ArrayIndexOutOfBoundsException.class.getName());
+		} catch (ArrayIndexOutOfBoundsException isx) {
 			//Then
 			Assertions.assertThat(isx).isSameAs(interceptor.exception);
 		}
@@ -42,7 +42,7 @@ public class ExecutionChainTest {
 	}
 }
 
-class TestExecutionInterceptor implements HttlExecutionInterceptor {
+class TestExecutionFilter implements HttlExecutionFilter {
 
 	public HttlRequest request;
 

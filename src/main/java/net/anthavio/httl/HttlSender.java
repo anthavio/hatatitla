@@ -3,7 +3,6 @@ package net.anthavio.httl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +56,7 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	private final HttlBodyUnmarshaller unmarshaller;
 
-	private final List<HttlExecutionInterceptor> executionInterceptors;
+	private final List<HttlExecutionFilter> executionInterceptors;
 
 	public HttlSender(SenderBuilder config, HttlTransport transport) {
 		if (config == null) {
@@ -218,11 +217,9 @@ public class HttlSender implements SenderOperations, Closeable {
 		HttlResponse response = null;
 		try {
 			response = execute(request);
-			extractor = extractor.supports(response);
-			if (extractor != null) {
-				T extracted = (T) extractor.extract(response);
-				return new ExtractedResponse<T>(response, extracted);
-			} else { //extractor declared himself unfit for this response
+			T extracted = (T) extractor.extract(response);
+			return new ExtractedResponse<T>(response, extracted);
+			/*
 				Class<T> resultType = (Class<T>) ((ParameterizedType) extractor.getClass().getGenericSuperclass())
 						.getActualTypeArguments()[0];
 				Object extract = unmarshaller.unmarshall(response, resultType);
@@ -233,9 +230,9 @@ public class HttlSender implements SenderOperations, Closeable {
 				} else {
 					return new ExtractedResponse<T>(response, (T) extract);
 				}
-			}
-		} catch (IOException iox) {
-			throw new HttlProcessingException(response, iox);
+			*/
+		} catch (Exception x) {
+			throw new HttlProcessingException(response, x);
 		} finally {
 			Cutils.close(response);
 		}
@@ -349,14 +346,14 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	@Override
 	public String toString() {
-		return "HttpSender [" + config.getUrl() + ", executor=" + executor + "]";
+		return "HttlSender [" + config.getUrl() + ", executor=" + executor + "]";
 	}
 
-	public static class HttpHeaders extends Multival<String> {
+	public static class HttlHeaders extends Multival<String> {
 
 		private static final long serialVersionUID = 1L;
 
-		public HttpHeaders() {
+		public HttlHeaders() {
 
 		}
 	}

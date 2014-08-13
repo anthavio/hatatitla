@@ -3,10 +3,10 @@ package net.anthavio.httl.marshall;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 
 import org.simpleframework.xml.core.Persister;
 
@@ -38,15 +38,17 @@ public class SimpleXmlMarshaller implements HttlBodyMarshaller {
 	}
 
 	@Override
-	public SimpleXmlMarshaller supports(HttlRequest request) {
-		return request.getMediaType().contains("xml") ? this : null;
+	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
+		if (!request.getMediaType().contains("xml")) {
+			throw new HttlRequestException("Cannot mashall into " + request.getMediaType());
+		}
+		write(request.getBody().getPayload(), stream, request.getCharset());
 	}
 
-	@Override
-	public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
+	public void write(Object payload, OutputStream stream, String charset) throws IOException {
 		OutputStreamWriter writer = new OutputStreamWriter(stream, charset);
 		try {
-			persister.write(requestBody, writer);
+			persister.write(payload, writer);
 		} catch (Exception x) {
 			if (x instanceof RuntimeException) {
 				throw (RuntimeException) x;

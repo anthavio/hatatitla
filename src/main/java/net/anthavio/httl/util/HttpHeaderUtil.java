@@ -15,14 +15,14 @@ import java.util.Date;
 import net.anthavio.cache.CacheEntry;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.cache.CachedResponse;
 
 public class HttpHeaderUtil {
 
 	public static CacheEntry<CachedResponse> buildCacheEntry(HttlRequest request, HttlResponse response) {
 
-		HttpHeaders headers = response.getHeaders();
+		HttlHeaders headers = response.getHeaders();
 
 		long softTtl = 0; //seconds
 		long maxAge = 0; //seconds
@@ -239,9 +239,26 @@ public class HttpHeaderUtil {
 			return null; //304 NOT MODIFIED
 		}
 
-		int blength = getBufferLength(response);
-		char[] buffer = new char[blength];
-		Reader input = new InputStreamReader(response.getStream(), response.getCharset());
+		return readAsString(response.getStream(), response.getCharset(), getBufferLength(response));
+	}
+
+	public static String readAsString(Reader input, int bufferSize) throws IOException {
+		char[] buffer = new char[bufferSize];
+		StringWriter output = new StringWriter();
+		int len = -1;
+		try {
+			while ((len = input.read(buffer)) != -1) {
+				output.write(buffer, 0, len);
+			}
+		} finally {
+			input.close();
+		}
+		return output.toString();
+	}
+
+	public static String readAsString(InputStream stream, Charset charset, int bufferSize) throws IOException {
+		char[] buffer = new char[bufferSize];
+		Reader input = new InputStreamReader(stream, charset);
 		StringWriter output = new StringWriter();
 		int len = -1;
 		try {
@@ -262,9 +279,11 @@ public class HttpHeaderUtil {
 			return null; //304 NOT MODIFIED
 		}
 
-		int blength = getBufferLength(response);
-		byte[] buffer = new byte[blength];
-		InputStream input = response.getStream();
+		return readAsBytes(response.getStream(), getBufferLength(response));
+	}
+
+	public static byte[] readAsBytes(InputStream input, int bufferSize) throws IOException {
+		byte[] buffer = new byte[bufferSize];
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		int len = -1;
 		try {
@@ -277,20 +296,24 @@ public class HttpHeaderUtil {
 		return output.toByteArray();
 	}
 
-	private static final int KILO = 1024;
+	public static final int KILO16 = 16 * 1024;
 
-	private static final int KILO64 = 64 * KILO;
+	public static final int KILO64 = 64 * 1024;
 
 	private static int getBufferLength(HttlResponse response) {
-		int blength = 1024;
+		int blength = KILO16;
 		String sclength = response.getFirstHeader("Content-Length");
 		if (sclength != null) {
 			int clength = Integer.parseInt(sclength);
-			blength = clength / 100;
-			if (blength < KILO) {
-				blength = KILO;
-			} else if (blength > KILO64) {
-				blength = KILO64;
+			if (clength < KILO16) {
+				blength = clength;
+			} else {
+				blength = clength / 100;
+				if (blength < KILO16) {
+					blength = KILO16;
+				} else if (blength > KILO64) {
+					blength = KILO64;
+				}
 			}
 		}
 		//TODO enhance this method
@@ -323,4 +346,5 @@ public class HttpHeaderUtil {
 			throw new IllegalStateException("utf-8 is gone", uex);
 		}
 	}
+
 }

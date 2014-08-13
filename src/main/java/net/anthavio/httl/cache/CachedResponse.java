@@ -10,7 +10,7 @@ import java.io.StringReader;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
@@ -59,7 +59,7 @@ public class CachedResponse extends HttlResponse implements Serializable {
 	}
 
 	//for testing purposes only - remove later
-	public CachedResponse(HttlRequest request, int code, String message, HttpHeaders headers, String data)
+	public CachedResponse(HttlRequest request, int code, String message, HttlHeaders headers, String data)
 			throws IOException {
 		super(request, code, message, headers, DUMMY_STREAM);
 		this.contentString = data;

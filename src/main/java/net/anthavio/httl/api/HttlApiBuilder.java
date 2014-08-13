@@ -12,15 +12,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlConstants;
-import net.anthavio.httl.HttlExecutionInterceptor;
-import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.api.RestBody.NoopRequestMarshaller;
+import net.anthavio.httl.api.RestBody.NoopHttlBodyWriter;
 import net.anthavio.httl.api.RestVar.NoopParamSetter;
 import net.anthavio.httl.api.VarSetter.ComplexMetaVarSetter;
 import net.anthavio.httl.api.VarSetter.FieldApiVarMeta;
@@ -39,7 +39,7 @@ public class HttlApiBuilder {
 
 	private final HttlSender sender;
 
-	private HttpHeaders headers;
+	private HttlHeaders headers;
 
 	private Parameters params;
 
@@ -56,7 +56,7 @@ public class HttlApiBuilder {
 	 */
 	public HttlApiBuilder addHeader(String name, String value) {
 		if (headers == null) {
-			headers = new HttpHeaders();
+			headers = new HttlHeaders();
 		}
 		headers.add(name, value);
 		return this;
@@ -81,7 +81,7 @@ public class HttlApiBuilder {
 		return build(apiInterface, sender, null, null);
 	}
 
-	public static <T> T build(Class<T> apiInterface, HttlSender sender, HttpHeaders headers, Parameters params) {
+	public static <T> T build(Class<T> apiInterface, HttlSender sender, HttlHeaders headers, Parameters params) {
 		RestApi annotation = apiInterface.getAnnotation(RestApi.class);
 		String urlPathPrefix = (annotation != null) ? annotation.value() : "";
 		Map<Method, ApiMethodMeta> methods = doApiMethods(apiInterface, urlPathPrefix);
@@ -303,20 +303,20 @@ public class HttlApiBuilder {
 			// interceptors/marshallers/extractors first - they need no annotation with name
 			if (HttlBuilderVisitor.class.isAssignableFrom(type)) {
 				name = "#" + HttlBuilderVisitor.class.getSimpleName() + "-" + i;
-				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.BLD_INTERCEPTOR);
+				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.BLDR_VISITOR);
 				metaList.add(meta);
 
-			} else if (HttlExecutionInterceptor.class.isAssignableFrom(type)) {
-				name = "#" + HttlExecutionInterceptor.class.getSimpleName() + "-" + i;
-				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.EXE_INTERCEPTOR);
+			} else if (HttlExecutionFilter.class.isAssignableFrom(type)) {
+				name = "#" + HttlExecutionFilter.class.getSimpleName() + "-" + i;
+				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.EXEC_FILTER);
 				metaList.add(meta);
 
-			} else if (HttlBodyMarshaller.class.isAssignableFrom(type)) {
-				name = "#" + HttlBodyMarshaller.class.getSimpleName();
-				if (map.containsKey(name)) {
-					throw new HttlApiException("Multiple RequestMarshaller parameters found", method);
+			} else if (HttlBodyWriter.class.isAssignableFrom(type)) {
+				name = "#" + HttlBodyWriter.class.getSimpleName();
+				if (map.containsKey(name)) { //TODO also add check if body writer is not defined via attribute
+					throw new HttlApiException("Multiple HttlBodyWriter parameters found", method);
 				}
-				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.REQ_MARSHALLER);
+				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.BODY_WRITER);
 				metaList.add(meta);
 
 			} else if (HttlResponseExtractor.class.isAssignableFrom(type)) {
@@ -335,7 +335,7 @@ public class HttlApiBuilder {
 				if (map.containsKey(name)) {
 					throw new HttlApiException("Multiple ResponseExtractor parameters found", method);
 				}
-				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.RES_EXTRACTOR);
+				meta = new ApiVarMeta(i, type, name, true, null, null, null, VarTarget.RESP_EXTRACTOR);
 				metaList.add(meta);
 
 			} else {
@@ -368,7 +368,7 @@ public class HttlApiBuilder {
 		boolean required = false;
 		String nullval = null;
 		VarSetter<Object> setter = null;
-		HttlBodyMarshaller marshaller = null;
+		HttlBodyWriter<Object> marshaller = null;
 		String variable = null;
 		VarTarget target = VarTarget.QUERY;
 
@@ -391,12 +391,12 @@ public class HttlApiBuilder {
 
 			} else if (annotation instanceof RestBody) {
 				RestBody body = (RestBody) annotation;
-				name = BODY; //artificial
+				name = BODY; //artificial name
 				target = VarTarget.BODY;
 				if (!body.value().isEmpty()) {
 					variable = body.value(); //Content-Type header
 				}
-				if (body.marshaller() != NoopRequestMarshaller.class) {
+				if (body.marshaller() != NoopHttlBodyWriter.class) {
 					try {
 						marshaller = body.marshaller().newInstance();
 					} catch (Exception x) {
@@ -579,8 +579,8 @@ public class HttlApiBuilder {
 
 	static enum VarTarget {
 		PATH, QUERY, HEADER, BODY, //normal value parameters
-		BLD_INTERCEPTOR, EXE_INTERCEPTOR, //REQ_INTERCEPTOR, RES_INTERCEPTOR, //
-		REQ_MARSHALLER, RES_EXTRACTOR;//
+		BLDR_VISITOR, EXEC_FILTER, //REQ_INTERCEPTOR, RES_INTERCEPTOR, //
+		BODY_WRITER, RESP_EXTRACTOR;//
 	}
 
 	static class ApiHeaderMeta {
@@ -605,19 +605,19 @@ public class HttlApiBuilder {
 		final String nullval;
 		final Type type;
 		final VarSetter<Object> setter;
-		final HttlBodyMarshaller marshaller; //only for @Body
+		final HttlBodyWriter<Object> writer; //only for @Body
 		VarTarget target;
 		String variable; //@Body content type or placeholder for urlpath
 
 		public ApiVarMeta(int index, Type type, String name, boolean killnull, String nullval, VarSetter<Object> setter,
-				HttlBodyMarshaller marshaller, VarTarget target) {
+				HttlBodyWriter<Object> marshaller, VarTarget target) {
 			this.index = index;
 			this.type = type;
 			this.name = name;
 			this.killnull = killnull;
 			this.nullval = nullval;
 			this.setter = setter;
-			this.marshaller = marshaller;
+			this.writer = marshaller;
 			this.target = target;
 		}
 

@@ -1,10 +1,6 @@
 package net.anthavio.httl;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-
-import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**
  * 
@@ -12,10 +8,6 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  *
  */
 public interface HttlResponseExtractor<T> {
-
-	public static StringExtractor STRING = new StringExtractor(200, 299);
-
-	public HttlResponseExtractor<T> supports(HttlResponse response);
 
 	/**
 	 * @return extracted body of SenderResponse
@@ -57,85 +49,31 @@ public interface HttlResponseExtractor<T> {
 		}
 
 	}
+	/*
+		public static class ReaderExtractor implements HttlResponseExtractor<Reader> {
 
-	/**
-	 * Simple string extractor. 
-	 */
-	public static class StringExtractor implements HttlResponseExtractor<String> {
-
-		private int httpMin;
-		private int httpMax;
-
-		public StringExtractor(int httpMin, int httpMax) {
-			this.httpMin = httpMin;
-			this.httpMax = httpMax;
-		}
-
-		@Override
-		public StringExtractor supports(HttlResponse response) {
-			return this;
-		}
-
-		@Override
-		public String extract(HttlResponse response) throws IOException {
-			if (response.getHttpStatusCode() > httpMax || response.getHttpStatusCode() < httpMin) {
-				throw new HttlStatusException(response);
-			} else {
-				return HttpHeaderUtil.readAsString(response);
+			@Override
+			public ReaderExtractor supports(HttlResponse response) {
+				return this;
 			}
-		}
 
-	};
-
-	public static class BytesExtractor implements HttlResponseExtractor<byte[]> {
-
-		private int httpMin;
-		private int httpMax;
-
-		public BytesExtractor(int httpMin, int httpMax) {
-			this.httpMin = httpMin;
-			this.httpMax = httpMax;
-		}
-
-		@Override
-		public BytesExtractor supports(HttlResponse response) {
-			return this;
-		}
-
-		@Override
-		public byte[] extract(HttlResponse response) throws IOException {
-			if (response.getHttpStatusCode() > httpMax || response.getHttpStatusCode() < httpMin) {
-				throw new HttlStatusException(response);
-			} else {
-				return HttpHeaderUtil.readAsBytes(response);
+			@Override
+			public Reader extract(HttlResponse response) throws IOException {
+				return response.getReader();
 			}
-		}
-	};
+		};
 
-	public static class ReaderExtractor implements HttlResponseExtractor<Reader> {
+		public static class StreamExtractor implements HttlResponseExtractor<InputStream> {
 
-		@Override
-		public ReaderExtractor supports(HttlResponse response) {
-			return this;
-		}
+			@Override
+			public StreamExtractor supports(HttlResponse response) {
+				return this;
+			}
 
-		@Override
-		public Reader extract(HttlResponse response) throws IOException {
-			return response.getReader();
-		}
-	};
-
-	public static class StreamExtractor implements HttlResponseExtractor<InputStream> {
-
-		@Override
-		public StreamExtractor supports(HttlResponse response) {
-			return this;
-		}
-
-		@Override
-		public InputStream extract(HttlResponse response) throws IOException {
-			return response.getStream();
-		}
-	};
-
+			@Override
+			public InputStream extract(HttlResponse response) throws IOException {
+				return response.getStream();
+			}
+		};
+	*/
 }

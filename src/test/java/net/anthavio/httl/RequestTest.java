@@ -2,6 +2,7 @@ package net.anthavio.httl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -11,6 +12,7 @@ import java.util.Collections;
 import java.util.Date;
 
 import net.anthavio.httl.Authentication.Scheme;
+import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
@@ -155,15 +157,16 @@ public class RequestTest {
 
 		//Then - RequestException
 		try {
-			request = sender.POST("/x").body("b").build();
-			Assertions.fail("Previous statement must throw IllegalArgumentException");
+			request = sender.POST("/x").body("brrrrrrrrrrr").build();
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
 		} catch (HttlRequestException rx) {
 			//this is expected
 		}
 
 		//When - Content-Type passed as separate header
-		request = sender.POST("/x").header("Content-Type", "text/plain").body("b").build();
+		request = sender.POST("/x").header("Content-Type", "text/plain").body("brrrrrrrrrrr").build();
 		//Then
+		assertThat(request.getBody().getPayload()).isEqualTo("brrrrrrrrrrr");
 		assertThat(request.getMediaType()).isEqualTo("text/plain");
 		assertThat(request.getCharset()).isEqualTo("utf-8");
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=utf-8");
@@ -175,32 +178,84 @@ public class RequestTest {
 		sender = config.build();
 
 		//Then - ok now
-		request = sender.POST("/x").body("b").build();
-		assertThat(request.getBody().getPayload()).isEqualTo("b");
+		request = sender.POST("/x").body("brrrrrrrrrrr").build();
+		assertThat(request.getBody().getPayload()).isEqualTo("brrrrrrrrrrr");
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=ISO-8859-2");
 		assertThat(request.getMediaType()).isEqualTo("text/plain");
 		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
+	}
 
+	@Test
+	public void postBodyCaching() {
+		HttlSender sender = new MockSenderConfig().build();
+
+		ByteArrayInputStream stream = new ByteArrayInputStream("brrrrrrrrrrrrr".getBytes());
+		//When - default is non caching
+		HttlRequest request = sender.POST("/whatever").body(stream, "text/plain").build();
+		//Then - original stream
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.STREAM);
+		Assertions.assertThat(request.getBody().getPayload()).isEqualTo(stream);
+
+		//When - caching parameter true
+		request = sender.POST("/whatever").body(stream, "text/plain", true).build();
+		//Then - cached to byte[]
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.BYTES);
+		Assertions.assertThat(request.getBody().getPayload()).isExactlyInstanceOf(byte[].class);
+
+		//Given Mashalled payload
+		TestBodyRequest bean = new TestBodyRequest("Something");
+		//When - default
+		request = sender.POST("/whatever").body(bean, "application/json").build();
+		//Then - original bean is there
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.MARSHALL);
+		Assertions.assertThat(request.getBody().getPayload()).isEqualTo(bean);
+
+		//When - cached parameter true
+		request = sender.POST("/whatever").body(bean, "application/json", true).build();
+		//Then - bean is marshalled into bytes
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.BYTES);
+		Assertions.assertThat(request.getBody().getPayload()).isExactlyInstanceOf(byte[].class);
+
+		//When - caching and wrong mime type to marshall
+		try {
+			sender.POST("/whatever").body(bean, "wrong/type", true).build();
+			//Then - exception intantly
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
+		} catch (HttlRequestException rx) {
+			Assertions.assertThat(rx.getMessage()).startsWith("Marshaller not found");
+		}
 	}
 
 	@Test
 	public void dateParameter() throws UnsupportedEncodingException {
+
+		//Given - default settings
 		HttlSender sender = new HttpUrlConfig("www.example.com").build();
 
+		//When - Date as parameter
 		SenderNobodyRequestBuilder builder = sender.OPTIONS("/options");
 		Date date = new Date();
 		builder.param("d", date, 32, "ZXZX");
-		HttlRequest req = builder.build();
+		HttlRequest request = builder.build();
+		//Then - default pattern is used
 		String sdate = new SimpleDateFormat(ConfigurableParamSetter.DEFAULT_DATE_PATTERN).format(date);
 		sdate = URLEncoder.encode(sdate, "UTF-8");
-		assertThat(req.getPathAndQuery()).isEqualTo("/options?d=" + sdate + "&d=32&d=ZXZX");
+		assertThat(request.getPathAndQuery()).isEqualTo("/options?d=" + sdate + "&d=32&d=ZXZX");
 
-		//When
-		HttlRequest request = sender.OPTIONS("/options").param("d", date, "yyyy-MM-dd").build();
+		//Given - custom date format
+		String pattern = "yyyy-MM-dd";
+		String expected = new SimpleDateFormat(pattern).format(date);
+
+		//When - pattern set as parameter
+		request = sender.OPTIONS("/options").param("d", date, pattern).build();
 		//Then
-		sdate = new SimpleDateFormat("yyyy-MM-dd").format(date);
-		sdate = URLEncoder.encode(sdate, "UTF-8");
-		assertThat(request.getPathAndQuery()).isEqualTo("/options?d=" + sdate);
+		assertThat(request.getPathAndQuery()).isEqualTo("/options?d=" + expected);
+
+		//When - pattern set into global ParamSetter
+		sender.getConfig().setParamSetter(new ConfigurableParamSetter(pattern));
+		request = sender.DELETE("/delete").param("d", date).build();
+		//Then
+		assertThat(request.getPathAndQuery()).isEqualTo("/delete?d=" + expected);
 	}
 
 	@Test

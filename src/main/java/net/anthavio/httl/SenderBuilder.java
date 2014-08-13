@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
-import net.anthavio.httl.HttlResponseExtractor.BytesExtractor;
-import net.anthavio.httl.HttlResponseExtractor.StringExtractor;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.marshall.HttlBytesExtractor;
+import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.marshall.MediaTypeUnmarshaller;
 import net.anthavio.httl.util.Cutils;
@@ -46,13 +46,13 @@ public abstract class SenderBuilder {
 
 	private ExecutorService executorService;
 
-	private final HttpHeaders defaultHeaders = new HttpHeaders();
+	private final HttlHeaders defaultHeaders = new HttlHeaders();
 
 	private final Parameters defaultParameters = new Parameters();
 
 	private HttlParameterSetter paramSetter = new ConfigurableParamSetter();
 
-	private final List<HttlExecutionInterceptor> executionInterceptors = new ArrayList<HttlExecutionInterceptor>();
+	private final List<HttlExecutionFilter> executionInterceptors = new ArrayList<HttlExecutionFilter>();
 
 	private final List<HttlBuilderVisitor> builderVisitors = new ArrayList<HttlBuilderVisitor>();
 
@@ -60,9 +60,9 @@ public abstract class SenderBuilder {
 
 	private HttlBodyUnmarshaller unmarshaller = new MediaTypeUnmarshaller();
 
-	private HttlResponseExtractor<String> stringExtractor = new StringExtractor(200, 299);
+	private HttlResponseExtractor<String> stringExtractor = new HttlStringExtractor(200, 299);
 
-	private HttlResponseExtractor<byte[]> bytesExtractor = new BytesExtractor(200, 299);
+	private HttlResponseExtractor<byte[]> bytesExtractor = new HttlBytesExtractor(200, 299);
 
 	public SenderBuilder(URL url) {
 		this.url = digHostUrl(url);
@@ -219,7 +219,7 @@ public abstract class SenderBuilder {
 	/**
 	 * @return Header added into every HttlRequest
 	 */
-	public HttpHeaders getDefaultHeaders() {
+	public HttlHeaders getDefaultHeaders() {
 		return defaultHeaders;
 	}
 
@@ -278,7 +278,7 @@ public abstract class SenderBuilder {
 		this.bytesExtractor = extractor;
 	}
 
-	public SenderBuilder addExecutionInterceptor(HttlExecutionInterceptor interceptor) {
+	public SenderBuilder addExecutionInterceptor(HttlExecutionFilter interceptor) {
 		if (interceptor == null) {
 			throw new IllegalArgumentException("Null interceptor");
 		}
@@ -286,7 +286,7 @@ public abstract class SenderBuilder {
 		return this;
 	}
 
-	public List<HttlExecutionInterceptor> getExecutionInterceptors() {
+	public List<HttlExecutionFilter> getExecutionInterceptors() {
 		return executionInterceptors;
 	}
 

@@ -3,7 +3,6 @@ package net.anthavio.httl.marshall;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -20,6 +19,7 @@ import javax.xml.namespace.QName;
 
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 
 /**
  * 
@@ -78,23 +78,25 @@ public class JaxbMarshaller implements HttlBodyMarshaller {
 	}
 
 	@Override
-	public JaxbMarshaller supports(HttlRequest request) {
-		return request.getMediaType().contains("xml") ? this : null;
+	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
+		if (!request.getMediaType().contains("xml")) {
+			throw new HttlRequestException("Cannot mashall into " + request.getMediaType());
+		}
+		write(request.getBody().getPayload(), stream, request.getCharset());
 	}
 
-	@Override
-	public void write(Object requestBody, OutputStream stream, Charset charset) throws IOException {
+	public void write(Object payload, OutputStream stream, String charset) throws IOException {
 
-		Class<?> clazz = requestBody.getClass();
-		requestBody = getRoot(requestBody, clazz);
+		Class<?> clazz = payload.getClass();
+		payload = getRoot(payload, clazz);
 
 		try {
 			JAXBContext jaxbContext = getJaxbContext(clazz);
 			Marshaller marshaller = createMarshaller(jaxbContext);
-			marshaller.setProperty(Marshaller.JAXB_ENCODING, charset.name()); //override default encoding is any
-			marshaller.marshal(requestBody, stream);
+			marshaller.setProperty(Marshaller.JAXB_ENCODING, charset); //override default encoding is any
+			marshaller.marshal(payload, stream);
 		} catch (JAXBException jaxbx) {
-			throw new IllegalArgumentException("Jaxb marshalling failed for " + requestBody, jaxbx);
+			throw new IllegalArgumentException("Jaxb marshalling failed for " + payload, jaxbx);
 		}
 
 	}

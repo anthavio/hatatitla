@@ -6,7 +6,7 @@ import java.net.HttpURLConnection;
 
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 
 /**
  * 
@@ -19,7 +19,7 @@ public class HttpUrlResponse extends HttlResponse {
 
 	private transient HttpURLConnection connection;
 
-	public HttpUrlResponse(HttlRequest request, int code, String message, HttpHeaders headers, InputStream stream,
+	public HttpUrlResponse(HttlRequest request, int code, String message, HttlHeaders headers, InputStream stream,
 			HttpURLConnection connection) throws IOException {
 		super(request, code, message, headers, stream);
 		if (connection == null) {

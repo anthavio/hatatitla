@@ -1,14 +1,13 @@
 package net.anthavio.httl.marshall;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.util.Cutils;
 
 /**
@@ -22,18 +21,18 @@ import net.anthavio.httl.util.Cutils;
  *
  */
 public class MediaTypeMarshaller implements HttlBodyMarshaller {
-
-	public static String marshall(HttlBodyMarshaller marshaller, Object payload) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		marshaller.write(payload, baos, Charset.forName("utf-8"));
-		baos.flush();
-		return new String(baos.toByteArray());
-	}
-
+	/*
+		public static String marshall(HttlBodyMarshaller marshaller, Object payload) throws IOException {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			marshaller.write(payload, baos, Charset.forName("utf-8"));
+			baos.flush();
+			return new String(baos.toByteArray());
+		}
+	*/
 	private Map<String, HttlBodyMarshaller> marshallers = new HashMap<String, HttlBodyMarshaller>();
 
 	@Override
-	public HttlBodyMarshaller supports(HttlRequest request) {
+	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
 		String mediaType = request.getMediaType();
 		HttlBodyMarshaller marshaller = marshallers.get(mediaType);
 		if (marshaller == null) {
@@ -42,12 +41,12 @@ public class MediaTypeMarshaller implements HttlBodyMarshaller {
 				marshallers.put(mediaType, marshaller);
 			}
 		}
-		return marshaller.supports(request);
-	}
 
-	@Override
-	public void write(Object payload, OutputStream stream, Charset charset) throws IOException {
-		throw new IllegalStateException("Call support() to get right Marshaller");
+		if (marshaller == null) {
+			throw new HttlRequestException("Marshaller not found for " + request);
+		}
+
+		marshaller.marshall(request, stream);
 	}
 
 	public HttlBodyMarshaller getMarshaller(String mediaType) {

@@ -10,7 +10,7 @@ import java.nio.charset.Charset;
 
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 
 /**
  * 
@@ -25,7 +25,7 @@ public class MockResponse extends HttlResponse {
 
 	private final byte[] responseBytes;
 
-	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttpHeaders headers, InputStream stream) {
+	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttlHeaders headers, InputStream stream) {
 		super(null, httpCode, httpMessage, headers, null);
 		try {
 			responseBytes = read(stream);
@@ -44,18 +44,18 @@ public class MockResponse extends HttlResponse {
 		this(request, httpCode, "OK", buildHeaders(contentType), responseBody);
 	}
 
-	private static HttpHeaders buildHeaders(String contentType) {
-		HttpHeaders headers = new HttpHeaders();
+	private static HttlHeaders buildHeaders(String contentType) {
+		HttlHeaders headers = new HttlHeaders();
 		headers.set("Content-Type", contentType);
 		return headers;
 	}
 
-	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttpHeaders headers, String responseBody) {
+	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttlHeaders headers, String responseBody) {
 		super(request, httpCode, httpMessage, headers, null);
 		this.responseBytes = responseBody.getBytes(Charset.forName("utf-8"));
 	}
 
-	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttpHeaders headers, byte[] responseBody) {
+	public MockResponse(HttlRequest request, int httpCode, String httpMessage, HttlHeaders headers, byte[] responseBody) {
 		super(null, httpCode, httpMessage, headers, null);
 		this.responseBytes = responseBody;
 	}

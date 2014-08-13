@@ -7,20 +7,20 @@ import net.anthavio.cache.Cache;
 import net.anthavio.cache.CacheEntry;
 
 /**
- * Comapring to HttlBuilderInterceptor, this interceptor cannot change HttlRequest, 
+ * Comapring to HttlBuilderVisitor, this interceptor cannot change HttlRequest, 
  * but can wrap it or return surrogate HttlResponse instead of execution
  * 
  * @author martin.vanek
  *
  */
-public interface HttlExecutionInterceptor {
+public interface HttlExecutionFilter {
 
 	public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException;
 
 	/**
 	 * Example how ExecutionInterceptor can be used
 	 */
-	public static class CachingExcetionInterceptor implements HttlExecutionInterceptor {
+	public static class CachingExecutionFilter implements HttlExecutionFilter {
 
 		private int staleTtl = 1;
 

@@ -20,13 +20,13 @@ public interface HttlExecutionChain {
 	 */
 	public static class SenderExecutionChain implements HttlExecutionChain {
 
-		private final List<HttlExecutionInterceptor> interceptors;
+		private final List<HttlExecutionFilter> interceptors;
 
 		private final HttlSender sender;
 
 		private int index = 0;
 
-		public SenderExecutionChain(List<HttlExecutionInterceptor> interceptors, HttlSender sender) {
+		public SenderExecutionChain(List<HttlExecutionFilter> interceptors, HttlSender sender) {
 			this.interceptors = interceptors;
 			this.sender = sender;
 		}

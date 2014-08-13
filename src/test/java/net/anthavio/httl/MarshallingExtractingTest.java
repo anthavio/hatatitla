@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.IllegalFormatFlagsException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,6 +13,8 @@ import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.TestResponse.NameValue;
+import net.anthavio.httl.marshall.HttlBytesExtractor;
+import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpClient4Transport;
@@ -117,41 +120,64 @@ public class MarshallingExtractingTest {
 		ExtractedResponse<String> extracted1s = sender.GET("/").extract(String.class);
 		// Then
 		Assertions.assertThat(extracted1s.getResponse().getHttpStatusCode()).isEqualTo(200);
-		Assertions.assertThat(extracted1s.getBody()).contains("Hello");
+		Assertions.assertThat(extracted1s.getBody()).startsWith("<h1> Hello");
 		Assertions.assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
-
-		// When - http 500 
-		try {
-			sender.GET("/").param("dostatus", 500).extract(String.class);
-			Assertions.fail("Previous statement should throw ResponseStatusException");
-		} catch (HttlStatusException rsx) {
-			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(500);
-			Assertions.assertThat(rsx.getResponseBody()).contains("Dostatus 500");
-		}
-		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When 
 		ExtractedResponse<byte[]> extracted1b = sender.GET("/").extract(byte[].class);
 		// Then 
 		Assertions.assertThat(extracted1b.getResponse().getHttpStatusCode()).isEqualTo(200);
-		Assertions.assertThat(new String(extracted1b.getBody(), "utf-8")).contains("Hello");
-		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
-
-		// When - http 500 
-		ExtractedResponse<byte[]> extracted2b = sender.GET("/").param("dostatus", 500).extract(byte[].class);
-		// Then - No exception
-		Assertions.assertThat(extracted2b.getResponse().getHttpStatusCode()).isEqualTo(500);
-		Assertions.assertThat(new String(extracted2b.getBody(), "utf-8")).contains("Dostatus 500");
+		Assertions.assertThat(new String(extracted1b.getBody(), "utf-8")).startsWith("<h1> Hello");
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		// When
 		try {
 			sender.GET("/").extract(new GenericType<List<String>>() {
 			});
-			Assertions.fail("Preceding statement must throw " + IllegalStateException.class.getName());
-		} catch (IllegalStateException isx) {
-			Assertions.assertThat(isx.getMessage()).startsWith("No Unmarshaller for type");
+			Assertions.fail("Preceding statement must throw " + HttlProcessingException.class.getName());
+		} catch (HttlProcessingException isx) {
+			Assertions.assertThat(isx.getMessage()).startsWith("No Unmarshaller for Response");
 		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		// When - http 500 String
+		try {
+			sender.GET("/").param("dostatus", 500).extract(String.class);
+			Assertions.fail("Previous statement should throw " + HttlStatusException.class.getName());
+		} catch (HttlStatusException rsx) {
+			//Then - HttlStatusException
+			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(500);
+			Assertions.assertThat(rsx.getResponseBody()).contains("Dostatus 500");
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		//Given - Allow HttlStringExtractor to accept 500
+		sender.getConfig().setStringExtractor(new HttlStringExtractor(200, 500));
+
+		//When - http 500
+		ExtractedResponse<String> extracted2s = sender.GET("/").param("dostatus", 500).extract(String.class);
+		Assertions.assertThat(extracted2s.getResponse().getHttpStatusCode()).isEqualTo(500);
+		Assertions.assertThat(extracted2s.getBody()).contains("Dostatus 500");
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		// When - http 500 byte[]
+		try {
+			sender.GET("/").param("dostatus", 500).extract(byte[].class);
+			Assertions.fail("Previous statement should throw " + HttlStatusException.class.getName());
+		} catch (HttlStatusException rsx) {
+			//Then - HttlStatusException
+			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(500);
+			Assertions.assertThat(rsx.getResponseBody()).contains("Dostatus 500");
+		}
+		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+
+		//Given - Allow HttlBytesExtractor to accept 500
+		sender.getConfig().setBytesExtractor(new HttlBytesExtractor(200, 500));
+
+		ExtractedResponse<byte[]> extracted2b = sender.GET("/").param("dostatus", 500).extract(byte[].class);
+		// Then - No exception
+		Assertions.assertThat(extracted2b.getResponse().getHttpStatusCode()).isEqualTo(500);
+		Assertions.assertThat(new String(extracted2b.getBody(), "utf-8")).contains("Dostatus 500");
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		sender.close();
@@ -174,48 +200,43 @@ public class MarshallingExtractingTest {
 		assertThat(handler.getResponse().getHttpStatusCode()).isEqualTo(500);
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
+		ArrayIndexOutOfBoundsException handleException = new ArrayIndexOutOfBoundsException("I'm baaad! I'm baaad!");
+		//When - Break handler to throw exception from it's handle methods
+		handler.setHandleException(handleException);
+
 		try {
-			sender.GET("/").param("dostatus", 500).extract(String.class);
-			Assert.fail("Preceding statement must throw SenderHttpStatusException");
-		} catch (HttlStatusException shsx) {
-			//expected
-			Assertions.assertThat(shsx.getResponse().getHttpStatusCode()).isEqualTo(500);
-			Assertions.assertThat(shsx.getResponse().getMediaType()).isEqualTo("text/html");
-			Assertions.assertThat(shsx.getResponseBody()).contains("Dostatus 500");
+			sender.GET("/").param("dostatus", 500).execute(handler);
+			Assert.fail("Expected " + ArrayIndexOutOfBoundsException.class.getName());
+		} catch (ArrayIndexOutOfBoundsException aiox) {
+			assertThat(aiox).isEqualTo(handleException);
 		}
+		assertThat(handler.getResponse().getHttpStatusCode()).isEqualTo(500);
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
+		//Failing extractor test
+
 		TestResponseBodyExtractor failingExtractor = new TestResponseBodyExtractor();
-		ClassCastException extractException = new ClassCastException("I'm evil! I'm evil!");
+		IllegalFormatFlagsException extractException = new IllegalFormatFlagsException("I'm evil! I'm evil!");
 		failingExtractor.simulatedException = extractException;
 
 		try {
 			sender.GET("/").extract(failingExtractor);
-			Assert.fail("Preceding statement must throw " + extractException.getClass().getName());
-		} catch (ClassCastException aiox) {
-			assertThat(aiox).isEqualTo(extractException);
+			Assert.fail("Expected " + HttlProcessingException.class.getName());
+		} catch (HttlProcessingException hpx) {
+			assertThat(hpx.getCause()).isEqualTo(extractException);
 		}
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
-		ArrayIndexOutOfBoundsException handleException = new ArrayIndexOutOfBoundsException("I'm baaad! I'm baaad!");
-		//set global error handler
-
-		//now the same without response exception
-		ExtractedResponse<String> extract = sender.GET("/").param("dostatus", 500).extract(String.class);
-		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
-		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
-		assertThat(extract.getBody()).isNull(); //extracted body is null
+		try {
+			sender.GET("/").param("dostatus", 501).extract(failingExtractor);
+			Assert.fail("Expected " + HttlProcessingException.class.getName());
+		} catch (HttlProcessingException hpx) {
+			assertThat(hpx.getCause()).isEqualTo(extractException);
+		}
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
-		//same with ResponseBodyExtractor instead of resultType Class
-		extract = sender.GET("/").param("dostatus", 500).extract(HttlResponseExtractor.STRING);
-		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
-		assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
-		assertThat(extract.getBody()).isNull(); //extracted body is null
-		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
-
-		//When - Break handler to throw exception from it's handle methods
-		handler.setHandleException(handleException);
+		ExtractedResponse<String> extract;
+		/*
 		//Then
 		try {
 			extract = sender.GET("/").param("dostatus", 501).extract(String.class);
@@ -229,7 +250,7 @@ public class MarshallingExtractingTest {
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		try {
-			extract = sender.GET("/").param("dostatus", 502).extract(HttlResponseExtractor.STRING);
+			extract = sender.GET("/").param("dostatus", 502).extract(HttlStringExtractor.DEFAULT);
 			Assert.fail("Preceding statement must throw " + handleException.getClass().getName());
 		} catch (ArrayIndexOutOfBoundsException aiox) {
 			assertThat(aiox).isEqualTo(handleException);
@@ -238,21 +259,26 @@ public class MarshallingExtractingTest {
 		assertThat(handler.getException()).isNull();
 
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
+		*/
 
 		try {
-			sender.GET("/").param("dostatus", 501).extract(failingExtractor);
-			Assert.fail("Preceding statement must throw " + extractException.getClass().getName());
-		} catch (ArrayIndexOutOfBoundsException aiox) {
-			assertThat(aiox).isEqualTo(handleException);
+			sender.GET("/").param("dostatus", 500).extract(String.class);
+			Assert.fail("Expected " + HttlStatusException.class.getName());
+		} catch (HttlStatusException shsx) {
+			//expected
+			Assertions.assertThat(shsx.getResponse().getHttpStatusCode()).isEqualTo(500);
+			Assertions.assertThat(shsx.getResponse().getMediaType()).isEqualTo("text/html");
+			Assertions.assertThat(shsx.getResponseBody()).contains("Dostatus 500");
 		}
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
-		try {
-			sender.GET("/").param("dostatus", 500).execute(handler);
-		} catch (ArrayIndexOutOfBoundsException aiox) {
-			assertThat(aiox).isEqualTo(handleException);
-		}
-		assertThat(handler.getResponse().getHttpStatusCode()).isEqualTo(500);
+		//Given - allow HttlStringExtractor http 500
+		sender.getConfig().setStringExtractor(new HttlStringExtractor(0, 1000));
+		//now the same without response exception
+		extract = sender.GET("/").param("dostatus", 500).extract(String.class);
+		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(500);
+		//assertThat(extract.getResponse()).isEqualTo(handler.getResponse());
+		//assertThat(extract.getBody()).isNull(); //extracted body is null
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		sender.close();
@@ -275,7 +301,9 @@ public class MarshallingExtractingTest {
 				.accept("application/xml").header("Accept-Charset", "Cp1250").build();
 		//request.setEncodeParams(true);
 		//charset is added from configuration
-		assertThat(request.getFirstHeader("Content-Type").indexOf("charset=ISO-8859-2")).isNotEqualTo(-1);
+		assertThat(request.getMediaType()).isEqualTo("application/json");
+		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=ISO-8859-2");
 		//System.out.println(request.getParameters().getFirst("pmsg"));
 		ExtractedResponse<TestResponse> extract = sender.extract(request, TestResponse.class);
 		assertThat(extract.getResponse().getHttpStatusCode()).isEqualTo(201);
@@ -311,11 +339,6 @@ class TestResponseBodyExtractor implements HttlResponseExtractor<String> {
 	public RuntimeException simulatedException; //simulate very bad extractor
 
 	public HttlResponse response;
-
-	@Override
-	public TestResponseBodyExtractor supports(HttlResponse response) {
-		return this;
-	}
 
 	@Override
 	public String extract(HttlResponse response) throws IOException {

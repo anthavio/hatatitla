@@ -6,7 +6,6 @@ import java.lang.reflect.Type;
 import net.anthavio.httl.util.GenericType;
 
 /**
- * Work like Factory (supports) and Unmarshaller (unmarshall) in the same time
  * 
  * @author martin.vanek
  *

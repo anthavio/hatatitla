@@ -1,6 +1,7 @@
 package net.anthavio.httl.api;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -9,9 +10,8 @@ import java.util.Date;
 
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.api.ComplexApiTest.SomeBodyBean;
+import net.anthavio.httl.api.ComplexApiTest.TestBodyBean;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
-import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
@@ -40,7 +40,7 @@ public class BasicApiTest {
 		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
 
 		Assertions.assertThat(api.toString()).startsWith(
-				"ApiInvocationHandler for " + SimpleApi.class.getName() + " and HttpSender");
+				"ApiInvocationHandler for " + SimpleApi.class.getName() + " and HttlSender");
 		Assertions.assertThat(api.equals(api)).isTrue();
 		Assertions.assertThat(api.equals("zzz")).isFalse();
 
@@ -78,16 +78,15 @@ public class BasicApiTest {
 		Jackson2Marshaller jrm = new Jackson2Marshaller(new ObjectMapper().configure(
 				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
 		HttlSender sender = new MockSenderConfig(transport).setMarshaller(jrm).build();
-		//Marshallers marshallers = (Marshallers)sender.getConfig().getMarshaller();
-		//Jackson2Marshaller jrm = (Jackson2Marshaller) marshallers.supports(null, "application/json");
-		//jrm.getObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true); // millisecond precision
 
 		String helloPlain = "Hello Inčučuna!";
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
 		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
 
-		final SomeBodyBean beanIn = new SomeBodyBean("Kvído Vymětal", new Date(), 369);
-		final String jsonbean = MediaTypeMarshaller.marshall(jrm, beanIn);
+		final TestBodyBean beanIn = new TestBodyBean("Kvído Vymětal", new Date(), 369);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		jrm.write(beanIn, baos, "utf-8");
+		final String jsonbean = new String(baos.toByteArray(), "utf-8");
 
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
 
@@ -113,7 +112,7 @@ public class BasicApiTest {
 		HttlResponse returnResponsePostBean = api.returnResponsePostBean(beanIn);
 		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponsePostBean)).isEqualTo(jsonbean);
 
-		SomeBodyBean returnBeanPostBean = api.returnBeanPostBean(beanIn);
+		TestBodyBean returnBeanPostBean = api.returnBeanPostBean(beanIn);
 		Assertions.assertThat(returnBeanPostBean).isEqualToComparingFieldByField(beanIn);
 
 		api.returnVoidPostString(helloPlain);
@@ -121,7 +120,7 @@ public class BasicApiTest {
 		String returnStringPostString = api.returnStringPostString(helloPlain);
 		Assertions.assertThat(returnStringPostString).isEqualTo(helloPlain);
 
-		SomeBodyBean returnBeanPostString = api.returnBeanPostString(jsonbean);
+		TestBodyBean returnBeanPostString = api.returnBeanPostString(jsonbean);
 		Assertions.assertThat(returnBeanPostString).isEqualToComparingFieldByField(beanIn);
 
 	}
@@ -198,16 +197,16 @@ public class BasicApiTest {
 		public void returnVoidPostNothing();
 
 		@RestCall("POST /returnVoidPostBean")
-		public void returnVoidPostBean(@RestBody SomeBodyBean bean);
+		public void returnVoidPostBean(@RestBody TestBodyBean bean);
 
 		@RestCall("POST /returnStringPostBean")
-		public String returnStringPostBean(@RestBody SomeBodyBean bean);
+		public String returnStringPostBean(@RestBody TestBodyBean bean);
 
 		@RestCall("POST /returnResponsePostBean")
-		public HttlResponse returnResponsePostBean(@RestBody SomeBodyBean bean);
+		public HttlResponse returnResponsePostBean(@RestBody TestBodyBean bean);
 
 		@RestCall("POST /returnBeanPostBean")
-		public SomeBodyBean returnBeanPostBean(@RestBody SomeBodyBean bean);
+		public TestBodyBean returnBeanPostBean(@RestBody TestBodyBean bean);
 
 		@RestCall("POST /returnVoidPostString")
 		public void returnVoidPostString(@RestBody String string);
@@ -216,7 +215,7 @@ public class BasicApiTest {
 		public String returnStringPostString(@RestBody String string);
 
 		@RestCall("POST /returnBeanPostString")
-		public SomeBodyBean returnBeanPostString(@RestBody String string);
+		public TestBodyBean returnBeanPostString(@RestBody String string);
 
 		@RestCall("POST /returnStreamPostBytes")
 		public InputStream returnStreamPostBytes(@RestBody byte[] bytes);

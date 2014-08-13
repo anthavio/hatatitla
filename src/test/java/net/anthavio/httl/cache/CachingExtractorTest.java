@@ -14,13 +14,14 @@ import net.anthavio.cache.Scheduler;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlStatusException;
+import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
+import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.transport.HttpClient4Config;
 
 import org.junit.After;
@@ -57,7 +58,7 @@ public abstract class CachingExtractorTest {
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
 		HttlRequest request = cextractor.getSender().GET("/").build();
-		HttlResponseExtractor<String> extractor = HttlResponseExtractor.STRING;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
 		//soft 1s, hard 2s, synchronous refresh
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(extractor, request, 2, 1,
 				TimeUnit.SECONDS);
@@ -147,7 +148,7 @@ public abstract class CachingExtractorTest {
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
 		HttlRequest request = cextractor.getSender().GET("/").param("sleep", 1).build();
-		HttlResponseExtractor<String> extractor = HttlResponseExtractor.STRING;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
 
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor);
@@ -194,7 +195,7 @@ public abstract class CachingExtractorTest {
 
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 		HttlRequest request = cextractor.getSender().GET("/").build();
-		HttlResponseExtractor<String> extractor = HttlResponseExtractor.STRING;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!
 
@@ -271,7 +272,7 @@ public abstract class CachingExtractorTest {
 
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 		SenderRequestBuilder<?> builder = cextractor.getSender().GET("/");
-		HttlResponseExtractor<String> extractor = HttlResponseExtractor.STRING;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
 		CachingExtractorRequest<String> cerequest = cextractor.from(builder.build()).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!
 

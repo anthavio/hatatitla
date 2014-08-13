@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttpHeaders;
+import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -91,7 +91,7 @@ public class JettyTransport implements HttlTransport {
 		exchange.setAddress(new Address(config.getHostUrl().getHost(), config.getHostUrl().getPort()));
 		exchange.setRequestURI(path);
 		*/
-		HttpHeaders headers = request.getHeaders();
+		HttlHeaders headers = request.getHeaders();
 
 		if (headers != null && headers.size() > 0) {
 			for (String name : headers) {
@@ -141,7 +141,7 @@ public class JettyTransport implements HttlTransport {
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					config.getMarshaller().write(body.getPayload(), baos, Charset.forName(request.getCharset()));
+					config.getMarshaller().marshall(request, baos);
 					exchange.setRequestContent(new ByteArrayBuffer(baos.toByteArray()));
 					break;
 				case STRING:

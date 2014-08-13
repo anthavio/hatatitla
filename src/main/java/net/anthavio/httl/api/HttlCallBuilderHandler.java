@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 
-import net.anthavio.httl.HttlExecutionInterceptor;
+import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
@@ -30,12 +30,12 @@ public class HttlCallBuilderHandler implements InvocationHandler {
 	private final Map<Method, BuilderMethodMeta> methodMetaMap;
 
 	private final HttlBuilderVisitor builderInterceptor;
-	private final HttlExecutionInterceptor executionInterceptor;
+	private final HttlExecutionFilter executionInterceptor;
 	private final HttlResponseExtractor<?> responseExtractor;
 
 	public HttlCallBuilderHandler(HttlApiHandler<?> apiHandler, ApiMethodMeta methodMeta,
 			SenderBodyRequestBuilder builder, HttlBuilderVisitor builderInterceptor,
-			HttlExecutionInterceptor executionInterceptor, HttlResponseExtractor<?> responseExtractor) {
+			HttlExecutionFilter executionInterceptor, HttlResponseExtractor<?> responseExtractor) {
 		this.apiHandler = apiHandler;
 		this.methodMeta = methodMeta;
 		this.methodMetaMap = methodMeta.builder.methods;

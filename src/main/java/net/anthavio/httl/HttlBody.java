@@ -19,11 +19,11 @@ public class HttlBody {
 		} else if (payload instanceof byte[]) {
 			return new HttlBody((byte[]) payload);
 		} else if (payload instanceof InputStream) {
-			return new HttlBody((InputStream) payload);
+			return new HttlBody((InputStream) payload, false);
 		} else if (payload instanceof Reader) {
-			return new HttlBody((Reader) payload);
+			return new HttlBody((Reader) payload, false);
 		} else {
-			return new HttlBody(payload);
+			return new HttlBody(payload, true);
 		}
 	}
 
@@ -35,32 +35,47 @@ public class HttlBody {
 
 	private final Type type;
 
+	private final boolean cache;
+
 	public HttlBody(String string) {
 		this.payload = string;
 		this.type = Type.STRING;
+		this.cache = true;
 	}
 
 	public HttlBody(byte[] bytes) {
 		this.payload = bytes;
 		this.type = Type.BYTES;
+		this.cache = true;
 	}
 
-	public HttlBody(InputStream stream) {
+	public HttlBody(InputStream stream, boolean cache) {
 		this.payload = stream;
 		this.type = Type.STREAM;
+		this.cache = cache;
 	}
 
-	public HttlBody(Reader reader) {
+	public HttlBody(Reader reader, boolean cache) {
 		this.payload = reader;
 		this.type = Type.READER;
+		this.cache = cache;
 	}
 
 	/**
-	 * Sky is the limit! Just implement RequestMarshaller and you can send even JDBC connections
+	 * Sky is the limit! Just implement Marshaller and you can send even JDBC connections
 	 */
-	public HttlBody(Object payload) {
+	public HttlBody(Object payload, boolean cache) {
 		this.payload = payload;
 		this.type = Type.MARSHALL;
+		this.cache = cache;
+	}
+
+	/**
+	 * true - marshall payload or read stream into cached byte[]
+	 * false - mashall payload or write stream directly into output stream
+	 */
+	public boolean isCache() {
+		return cache;
 	}
 
 	public Object getPayload() {
