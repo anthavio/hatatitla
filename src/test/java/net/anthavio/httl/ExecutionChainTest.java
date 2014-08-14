@@ -19,7 +19,7 @@ public class ExecutionChainTest {
 
 		//Given
 		TestExecutionFilter interceptor = new TestExecutionFilter();
-		HttlSender sender = new MockSenderConfig().addExecutionInterceptor(interceptor).build();
+		HttlSender sender = new MockSenderConfig().addExecutionFilter(interceptor).build();
 
 		//When
 		HttlRequest request = sender.GET("/").build();
@@ -51,7 +51,7 @@ class TestExecutionFilter implements HttlExecutionFilter {
 	public RuntimeException exception;
 
 	@Override
-	public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException {
+	public HttlResponse filter(HttlRequest request, HttlExecutionChain chain) throws IOException {
 		this.request = request; //record request
 
 		if (exception != null) {

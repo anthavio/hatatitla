@@ -96,14 +96,6 @@ public class HttlRequestBuilders {
 		// headers section...
 
 		/**
-		 * Sets Accept Header for Content-Type negotiation
-		 */
-		public X accept(String type) {
-			headers.set(HttlConstants.Accept, type);
-			return getX();
-		}
-
-		/**
 		 * Set Headers replacing all existing
 		 */
 		public X setHeaders(Map<String, ?> headers) {

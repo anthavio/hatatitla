@@ -299,7 +299,7 @@ public class MarshallingExtractingTest {
 
 		//different encoding for request and response
 		HttlRequest request = sender.POST("/").param("pmsg", message).param("dostatus", 201).body(body, "application/json")
-				.accept("application/xml").header("Accept-Charset", "Cp1250").build();
+				.header("Accept", "application/xml").header("Accept-Charset", "Cp1250").build();
 		//request.setEncodeParams(true);
 		//charset is added from configuration
 		assertThat(request.getMediaType()).isEqualTo("application/json");

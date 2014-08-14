@@ -73,12 +73,21 @@ public class OAuthServerTest extends HttpServlet {
 		super.init();
 		//ObjectMapper mapper = new ObjectMapper();
 		//mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		sender = HttlSender.For("https://github.com").setHeader("Accept", "application/json").build();
 
+		//Twitter has OAuth 1.0 - https://dev.twitter.com/docs/auth/implementing-sign-twitter
+
+		sender = HttlSender.For("https://api.worldoftanks.eu").setHeader("Accept", "application/json").build();
+
+		builder = new OAuth2Builder(sender).setStrict(false).setAuthUrl("/wot/auth/login/")
+				.setCustomParam("application_id", "a58197e5c9dc213a5c56865014dbd08c")
+				.setRedirectUri("http://local.nature.com:3030/callback/wot").build();
+		/*
+		sender = HttlSender.For("https://github.com").setHeader("Accept", "application/json").build();
 		builder = new OAuth2Builder(sender).setAuthUrl("https://github.com/login/oauth/authorize")
 				.setTokenUrl("https://github.com/login/oauth/access_token").setClientId("22d827124162f9f9a81b")
 				.setClientSecret("91f27372b6835a31a963be4007c090cdb6b4def3")
 				.setRedirectUri("http://local.nature.com:3030/callback/github").build();
+		*/
 		/*
 		HttlSender sender = HttlSender.Build("https://accounts.google.com");
 		builder = new OAuth2Builder(sender).setAuthUrl("https://accounts.google.com/o/oauth2/auth")
@@ -96,35 +105,50 @@ public class OAuthServerTest extends HttpServlet {
 
 		if (request.getRequestURI().contains("authorize")) {
 			//"public access" github
-			String url = builder.getAuthUrl("random-state", "openid email");
-			System.out.println(url);
+			//String url = builder.getAuthUrl("random-state", "openid email"); //github
+			String url = builder.getAuthUrl(null, null); //github
+			System.out.println("Redirecting to " + url);
 			response.sendRedirect(url);
 
 		} else if (request.getRequestURI().contains("callback")) {
-			String error = request.getParameter("error");
-			if (error != null) {
-				response.getWriter().println(error);
-				response.getWriter().println(request.getParameter("error_description"));
-			} else {
-				System.out.println("Code callback!");
-				String code = request.getParameter("code");
-				HttlBuilderVisitor visitor = new HttlBuilderVisitor() {
 
-					@Override
-					public void visit(HttlRequestBuilder<?> builder) {
-						builder.accept("application/json");
+			if (request.getRequestURI().contains("wot")) {
+				String status = request.getParameter("status");
+				if ("ok".equals(status)) {
+					String accessToken = request.getParameter("access_token");
+					//account_id, nickname, expires_at
+					System.out.println("WOT access_token " + accessToken);
+				} else if ("error".equals(status)) {
+					System.out.println("WOT error callback " + request.getParameter("code") + " "
+							+ request.getParameter("message"));
+				} else {
+					System.out.println("Unknown WOT status " + status);
+				}
+			} else { //civilized OAuth
+				String error = request.getParameter("error");
+				if (error != null) {
+					response.getWriter().println(error);
+					response.getWriter().println(request.getParameter("error_description"));
+				} else {
+					System.out.println("Code callback!");
+					String code = request.getParameter("code");
+					HttlBuilderVisitor visitor = new HttlBuilderVisitor() {
 
-					}
-				};
-				OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, OAuthTokenResponse.class);
-				String access_token = tokenResponse.getAccess_token();
-				ExtractedResponse<String> extract = sender.GET("/user").param("access_token", access_token)
-						.extract(String.class);
-				response.getWriter().print(extract);
+						@Override
+						public void visit(HttlRequestBuilder<?> builder) {
+							builder.header("Accept", "application/json");
 
+						}
+					};
+					OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, OAuthTokenResponse.class);
+					String access_token = tokenResponse.getAccess_token();
+					ExtractedResponse<String> extract = sender.GET("/user").param("access_token", access_token)
+							.extract(String.class);
+					response.getWriter().print(extract);
+					response.setStatus(200);
+				}
 			}
 		} else {
 		}
 	}
-
 }

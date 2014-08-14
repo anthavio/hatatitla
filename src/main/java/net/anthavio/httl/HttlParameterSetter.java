@@ -104,33 +104,46 @@ public interface HttlParameterSetter {
 				}
 			} else {
 				if (paramValue instanceof Collection) {
-					List<String> list = parameters.get(paramName, reset);
-					Collection<?> collection = (Collection<?>) paramValue;
-					for (Object element : collection) {
-						element(list, paramName, element);
-					}
+					collection(parameters, reset, paramName, (Collection<?>) paramValue);
 
 				} else if (paramValue instanceof Iterator) {
-					List<String> list = parameters.get(paramName, reset);
-					Iterator<?> iterator = (Iterator<?>) paramValue;
-					while (iterator.hasNext()) {
-						Object element = iterator.next();
-						element(list, paramName, element);
-					}
+					iterator(parameters, reset, paramName, (Iterator<?>) paramValue);
 
 				} else if (paramValue.getClass().isArray()) {
-					List<String> list = parameters.get(paramName, reset);
-					int length = Array.getLength(paramValue);
-					for (int i = 0; i < length; i++) {
-						Object element = Array.get(paramValue, i);
-						element(list, paramName, element);
-					}
+					array(parameters, reset, paramName, paramValue);
+
 				} else {
 					String string = convert(paramName, paramValue);
 					if (string != null) {
 						parameters.put(paramName, string, reset);
 					}
 				}
+			}
+		}
+
+		protected void collection(Parameters parameters, boolean reset, String paramName, Collection<?> paramValue) {
+			List<String> list = parameters.get(paramName, reset);
+			Collection<?> collection = (Collection<?>) paramValue;
+			for (Object element : collection) {
+				element(list, paramName, element);
+			}
+		}
+
+		protected void iterator(Parameters parameters, boolean reset, String paramName, Iterator<?> paramValue) {
+			List<String> list = parameters.get(paramName, reset);
+			Iterator<?> iterator = (Iterator<?>) paramValue;
+			while (iterator.hasNext()) {
+				Object element = iterator.next();
+				element(list, paramName, element);
+			}
+		}
+
+		protected void array(Parameters parameters, boolean reset, String paramName, Object paramValue) {
+			List<String> list = parameters.get(paramName, reset);
+			int length = Array.getLength(paramValue);
+			for (int i = 0; i < length; i++) {
+				Object element = Array.get(paramValue, i);
+				element(list, paramName, element);
 			}
 		}
 

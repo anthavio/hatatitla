@@ -258,7 +258,7 @@ public class SpecialApiTest {
 		}
 
 		@Override
-		public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException {
+		public HttlResponse filter(HttlRequest request, HttlExecutionChain chain) throws IOException {
 			this.lastRequest = request;
 			HttlResponse response = chain.next(request);
 			this.lastResponse = response;

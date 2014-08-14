@@ -56,8 +56,9 @@ public class OAuth2Builder {
 		return strict;
 	}
 
-	public void setStrict(boolean strict) {
+	public OAuth2Builder setStrict(boolean strict) {
 		this.strict = strict;
+		return this;
 	}
 
 	public URL getAuthUrl() {
@@ -153,7 +154,7 @@ public class OAuth2Builder {
 	}
 
 	public OAuth2Builder setCustomParam(String name, String value) {
-		if (this.customAuthParams != null) {
+		if (this.customAuthParams == null) {
 			this.customAuthParams = new ArrayList<String[]>();
 		}
 		customAuthParams.add(new String[] { name, value });

@@ -15,7 +15,7 @@ import net.anthavio.cache.CacheEntry;
  */
 public interface HttlExecutionFilter {
 
-	public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException;
+	public HttlResponse filter(HttlRequest request, HttlExecutionChain chain) throws IOException;
 
 	/**
 	 * Example how ExecutionInterceptor can be used
@@ -29,7 +29,7 @@ public interface HttlExecutionFilter {
 		private Cache<HttlRequest, HttlResponse> cache;
 
 		@Override
-		public HttlResponse intercept(HttlRequest request, HttlExecutionChain chain) throws IOException {
+		public HttlResponse filter(HttlRequest request, HttlExecutionChain chain) throws IOException {
 			CacheEntry<HttlResponse> entry = cache.get(request);
 			if (entry != null) {
 				//TODO if entry.isStale();

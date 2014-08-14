@@ -279,7 +279,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			if (interceptor != null) {
 				HttlExecutionFilter interceptor = this.interceptor;
 				this.interceptor = null;
-				return interceptor.intercept(request, this);
+				return interceptor.filter(request, this);
 			} else {
 				return sender.execute(request);
 			}

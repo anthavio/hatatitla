@@ -52,7 +52,7 @@ public abstract class SenderBuilder {
 
 	private HttlParameterSetter paramSetter = new ConfigurableParamSetter();
 
-	private final List<HttlExecutionFilter> executionInterceptors = new ArrayList<HttlExecutionFilter>();
+	private final List<HttlExecutionFilter> executionFilters = new ArrayList<HttlExecutionFilter>();
 
 	private final List<HttlBuilderVisitor> builderVisitors = new ArrayList<HttlBuilderVisitor>();
 
@@ -131,19 +131,6 @@ public abstract class SenderBuilder {
 	public Charset getCharset() {
 		return this.charset;
 	}
-
-	/*
-		public HttpSenderBuilder setCharset(Charset charset) {
-			this.charset = charset;
-			this.encoding = charset.name();
-			String contentType = this.defaultHeaders.getFirst(Constants.Content_Type);
-			if (contentType != null) {
-				this.defaultHeaders.set(Constants.Content_Type, contentType.substring(contentType.indexOf("; charset="))
-						+ "; charset=" + encoding);
-			}
-			return this;
-		}
-	*/
 
 	/**
 	 * @return Timeout for creating connection in millis (CONNECTION_TIMEOUT)
@@ -278,23 +265,23 @@ public abstract class SenderBuilder {
 		this.bytesExtractor = extractor;
 	}
 
-	public SenderBuilder addExecutionInterceptor(HttlExecutionFilter interceptor) {
-		if (interceptor == null) {
-			throw new IllegalArgumentException("Null interceptor");
+	public SenderBuilder addExecutionFilter(HttlExecutionFilter filter) {
+		if (filter == null) {
+			throw new IllegalArgumentException("Null filter");
 		}
-		executionInterceptors.add(interceptor);
+		executionFilters.add(filter);
 		return this;
 	}
 
-	public List<HttlExecutionFilter> getExecutionInterceptors() {
-		return executionInterceptors;
+	public List<HttlExecutionFilter> getExecutionFilters() {
+		return executionFilters;
 	}
 
-	public SenderBuilder addBuilderInterceptor(HttlBuilderVisitor interceptor) {
-		if (interceptor == null) {
-			throw new IllegalArgumentException("Null interceptor");
+	public SenderBuilder addBuilderVisitor(HttlBuilderVisitor visitor) {
+		if (visitor == null) {
+			throw new IllegalArgumentException("Null filter");
 		}
-		builderVisitors.add(interceptor);
+		builderVisitors.add(visitor);
 		return this;
 	}
 
@@ -323,8 +310,11 @@ public abstract class SenderBuilder {
 		return paramSetter;
 	}
 
-	public SenderBuilder setParamSetter(HttlParameterSetter paramHandler) {
-		this.paramSetter = paramHandler;
+	public SenderBuilder setParamSetter(HttlParameterSetter paramSetter) {
+		if (paramSetter == null) {
+			throw new IllegalArgumentException("Null setter");
+		}
+		this.paramSetter = paramSetter;
 		return this;
 	}
 

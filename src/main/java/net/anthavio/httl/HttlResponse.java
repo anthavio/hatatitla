@@ -35,13 +35,11 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 	protected final HttlHeaders headers;
 
-	protected transient InputStream stream;
+	protected transient InputStreamWrapper stream;
 
 	protected final String mediaType;
 
 	protected final String encoding;// = "utf-8";//"ISO-8859-1";
-
-	protected boolean closed;
 
 	public HttlResponse(HttlRequest request, int httpCode, String message, HttlHeaders headers, InputStream stream) {
 		this.request = request;
@@ -71,7 +69,11 @@ public abstract class HttlResponse implements Closeable, Serializable {
 				stream = new InflaterInputStream(stream);
 			}
 		}
-		this.stream = stream; //null for 304 Not Modified
+		if (stream != null) {
+			this.stream = new InputStreamWrapper(stream);
+		} else {
+			this.stream = null; //null for 304 Not Modified
+		}
 
 	}
 
@@ -137,8 +139,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 	@Override
 	public void close() {
-		if (!closed) {
-			closed = true;
+		if (stream != null && !stream.isClosed()) {
 			try {
 				HttpHeaderUtil.close(this);
 			} catch (IOException iox) {
@@ -152,4 +153,75 @@ public abstract class HttlResponse implements Closeable, Serializable {
 		return "HttlResponse {" + httpStatusCode + ", " + httpStatusMessage + ", " + mediaType + ", " + encoding + "}";
 	}
 
+	/**
+	 * Tracking close call to prevent IOException
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	class InputStreamWrapper extends InputStream {
+
+		private final InputStream stream;
+
+		private boolean closed = false;
+
+		InputStreamWrapper(InputStream stream) {
+			this.stream = stream;
+		}
+
+		@Override
+		public void close() throws IOException {
+			closed = true;
+			stream.close();
+		}
+
+		public boolean isClosed() {
+			return closed;
+		}
+
+		@Override
+		public int read() throws IOException {
+			return stream.read();
+		}
+
+		public int read(byte[] b, int off, int len) throws IOException {
+			return stream.read(b, off, len);
+		}
+
+		public int read(byte[] b) throws IOException {
+			return stream.read(b);
+		}
+
+		public int available() throws IOException {
+			return stream.available();
+		}
+
+		public boolean equals(Object obj) {
+			return stream.equals(obj);
+		}
+
+		public int hashCode() {
+			return stream.hashCode();
+		}
+
+		public void mark(int readlimit) {
+			stream.mark(readlimit);
+		}
+
+		public boolean markSupported() {
+			return stream.markSupported();
+		}
+
+		public void reset() throws IOException {
+			stream.reset();
+		}
+
+		public long skip(long n) throws IOException {
+			return stream.skip(n);
+		}
+
+		public String toString() {
+			return stream.toString();
+		}
+	}
 }

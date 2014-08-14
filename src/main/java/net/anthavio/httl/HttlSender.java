@@ -56,7 +56,7 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	private final HttlBodyUnmarshaller unmarshaller;
 
-	private final List<HttlExecutionFilter> executionInterceptors;
+	private final List<HttlExecutionFilter> executionFilters;
 
 	public HttlSender(SenderBuilder config, HttlTransport transport) {
 		if (config == null) {
@@ -67,7 +67,7 @@ public class HttlSender implements SenderOperations, Closeable {
 		this.executor = config.getExecutorService();
 		this.marshaller = config.getMarshaller();
 		this.unmarshaller = config.getUnmarshaller();
-		this.executionInterceptors = config.getExecutionInterceptors();
+		this.executionFilters = config.getExecutionFilters();
 	}
 
 	public HttlTransport getTransport() {
@@ -76,6 +76,14 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	public ExecutorService getExecutor() {
 		return executor;
+	}
+
+	public HttlBodyMarshaller getMarshaller() {
+		return marshaller;
+	}
+
+	public HttlBodyUnmarshaller getUnmarshaller() {
+		return unmarshaller;
 	}
 
 	public SenderBuilder getConfig() {
@@ -108,8 +116,8 @@ public class HttlSender implements SenderOperations, Closeable {
 
 		HttlResponse response = null;
 		try {
-			if (executionInterceptors != null && executionInterceptors.size() != 0) {
-				response = new SenderExecutionChain(executionInterceptors, this).next(request);
+			if (executionFilters != null && executionFilters.size() != 0) {
+				response = new SenderExecutionChain(executionFilters, this).next(request);
 			} else {
 				response = doExecute(request);
 			}

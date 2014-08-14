@@ -10,5 +10,8 @@ import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
  */
 public interface HttlBuilderVisitor {
 
+	/**
+	 * @param builder - enjoy!
+	 */
 	public void visit(HttlRequestBuilder<?> builder);
 }
