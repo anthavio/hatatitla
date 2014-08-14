@@ -8,13 +8,10 @@ import net.anthavio.httl.HttlResponse;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 /**
  * JSON -> Java 
  * Jackson 2 based Unmarshaller
- * 
- * httpSender.extract(new GetRequest("/my_entity.json"), new JsonResponseExtractor(MyEntity.class));
  * 
  * @author martin.vanek
  *
@@ -28,7 +25,7 @@ public class Jackson2Unmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	public Jackson2Unmarshaller(ObjectMapper mapper) {
-		this(mapper, (mapper instanceof XmlMapper) ? "application/xml" : "application/json");
+		this(mapper, "application/json");
 	}
 
 	public Jackson2Unmarshaller(ObjectMapper mapper, String mediaType) {

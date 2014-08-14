@@ -66,7 +66,7 @@ public class OptionalLibTest {
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
-		Jackson2Unmarshaller unmarshaller = new Jackson2Unmarshaller(mapper);
+		Jackson2Unmarshaller unmarshaller = new Jackson2Unmarshaller(mapper, "application/xml");
 		TestBodyRequest extract = unmarshaller.unmarshall(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
