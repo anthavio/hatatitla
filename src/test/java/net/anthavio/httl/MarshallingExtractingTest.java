@@ -68,15 +68,15 @@ public class MarshallingExtractingTest {
 		MockTransport transport = new MockTransport();
 		MockSenderConfig config = new MockSenderConfig(transport);
 		HttlSender sender = config.build();
-		transport.setStaticResponse(555, "application/json", JsonBuilder.OBJECT().field("error", "Shit happend!").end()
+		transport.setStaticResponse(555, "application/json", JsonBuilder.OBJECT().field("message", "Shit happend!").end()
 				.getJson());
 
 		//When - default settings
 		try {
 			sender.GET("/evil").extract(String.class);
-			Assertions.fail("Preceding statement must throw IllegalStateException");
+			Assertions.fail("Expected " + HttlStatusException.class.getName());
+			//Then - HttlStatusException because of 555 response
 		} catch (HttlStatusException rsx) {
-			//Then - ResponseStatusException
 			Assertions.assertThat(rsx.getResponse().getHttpStatusCode()).isEqualTo(555);
 		}
 
@@ -87,18 +87,19 @@ public class MarshallingExtractingTest {
 			private ObjectMapper mapper = new ObjectMapper();
 
 			@Override
-			public Object unmarshall(HttlResponse response, Type resultType) throws IOException {
+			public Object doUnmarshall(HttlResponse response, Type resultType) throws IOException {
 				Map value = mapper.readValue(response.getReader(), Map.class);
-				throw new IllegalStateException((String) value.get("error")); // some API exception in real world
+				throw new ArrayIndexOutOfBoundsException((String) value.get("message")); // some API exception in real world
 			}
 		};
-		// When - Custom ResponseUnmarshaller is used
-		config.setUnmarshaller(evilUnmar);
 
-		//Then - Custom IllegalStateException is thrown
+		// When - Custom ResponseUnmarshaller
+		sender = config.setUnmarshaller(evilUnmar).build();
 		try {
-			sender.GET("/evil").extract(Exception.class);
-		} catch (IllegalStateException isx) {
+
+			sender.GET("/evil").extract(TestBodyRequest.class);
+			//Then - Custom ArrayIndexOutOfBoundsException is thrown
+		} catch (ArrayIndexOutOfBoundsException isx) {
 			Assertions.assertThat(isx.getMessage()).isEqualTo("Shit happend!");
 		}
 

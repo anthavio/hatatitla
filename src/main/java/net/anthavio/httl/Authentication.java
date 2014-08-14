@@ -88,48 +88,54 @@ public class Authentication {
 		return this.scheme;
 	}
 
-	public void setScheme(Scheme scheme) {
+	public Authentication setScheme(Scheme scheme) {
 		this.scheme = scheme;
+		return this;
 	}
 
 	public String getUsername() {
 		return this.username;
 	}
 
-	public void setUsername(String username) {
+	public Authentication setUsername(String username) {
 		this.username = username;
+		return this;
 	}
 
 	public String getPassword() {
 		return this.password;
 	}
 
-	public void setPassword(String password) {
+	public Authentication setPassword(String password) {
 		this.password = password;
+		return this;
 	}
 
 	public boolean getPreemptive() {
 		return this.preemptive;
 	}
 
-	public void setPreemptive(boolean preemptive) {
+	public Authentication setPreemptive(boolean preemptive) {
 		this.preemptive = preemptive;
+		return this;
 	}
 
 	public String getRealm() {
 		return this.realm;
 	}
 
-	public void setRealm(String realm) {
+	public Authentication setRealm(String realm) {
 		this.realm = realm;
+		return this;
 	}
 
 	public String getNonce() {
 		return this.nonce;
 	}
 
-	public void setNonce(String nonce) {
+	public Authentication setNonce(String nonce) {
 		this.nonce = nonce;
+		return this;
 	}
 
 }

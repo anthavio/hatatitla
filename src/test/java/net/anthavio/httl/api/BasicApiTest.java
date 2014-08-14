@@ -10,7 +10,7 @@ import java.util.Date;
 
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.api.ComplexApiTest.TestBodyBean;
+import net.anthavio.httl.api.AdvancedApiTest.TestBodyBean;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.MockSenderConfig;
@@ -66,8 +66,24 @@ public class BasicApiTest {
 
 		transport.setStaticResponse(null);
 
-		api.returnVoidPostNothing();
-		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/returnVoidPostNothing");
+		api.void2void();
+		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/void2void");
+	}
+
+	@RestHeaders("Content-Type: application/json")
+	static interface SimpleApi {
+
+		@RestCall("GET /returnVoid")
+		public void returnVoid();
+
+		@RestCall("GET /returnString")
+		public String returnString();
+
+		@RestCall("GET /returnResponse")
+		public HttlResponse returnResponse();
+
+		@RestCall("POST /void2void")
+		public void void2void();
 
 	}
 
@@ -81,7 +97,7 @@ public class BasicApiTest {
 
 		String helloPlain = "Hello Inčučuna!";
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
-		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
+		ApiWithBeans api = HttlApiBuilder.build(ApiWithBeans.class, sender);
 
 		final TestBodyBean beanIn = new TestBodyBean("Kvído Vymětal", new Date(), 369);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -91,38 +107,64 @@ public class BasicApiTest {
 		//final String xmlbean = sender.getRequestMarshaller("application/xml").marshall(beanIn);
 
 		//When
-		api.returnVoidPostBean(beanIn);
+		api.bean2void(beanIn);
 
 		//Then
-		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/returnVoidPostBean");
+		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/bean2void");
 		Assertions.assertThat(transport.getLastRequest().getBody()).isNotNull();
 
 		//When
-		api.returnVoidPostBean(null);
-		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/returnVoidPostBean");
+		api.bean2void(null);
+		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/bean2void");
 
 		//When
-		String returnStringPostBean = api.returnStringPostBean(beanIn);
-		Assertions.assertThat(returnStringPostBean).isEqualTo(jsonbean);
+		String bean2string = api.bean2string(beanIn);
+		Assertions.assertThat(bean2string).isEqualTo(jsonbean);
 
 		//When
-		String returnStringPostBeanNull = api.returnStringPostBean(null);
-		Assertions.assertThat(returnStringPostBeanNull).startsWith("MockResponse");
+		bean2string = api.bean2string(null);
+		Assertions.assertThat(bean2string).startsWith("MockResponse");
 		Assertions.assertThat(transport.getLastRequest().getBody()).isNull();
-		HttlResponse returnResponsePostBean = api.returnResponsePostBean(beanIn);
-		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponsePostBean)).isEqualTo(jsonbean);
 
-		TestBodyBean returnBeanPostBean = api.returnBeanPostBean(beanIn);
-		Assertions.assertThat(returnBeanPostBean).isEqualToComparingFieldByField(beanIn);
+		HttlResponse bean2response = api.bean2response(beanIn);
+		Assertions.assertThat(HttpHeaderUtil.readAsString(bean2response)).isEqualTo(jsonbean);
 
-		api.returnVoidPostString(helloPlain);
+		TestBodyBean bean2bean = api.bean2bean(beanIn);
+		Assertions.assertThat(bean2bean).isEqualToComparingFieldByField(beanIn);
 
-		String returnStringPostString = api.returnStringPostString(helloPlain);
-		Assertions.assertThat(returnStringPostString).isEqualTo(helloPlain);
+		api.string2void(helloPlain);
 
-		TestBodyBean returnBeanPostString = api.returnBeanPostString(jsonbean);
-		Assertions.assertThat(returnBeanPostString).isEqualToComparingFieldByField(beanIn);
+		String string2string = api.string2string(helloPlain);
+		Assertions.assertThat(string2string).isEqualTo(helloPlain);
 
+		TestBodyBean string2bean = api.string2bean(jsonbean);
+		Assertions.assertThat(string2bean).isEqualToComparingFieldByField(beanIn);
+
+	}
+
+	@RestHeaders("Content-Type: application/json")
+	static interface ApiWithBeans {
+
+		@RestCall("POST /bean2void")
+		public void bean2void(@RestBody TestBodyBean bean);
+
+		@RestCall("POST /bean2string")
+		public String bean2string(@RestBody TestBodyBean bean);
+
+		@RestCall("POST /bean2response")
+		public HttlResponse bean2response(@RestBody TestBodyBean bean);
+
+		@RestCall("POST /bean2bean")
+		public TestBodyBean bean2bean(@RestBody TestBodyBean bean);
+
+		@RestCall("POST /string2void")
+		public void string2void(@RestBody String string);
+
+		@RestCall("POST /string2string")
+		public String string2string(@RestBody String string);
+
+		@RestCall("POST /string2bean")
+		public TestBodyBean string2bean(@RestBody String string);
 	}
 
 	@Test
@@ -133,35 +175,63 @@ public class BasicApiTest {
 
 		String helloPlain = "Hello Inčučuna!";
 		transport.setStaticResponse(201, "text/dolly", helloPlain);
-		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
+		ApiWithStreams api = HttlApiBuilder.build(ApiWithStreams.class, sender);
 
-		InputStream returnStreamPostBytes = api.returnStreamPostBytes(helloPlain.getBytes("utf-8"));
-		Assertions.assertThat(new String(IOUtils.toByteArray(returnStreamPostBytes), "utf-8")).isEqualTo(helloPlain);
+		//When
+		InputStream postBytesReturnStream = api.postBytesReturnStream(helloPlain.getBytes("utf-8"));
+		//Then
+		Assertions.assertThat(new String(IOUtils.toByteArray(postBytesReturnStream), "utf-8")).isEqualTo(helloPlain);
+		postBytesReturnStream.close();
 
-		Reader returnReaderPostString = api.returnReaderPostString(helloPlain);
-		Assertions.assertThat(IOUtils.toString(returnReaderPostString)).isEqualTo(helloPlain);
+		//When
+		Reader postStringReturnReader = api.postStringReturnReader(helloPlain);
+		//Then
+		Assertions.assertThat(IOUtils.toString(postStringReturnReader)).isEqualTo(helloPlain);
+		postStringReturnReader.close();
 
-		InputStream returnStreamPostStream = api.returnStreamPostStream(new ByteArrayInputStream(helloPlain
+		//When
+		InputStream postStreamReturnStream = api.postStreamReturnStream(new ByteArrayInputStream(helloPlain
 				.getBytes("utf-8")));
-		Assertions.assertThat(IOUtils.toString(returnStreamPostStream, "utf-8")).isEqualTo(helloPlain);
+		//Then
+		Assertions.assertThat(IOUtils.toString(postStreamReturnStream, "utf-8")).isEqualTo(helloPlain);
+		postStreamReturnStream.close();
 
-		Reader returnReaderPostReader = api.returnReaderPostReader(new StringReader(helloPlain));
-		Assertions.assertThat(IOUtils.toString(returnReaderPostReader)).isEqualTo(helloPlain);
+		//When
+		Reader postReaderReturnReader = api.postReaderReturnReader(new StringReader(helloPlain));
+		//Then
+		Assertions.assertThat(IOUtils.toString(postReaderReturnReader)).isEqualTo(helloPlain);
+		postReaderReturnReader.close();
+	}
+
+	@RestHeaders("Content-Type: application/json")
+	static interface ApiWithStreams {
+
+		@RestCall("POST /returnStreamPostBytes")
+		public InputStream postBytesReturnStream(@RestBody byte[] bytes);
+
+		@RestCall("POST /returnReaderPostString")
+		public Reader postStringReturnReader(@RestBody String string);
+
+		@RestCall("POST /returnStreamPostStream")
+		public InputStream postStreamReturnStream(@RestBody InputStream stream);
+
+		@RestCall("POST /returnReaderPostReader")
+		public Reader postReaderReturnReader(@RestBody Reader reader);
 	}
 
 	@Test
-	public void wrongsApis() {
+	public void emptyParamaterApis() {
 		HttlSender sender = HttlSender.For("www.example.com").build();
 		try {
 			HttlApiBuilder.with(sender).build(WrongApiMissingName.class);
-			Assertions.fail("Previous statement must throw " + HttlApiException.class.getSimpleName());
+			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());
 		} catch (HttlApiException abx) {
 			Assertions.assertThat(abx.getMessage()).startsWith("Missing parameter's name on position 1");
 		}
 
 		try {
 			HttlApiBuilder.with(sender).build(WrongApiEmptyName.class);
-			Assertions.fail("Previous statement must throw " + HttlApiException.class.getSimpleName());
+			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());
 		} catch (HttlApiException abx) {
 			Assertions.assertThat(abx.getMessage()).startsWith("Missing parameter's name on position 1");
 		}
@@ -181,53 +251,21 @@ public class BasicApiTest {
 		public void missing(@RestVar("") String some);
 	}
 
-	@RestHeaders("Content-Type: application/json")
-	static interface SimpleApi {
+	@Test
+	public void wrongGetWithBody() {
+		HttlSender sender = HttlSender.For("www.example.com").build();
+		try {
+			HttlApiBuilder.with(sender).build(WrongApiGetWithBody.class);
+			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());
+		} catch (HttlApiException abx) {
+			Assertions.assertThat(abx.getMessage()).startsWith("Body not allowed");
+		}
+	}
 
-		@RestCall("GET /returnVoid")
-		public void returnVoid();
+	static interface WrongApiGetWithBody {
 
-		@RestCall("GET /returnString")
-		public String returnString();
-
-		@RestCall("GET /returnResponse")
-		public HttlResponse returnResponse();
-
-		@RestCall("POST /returnVoidPostNothing")
-		public void returnVoidPostNothing();
-
-		@RestCall("POST /returnVoidPostBean")
-		public void returnVoidPostBean(@RestBody TestBodyBean bean);
-
-		@RestCall("POST /returnStringPostBean")
-		public String returnStringPostBean(@RestBody TestBodyBean bean);
-
-		@RestCall("POST /returnResponsePostBean")
-		public HttlResponse returnResponsePostBean(@RestBody TestBodyBean bean);
-
-		@RestCall("POST /returnBeanPostBean")
-		public TestBodyBean returnBeanPostBean(@RestBody TestBodyBean bean);
-
-		@RestCall("POST /returnVoidPostString")
-		public void returnVoidPostString(@RestBody String string);
-
-		@RestCall("POST /returnStringPostString")
-		public String returnStringPostString(@RestBody String string);
-
-		@RestCall("POST /returnBeanPostString")
-		public TestBodyBean returnBeanPostString(@RestBody String string);
-
-		@RestCall("POST /returnStreamPostBytes")
-		public InputStream returnStreamPostBytes(@RestBody byte[] bytes);
-
-		@RestCall("POST /returnReaderPostString")
-		public Reader returnReaderPostString(@RestBody String string);
-
-		@RestCall("POST /returnStreamPostStream")
-		public InputStream returnStreamPostStream(@RestBody InputStream stream);
-
-		@RestCall("POST /returnReaderPostReader")
-		public Reader returnReaderPostReader(@RestBody Reader reader);
+		@RestCall("GET /whatever")
+		public void whatever(@RestBody String body); //GET with body is nonsense
 
 	}
 }

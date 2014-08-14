@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Work like Factory (supports) and Marshaller (write) in the same time
  * 
  * @author martin.vanek
  *
@@ -12,8 +11,7 @@ import java.io.OutputStream;
 public interface HttlBodyMarshaller {
 
 	/**
-	 * Kind of lookup method
-	 * @return null or instance that will marshall request
+	 * Check request.getMediaType() and marshall request.getBody().getPayload()
 	 */
 	public abstract void marshall(HttlRequest request, OutputStream stream) throws IOException;
 

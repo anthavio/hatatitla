@@ -73,7 +73,7 @@ public class JaxbUnmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	@Override
-	public Object unmarshall(HttlResponse response, Type resultType) throws IOException {
+	public Object doUnmarshall(HttlResponse response, Type resultType) throws IOException {
 		if (!(resultType instanceof Class)) {
 			throw new IllegalArgumentException("JAXB can only read Class " + resultType);
 		}

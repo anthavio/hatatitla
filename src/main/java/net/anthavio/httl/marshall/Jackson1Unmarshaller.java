@@ -3,8 +3,8 @@ package net.anthavio.httl.marshall;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlBodyUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlResponse;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.JavaType;
@@ -47,7 +47,7 @@ public class Jackson1Unmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	@Override
-	public Object unmarshall(HttlResponse response, Type resultType) throws IOException {
+	public Object doUnmarshall(HttlResponse response, Type resultType) throws IOException {
 		JavaType javaType = mapper.constructType(resultType); //TODO cache JavaType
 		return mapper.reader(javaType).readValue(response.getReader());
 	}

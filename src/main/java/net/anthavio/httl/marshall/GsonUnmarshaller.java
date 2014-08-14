@@ -3,8 +3,8 @@ package net.anthavio.httl.marshall;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlBodyUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlResponse;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -50,7 +50,7 @@ public class GsonUnmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	@Override
-	public Object unmarshall(HttlResponse response, Type resultType) throws IOException {
+	public Object doUnmarshall(HttlResponse response, Type resultType) throws IOException {
 		return gson.fromJson(response.getReader(), resultType);
 	}
 

@@ -3,11 +3,12 @@ package net.anthavio.httl.marshall;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlBodyUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlResponse;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 /**
  * JSON -> Java 
@@ -27,7 +28,7 @@ public class Jackson2Unmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	public Jackson2Unmarshaller(ObjectMapper mapper) {
-		this(mapper, "application/json");
+		this(mapper, (mapper instanceof XmlMapper) ? "application/xml" : "application/json");
 	}
 
 	public Jackson2Unmarshaller(ObjectMapper mapper, String mediaType) {
@@ -47,7 +48,7 @@ public class Jackson2Unmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	@Override
-	public Object unmarshall(HttlResponse response, Type resultType) throws IOException {
+	public Object doUnmarshall(HttlResponse response, Type resultType) throws IOException {
 		JavaType javaType = mapper.constructType(resultType); //TODO cache JavaType
 		return mapper.reader(javaType).readValue(response.getReader());
 	}

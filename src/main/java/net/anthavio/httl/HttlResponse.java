@@ -11,8 +11,10 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import net.anthavio.httl.HttlSender.HttlHeaders;
-import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -20,6 +22,8 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  *
  */
 public abstract class HttlResponse implements Closeable, Serializable {
+
+	private static final Logger logger = LoggerFactory.getLogger(HttlResponse.class);
 
 	private static final long serialVersionUID = 1L;
 
@@ -36,6 +40,8 @@ public abstract class HttlResponse implements Closeable, Serializable {
 	protected final String mediaType;
 
 	protected final String encoding;// = "utf-8";//"ISO-8859-1";
+
+	protected boolean closed;
 
 	public HttlResponse(HttlRequest request, int httpCode, String message, HttlHeaders headers, InputStream stream) {
 		this.request = request;
@@ -109,21 +115,21 @@ public abstract class HttlResponse implements Closeable, Serializable {
 	}
 
 	/**
-	 * @return charset part of the Content-Type header. If header is missing, default ISO-8859-1 is returned
+	 * @return charset part of the Content-Type header
 	 */
 	public String getEncoding() {
 		return encoding;
 	}
 
 	/**
-	 * @return charset part of the Content-Type header. If header is missing, default ISO-8859-1 is returned
+	 * @return charset part of the Content-Type header
 	 */
 	public Charset getCharset() {
 		return Charset.forName(encoding);
 	}
 
 	/**
-	 * @return media type part of the Content-Type header. If header is missing, default media/unknown is returned
+	 * @return media type part of the Content-Type header
 	 */
 	public String getMediaType() {
 		return mediaType;
@@ -131,12 +137,19 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 	@Override
 	public void close() {
-		Cutils.close(stream);
+		if (!closed) {
+			closed = true;
+			try {
+				HttpHeaderUtil.close(this);
+			} catch (IOException iox) {
+				logger.warn("Closing problem: " + iox);
+			}
+		}
 	}
 
 	@Override
 	public String toString() {
-		return "HttlResponse {" + httpStatusCode + ", " + httpStatusMessage + ", " + mediaType + "}";
+		return "HttlResponse {" + httpStatusCode + ", " + httpStatusMessage + ", " + mediaType + ", " + encoding + "}";
 	}
 
 }

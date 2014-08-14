@@ -5,8 +5,8 @@ import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.util.Date;
 
-import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlBodyUnmarshaller.ConfigurableUnmarshaller;
+import net.anthavio.httl.HttlResponse;
 
 import org.simpleframework.xml.core.Persister;
 import org.simpleframework.xml.transform.Transform;
@@ -54,7 +54,7 @@ public class SimpleXmlUnmarshaller extends ConfigurableUnmarshaller {
 	}
 
 	@Override
-	public Object unmarshall(HttlResponse response, Type resultType) throws IOException {
+	public Object doUnmarshall(HttlResponse response, Type resultType) throws IOException {
 		if (!(resultType instanceof Class<?>)) {
 			throw new IllegalArgumentException("Simple XML Persister can only read Class " + resultType);
 		}

@@ -161,7 +161,7 @@ public class HttlApiBuilder {
 
 			if (body != null) {
 				if (http.getMethod().isBodyAllowed() == false) {
-					throw new HttlApiException("Body in not allowed on HTTP " + http.getMethod(), method);
+					throw new HttlApiException("Body not allowed on HTTP " + http.getMethod(), method);
 				}
 
 				if (body.variable == null && headerMap.get(HttlConstants.Content_Type) == null) {

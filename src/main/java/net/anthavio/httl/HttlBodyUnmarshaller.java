@@ -12,7 +12,10 @@ import net.anthavio.httl.util.GenericType;
  */
 public interface HttlBodyUnmarshaller {
 
-	public abstract Object unmarshall(HttlResponse response, Type returnType) throws IOException;
+	/**
+	 * Unmarshall response.getStream()
+	 */
+	public Object unmarshall(HttlResponse response, Type returnType) throws IOException;
 
 	/**
 	 * Configurable multipurpose Unmarshaller
@@ -36,17 +39,7 @@ public interface HttlBodyUnmarshaller {
 		}
 
 		public ConfigurableUnmarshaller(String mediaType, int minHttpCode, int maxHttpCode) {
-			/*
-			if (minHttpCode < 100 || minHttpCode > 599) {
-				throw new IllegalArgumentException("Http code out of range <100,599>: " + minHttpCode);
-			}
-			*/
 			this.minHttpCode = minHttpCode;
-			/*
-			if (maxHttpCode < 100 || maxHttpCode > 599) {
-				throw new IllegalArgumentException("Http code out of range <100,599>: " + maxHttpCode);
-			}
-			*/
 			this.maxHttpCode = maxHttpCode;
 
 			if (minHttpCode > maxHttpCode) {
@@ -60,10 +53,19 @@ public interface HttlBodyUnmarshaller {
 
 		}
 
-		public HttlBodyUnmarshaller supports(HttlResponse response, Type resultType) {
-			boolean isRangeOk = response.getHttpStatusCode() >= minHttpCode && response.getHttpStatusCode() <= maxHttpCode;
-			boolean isMediaOk = mediaType.equals(ANY_MEDIA_TYPE) || mediaType.equals(response.getMediaType());
-			return isRangeOk && isMediaOk ? this : null;
+		public abstract Object doUnmarshall(HttlResponse response, Type returnType) throws IOException;
+
+		public Object unmarshall(HttlResponse response, Type returnType) throws IOException {
+			int status = response.getHttpStatusCode();
+			if (status > maxHttpCode || status < minHttpCode) {
+				throw new HttlProcessingException(response, "Http status " + status + " is outside of range <" + minHttpCode
+						+ "," + maxHttpCode + ">");
+			}
+			if (!mediaType.equals(response.getMediaType()) && !mediaType.equals(ANY_MEDIA_TYPE)) {
+				throw new HttlProcessingException(response, "Mime type " + response.getMediaType() + " does not match "
+						+ mediaType);
+			}
+			return doUnmarshall(response, returnType);
 		}
 
 		public <T> T unmarshall(HttlResponse response, Class<T> resultType) throws IOException {

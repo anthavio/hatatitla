@@ -66,13 +66,13 @@ public class OptionalLibTest {
 
 		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", xml);
 
-		Jackson2Unmarshaller extractor = new Jackson2Unmarshaller(mapper);
-		TestBodyRequest extract = extractor.unmarshall(response, TestBodyRequest.class);
+		Jackson2Unmarshaller unmarshaller = new Jackson2Unmarshaller(mapper);
+		TestBodyRequest extract = unmarshaller.unmarshall(response, TestBodyRequest.class);
 		//System.out.println(extract.getMessage());
 
 		assertThat(bean.getMessage()).isEqualTo(extract.getMessage());
 
-		assertThat(marshaller.getObjectMapper()).isEqualTo(extractor.getObjectMapper());
+		assertThat(marshaller.getObjectMapper()).isEqualTo(unmarshaller.getObjectMapper());
 	}
 
 	@Test
@@ -83,7 +83,7 @@ public class OptionalLibTest {
 		TestBodyRequest bean = new TestBodyRequest("Hello čobole");
 		String json = mapper.writeValueAsString(bean);
 
-		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", json);
+		HttlResponse response = new MockResponse(null, 200, "application/json; charset=utf-8", json);
 
 		Jackson1Unmarshaller extractor = new Jackson1Unmarshaller(mapper);
 
@@ -104,7 +104,7 @@ public class OptionalLibTest {
 
 		String json = gson.toJson(bean);
 
-		HttlResponse response = new MockResponse(null, 200, "application/xml; charset=utf-8", json);
+		HttlResponse response = new MockResponse(null, 200, "application/json; charset=utf-8", json);
 
 		GsonUnmarshaller unmarshaller = new GsonUnmarshaller(gson);
 

@@ -18,8 +18,11 @@ import net.anthavio.httl.transport.HttpUrlConfig;
 import org.apache.commons.httpclient.HttpMethodBase;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.http.conn.BasicManagedEntity;
+import org.apache.http.conn.OperatedClientConnection;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.pool.PoolEntry;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -43,9 +46,15 @@ public class ConnectionPoolingTest {
 		server.stop();
 	}
 
+	/**
+	 * It is impossible to test and verify connection pooling properly
+	 * 
+	 * http://docs.oracle.com/javase/6/docs/technotes/guides/net/http-keepalive.html
+	 */
 	@Test
-	public void simple() throws IOException, Exception {
-		String url = "http://localhost:" + this.server.getHttpPort();
+	public void httpUrlConnectionPooling() throws IOException, Exception {
+		//Given 
+		String url = "http://localhost:" + server.getHttpPort();
 		HttlSender sender = new HttpUrlConfig(url).build();
 		HttlRequest request = sender.GET("/").build();
 		//connection persistence is controlled with system properties
@@ -72,8 +81,8 @@ public class ConnectionPoolingTest {
 	}
 
 	@Test
-	public void http3() throws IOException, Exception {
-		String url = "http://localhost:" + this.server.getHttpPort();
+	public void httpClient3pooling() throws IOException, Exception {
+		String url = "http://localhost:" + server.getHttpPort();
 		HttlSender sender = new HttpClient3Config(url).build();
 		HttlRequest request = sender.POST("/").build();
 
@@ -89,44 +98,56 @@ public class ConnectionPoolingTest {
 		Field fWrappedc = classx.getDeclaredField("wrappedConnection");
 		fWrappedc.setAccessible(true);
 
+		//Given - MultiThreadedHttpConnectionManager
+
 		HttpClient3Transport transport = (HttpClient3Transport) sender.getTransport();
 		MultiThreadedHttpConnectionManager connectionManager = (MultiThreadedHttpConnectionManager) transport
 				.getHttpClient().getHttpConnectionManager();
 		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(0);
 
+		//When - first request
 		HttpClient3Response response1 = (HttpClient3Response) sender.execute(request);
 		assertThat(response1.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		Object responsec1 = fResponsec.get(response1.getHttpMethod());
 		Object wrappedc1 = fWrappedc.get(responsec1);
 		response1.close();
-		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1);
+		//Then 
+		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1); //+1 kept alive
 
+		//When - second request
 		HttpClient3Response response2 = (HttpClient3Response) sender.execute(request);
 		assertThat(response2.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		Object responsec2 = fResponsec.get(response2.getHttpMethod());
 		Object wrappedc2 = fWrappedc.get(responsec2);
 		response2.close();
-		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1);
-
-		//System.out.println(wrappedc1);
-		//System.out.println(wrappedc2);
+		//Then
+		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1); //1 still same
+		//And !!!! 
 		assertThat(wrappedc1).isEqualTo(wrappedc2);
 
-		connectionManager.closeIdleConnections(0); //empty pool
+		//When - pool cleanup
+		connectionManager.closeIdleConnections(0);
+		//Then - empty
 		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(0);
 
 		//now test out of order opening/closing
+
 		HttlResponse responsea = sender.execute(request);
-		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1);
+		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1);//+1
 
 		HttlResponse responseb = sender.execute(request);
-		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(2);
+		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(2);//+1
 
 		HttlResponse responsec = sender.execute(request);
-		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(3);
+		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(3);//+1
+
+		//cannot distinguish between borrowed and available connections in pool
 
 		responsea.close();
 		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(3);
+		responsea = sender.execute(request);
+		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(3);
+		responsea.close();
 
 		responseb.close();
 		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(3);
@@ -145,9 +166,12 @@ public class ConnectionPoolingTest {
 		assertThat(connectionManager.getConnectionsInPool()).isEqualTo(1); //leaking connection is still there!
 	}
 
+	/**
+	 * http://hc.apache.org/httpcomponents-client-4.3.x/tutorial/html/advanced.html#stateful_conn
+	 */
 	@Test
-	public void http4() throws IOException, Exception {
-		String url = "http://localhost:" + this.server.getHttpPort();
+	public void httpClient4pooling() throws IOException, Exception {
+		String url = "http://localhost:" + server.getHttpPort();
 		HttlSender sender = new HttpClient4Config(url).build();
 
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
@@ -158,68 +182,78 @@ public class ConnectionPoolingTest {
 		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(0);
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
+		//When - default behaviour
 		HttlRequest request = sender.POST("/").build();
-		//http 1.1 does keep-alive by default
+		//Then - http 1.1 does keep-alive by default
 		Object[] entriesDefault = http4(sender, request);
 		assertThat(entriesDefault[0]).isEqualTo(entriesDefault[1]);
-		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(1);
+		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(1); //kept alive
 
-		//explicit connection close header will disable connection persistence
-		request = sender.POST("/").setHeader("Connection", "close").build();
+		//When - explicit connection close header will disable connection persistence
+		request = sender.POST("/").setHeader("Connection", "Close").build();
+		//Then - will be closed
 		Object[] entriesClose = http4(sender, request);
 		assertThat(entriesClose[0]).isNotEqualTo(entriesClose[1]); //isNotEqualTo 
-		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0); //closed => not in pool
+		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0); //closed => not pooled
 
-		//explicit keep-alive
-		request = sender.POST("/").setHeader("Connection", "keep-alive").build();
+		//When - explicit keep-alive
+		request = sender.POST("/").setHeader("Connection", "Keep-Alive").build();
+		//Then - will remain open
 		Object[] entriesKeepAlive = http4(sender, request);
 		assertThat(entriesKeepAlive[0]).isEqualTo(entriesKeepAlive[1]); //must be the same connection
-		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(1);
+		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(1); //kept alive
 
 		connectionManager.closeIdleConnections(0, TimeUnit.MILLISECONDS); //empty pool
 		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0);
 
 		//now test out of order opening/closing
+
 		HttlResponse response1 = sender.execute(request);
 		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0);
-		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(1);
+		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(1); //+1
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
 		HttlResponse response2 = sender.execute(request);
 		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0);
-		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(2);
+		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(2); //+1
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
 		HttlResponse response3 = sender.execute(request);
 		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0);
-		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(3);
+		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(3); //+1
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
 		response1.close();
-		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(1);
-		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(2);
+		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(1);//+1
+		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(2);//-1
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
 		response2.close();
-		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(2);
-		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(1);
+		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(2);//+1
+		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(1); //-1
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
 		response3.close();
-		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(3);
-		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(0);
+		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(3);//+1
+		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(0);//-1
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
-		sender.execute(request); //open before client closing...
+		//When - Create leaking response
+		sender.execute(request);
+		//And - Close whole HttlSender
 		sender.close();
 
-		//no leaks - all is empty after closing
+		//Then - no leaks - all is empty after closing
 		assertThat(connectionManager.getTotalStats().getAvailable()).isEqualTo(0);
 		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(0);
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 	}
 
-	private Object[] http4(HttlSender sender, HttlRequest request) throws Exception {
+	/**
+	 * Helper for accessing http client 4 internal connection pools
+	 */
+	private PoolEntry<HttpRoute, OperatedClientConnection>[] http4(HttlSender sender, HttlRequest request)
+			throws Exception {
 		//we can only check connection reusing via reflection
 		Field fEntity = BasicHttpResponse.class.getDeclaredField("entity");
 		fEntity.setAccessible(true);
@@ -242,7 +276,8 @@ public class ConnectionPoolingTest {
 
 		Object entity1 = fEntity.get(response1.getHttpResponse());
 		Object managedc1 = fMc.get(entity1);
-		Object entry1 = fEntry.get(managedc1);
+		PoolEntry<HttpRoute, OperatedClientConnection> entry1 = (PoolEntry<HttpRoute, OperatedClientConnection>) fEntry
+				.get(managedc1);
 		//System.out.println(entry1);
 		response1.close();
 
@@ -258,15 +293,16 @@ public class ConnectionPoolingTest {
 
 		Object entity2 = fEntity.get(response2.getHttpResponse());
 		Object managedc2 = fMc.get(entity2);
-		Object entry2 = fEntry.get(managedc2);
-		//System.out.println(entry2);
+		PoolEntry<HttpRoute, OperatedClientConnection> entry2 = (PoolEntry<HttpRoute, OperatedClientConnection>) fEntry
+				.get(managedc2);
+		//System.out.println(entry2 + " " + entry2.getClass());
 		response2.close();
 
 		//avaliable count dependes on Connection header
 		assertThat(connectionManager.getTotalStats().getLeased()).isEqualTo(0);
 		assertThat(connectionManager.getTotalStats().getPending()).isEqualTo(0);
 
-		return new Object[] { entry1, entry2 };
+		return new PoolEntry[] { entry1, entry2 };
 	}
 
 }

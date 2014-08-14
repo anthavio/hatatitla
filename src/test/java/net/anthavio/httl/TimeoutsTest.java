@@ -63,32 +63,32 @@ public class TimeoutsTest {
 
 	@Test
 	public void http3() throws IOException {
-		connectTimeout(newHttp3(this.urlFrozen));
+		connectTimeout(newHttp3(urlFrozen));
 
-		poolTimeout(newHttp3(this.urlSingle));
+		poolTimeout(newHttp3(urlSingle));
 
-		readTimeout(newHttp3(this.urlSingle));
+		readTimeout(newHttp3(urlSingle));
 	}
 
 	@Test
 	public void http4() throws IOException {
-		connectTimeout(newHttp4(this.urlFrozen));
+		connectTimeout(newHttp4(urlFrozen));
 
-		poolTimeout(newHttp4(this.urlSingle));
+		poolTimeout(newHttp4(urlSingle));
 
-		readTimeout(newHttp4(this.urlSingle));
+		readTimeout(newHttp4(urlSingle));
 	}
 
 	//@Test //Buggy as hell
 	public void jetty() throws IOException {
-		HttlSender sender = newJetty(this.urlFrozen);
+		HttlSender sender = newJetty(urlFrozen);
 		connectTimeout(sender);
 		sender.close();
 
 		//pool timeout is not testable here
 		//poolTimeout(newSimple(this.urlSingle));
 
-		sender = newJetty(this.urlSingle);
+		sender = newJetty(urlSingle);
 		readTimeout(sender);
 		sender.close();
 	}

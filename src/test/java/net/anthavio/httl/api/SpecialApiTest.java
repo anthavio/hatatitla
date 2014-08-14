@@ -14,7 +14,7 @@ import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.api.ComplexApiTest.TestBodyBean;
+import net.anthavio.httl.api.AdvancedApiTest.TestBodyBean;
 import net.anthavio.httl.util.MockSenderConfig;
 import net.anthavio.httl.util.MockTransport;
 

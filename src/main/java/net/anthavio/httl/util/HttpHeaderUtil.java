@@ -347,4 +347,28 @@ public class HttpHeaderUtil {
 		}
 	}
 
+	/**
+	 * To allow persistent connection we need to read all data from response stream
+	 */
+	public static void close(HttlResponse response) throws IOException {
+		InputStream stream = response.getStream();
+		if (stream == null || response instanceof CachedResponse) {
+			return;
+		}
+		if ("close".equals(response.getHeaders().getFirst("Connection"))) {
+			stream.close();
+		} else {
+			int bufferSize = getBufferLength(response);
+			byte[] buffer = new byte[bufferSize];
+			int len = -1;
+			try {
+				while ((len = stream.read(buffer)) != -1) {
+					//throw away
+				}
+			} finally {
+				stream.close();
+			}
+		}
+	}
+
 }
