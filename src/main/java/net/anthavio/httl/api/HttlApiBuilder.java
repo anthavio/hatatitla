@@ -18,8 +18,7 @@ import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlSender.HttlHeaders;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.api.HttlBody.NullSurrogateHttlBodyWriter;
 import net.anthavio.httl.api.HttlCall.HttpMethod;
 import net.anthavio.httl.api.HttlVar.NoopParamSetter;
@@ -40,16 +39,16 @@ public class HttlApiBuilder {
 
 	private final HttlSender sender;
 
-	private HttlHeaders headers;
+	private Multival<String> headers;
 
-	private Parameters params;
+	private Multival<String> params;
 
 	public HttlApiBuilder(HttlSender sender) {
 		if (sender == null) {
 			throw new IllegalArgumentException("Null sender");
 		}
 		this.sender = sender;
-		params = new Parameters();
+		params = new Multival<String>();
 	}
 
 	/**
@@ -57,7 +56,7 @@ public class HttlApiBuilder {
 	 */
 	public HttlApiBuilder addHeader(String name, String value) {
 		if (headers == null) {
-			headers = new HttlHeaders();
+			headers = new Multival<String>();
 		}
 		headers.add(name, value);
 		return this;
@@ -68,7 +67,7 @@ public class HttlApiBuilder {
 	 */
 	public HttlApiBuilder addParam(String name, String value) {
 		if (params == null) {
-			params = new Parameters();
+			params = new Multival<String>();
 		}
 		params.add(name, value);
 		return this;
@@ -82,7 +81,7 @@ public class HttlApiBuilder {
 		return build(apiInterface, sender, null, null);
 	}
 
-	public static <T> T build(Class<T> apiInterface, HttlSender sender, HttlHeaders headers, Parameters params) {
+	public static <T> T build(Class<T> apiInterface, HttlSender sender, Multival<String> headers, Multival<String> params) {
 		HttlApi annotation = apiInterface.getAnnotation(HttlApi.class);
 		String urlPathPrefix = (annotation != null) ? annotation.value() : "";
 		Map<Method, ApiMethodMeta> methods = doApiMethods(apiInterface, urlPathPrefix);
@@ -241,7 +240,7 @@ public class HttlApiBuilder {
 		Map<String, Integer> headerMap = new HashMap<String, Integer>();
 
 		//Process Type declared (global) annotations first
-		RestHeaders cheaders = clazz.getAnnotation(RestHeaders.class);
+		HttlHeaders cheaders = clazz.getAnnotation(HttlHeaders.class);
 		if (cheaders != null && cheaders.value().length != 0) {
 			for (String header : cheaders.value()) {
 				if (header.indexOf('{') != -1 && header.indexOf('}') != -1) {
@@ -260,7 +259,7 @@ public class HttlApiBuilder {
 		}
 
 		//Process Method declared (local) annotations now
-		RestHeaders mheaders = method.getAnnotation(RestHeaders.class);
+		HttlHeaders mheaders = method.getAnnotation(HttlHeaders.class);
 		if (mheaders != null && mheaders.value().length != 0) {
 			for (String header : mheaders.value()) {
 				int idx = header.indexOf(':');

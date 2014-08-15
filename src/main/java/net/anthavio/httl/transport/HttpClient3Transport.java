@@ -11,7 +11,7 @@ import java.util.List;
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -113,7 +113,7 @@ public class HttpClient3Transport implements HttlTransport {
 			throw new IllegalArgumentException("Unsupported method " + request.getMethod());
 		}
 
-		HttlHeaders headers = request.getHeaders();
+		Multival<String> headers = request.getHeaders();
 		if (headers != null && headers.size() != 0) {
 			for (String name : headers) {
 				List<String> values = headers.get(name);
@@ -133,7 +133,7 @@ public class HttpClient3Transport implements HttlTransport {
 
 		Header[] responseHeaders = httpMethod.getResponseHeaders();
 
-		HttlHeaders outHeaders = new HttlHeaders();
+		Multival<String> outHeaders = new Multival<String>();
 		for (Header header : responseHeaders) {
 			outHeaders.add(header.getName(), header.getValue());
 		}

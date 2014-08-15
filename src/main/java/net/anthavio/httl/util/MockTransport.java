@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
 
 import org.slf4j.Logger;
@@ -135,7 +135,7 @@ public class MockTransport implements HttlTransport {
 	 * Set Response returned from doExecute
 	 */
 	public void setStaticResponse(int code, String contentType, String body) {
-		HttlHeaders headers = new HttlHeaders();
+		Multival<String> headers = new Multival<String>();
 		headers.set("Content-Type", contentType);
 		this.staticResponse = new MockResponse(null, code, "OK", headers, body);
 	}

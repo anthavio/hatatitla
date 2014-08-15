@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -233,11 +234,79 @@ public class RequestTest {
 		//Given - default settings
 		HttlSender sender = new HttpUrlConfig("www.example.com").build();
 		HttlRequest request;
-		//When
-		Map<String, Object> map = new HashMap<String, Object>();
+
+		//When - null map
+		Map<String, Object> map = null;
 		request = sender.GET("/path").param("map", map).build();
+		//Then - nothing
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+		//When - empty
+		map = new HashMap<String, Object>();
+		request = sender.GET("/path").param("map", map).build();
+		//Then - nothing
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+		//When - single
+		map = new HashMap<String, Object>();
+		map.put("x", 1);
+		request = sender.GET("/path").param("map.", map).build();
+		//Then - single
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1");
+
+		map.clear();
+
+		//When - null value
+		map = new HashMap<String, Object>();
+		map.put("x", null);
+		request = sender.GET("/path").param("map.", map).build();
 		//Then
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+		//When - "" value
+		map = new HashMap<String, Object>();
+		map.put("x", "");
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=");
+
+		//When - array
+		map.put("x", new int[] { 1, 2, 3 });
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1&map.x=2&map.x=3");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1&x=2&x=3");
+
+		//When - list
+		ArrayList<Object> list = new ArrayList<Object>();
+		list.add(1);
+		list.add("2");
+		list.add(null);
+
+		map.put("x", list);
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1&map.x=2");
+		//And
+		request = sender.GET("/path").param(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1&x=2");
 
 	}
 

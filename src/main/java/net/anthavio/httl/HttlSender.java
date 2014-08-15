@@ -357,21 +357,22 @@ public class HttlSender implements SenderOperations, Closeable {
 		return "HttlSender [" + config.getUrl() + ", executor=" + executor + "]";
 	}
 
-	public static class HttlHeaders extends Multival<String> {
+	/*
+		public static class HttlHeaders extends Multival<String> {
 
-		private static final long serialVersionUID = 1L;
+			private static final long serialVersionUID = 1L;
 
-		public HttlHeaders() {
+			public HttlHeaders() {
 
+			}
 		}
-	}
-
+	
 	public static class Parameters extends Multival<String> {
 
 		private static final long serialVersionUID = 1L;
 
 	}
-
+	*/
 	/**
 	 * 
 	 * @author martin.vanek
@@ -383,7 +384,7 @@ public class HttlSender implements SenderOperations, Closeable {
 
 		private Map<String, List<T>> entries;
 
-		protected Multival() {
+		public Multival() {
 		}
 
 		/**

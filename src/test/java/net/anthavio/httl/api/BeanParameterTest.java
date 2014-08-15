@@ -2,7 +2,7 @@ package net.anthavio.httl.api;
 
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.MockSenderConfig;
 
 import org.assertj.core.api.Assertions;
@@ -22,7 +22,7 @@ public class BeanParameterTest {
 		HttlResponse response1 = api.nothing(new BeanParam("Guido", 5));
 
 		// Then - parameter names should be taken from field names
-		Parameters parameters1 = response1.getRequest().getParameters();
+		Multival<String> parameters1 = response1.getRequest().getParameters();
 		Assertions.assertThat(parameters1.getFirst("name")).isEqualTo("Guido");
 		Assertions.assertThat(parameters1.getFirst("number")).isEqualTo("5");
 
@@ -30,7 +30,7 @@ public class BeanParameterTest {
 		HttlResponse response2 = api.prefix(new BeanParam("Vaclav", 10));
 
 		//Then - with prefix
-		Parameters parameters2 = response2.getRequest().getParameters();
+		Multival<String> parameters2 = response2.getRequest().getParameters();
 		Assertions.assertThat(parameters2.getFirst("prefix.name")).isEqualTo("Vaclav");
 		Assertions.assertThat(parameters2.getFirst("prefix.number")).isEqualTo("10");
 	}
@@ -96,7 +96,7 @@ public class BeanParameterTest {
 		HttlResponse response1 = api.nothing(new BeanParamNamed("Guido", 5));
 
 		// Then
-		Parameters parameters1 = response1.getRequest().getParameters();
+		Multival<String> parameters1 = response1.getRequest().getParameters();
 		Assertions.assertThat(parameters1.getFirst("ty-pe.na-me")).isEqualTo("Guido");
 		Assertions.assertThat(parameters1.getFirst("ty-pe.num-ber")).isEqualTo("5");
 
@@ -104,7 +104,7 @@ public class BeanParameterTest {
 		HttlResponse response2 = api.prefix(new BeanParamNamed("Vaclav", 10));
 
 		//Then - with prefix
-		Parameters parameters2 = response2.getRequest().getParameters();
+		Multival<String> parameters2 = response2.getRequest().getParameters();
 		Assertions.assertThat(parameters2.getFirst("pa-ram.ty-pe.na-me")).isEqualTo("Vaclav");
 		Assertions.assertThat(parameters2.getFirst("pa-ram.ty-pe.num-ber")).isEqualTo("10");
 
@@ -119,13 +119,13 @@ public class BeanParameterTest {
 		//When - legal null parameter
 		HttlResponse response1 = api.prefix(null);
 		//Then - zero params
-		Parameters parameters1 = response1.getRequest().getParameters();
+		Multival<String> parameters1 = response1.getRequest().getParameters();
 		Assertions.assertThat(parameters1.size()).isEqualTo(0);
 
 		//When - legal null field
 		HttlResponse response2 = api.prefix(new BeanParamNamed(null, 33));
 		//Then - null param is skipped
-		Parameters parameters2 = response2.getRequest().getParameters();
+		Multival<String> parameters2 = response2.getRequest().getParameters();
 		Assertions.assertThat(parameters2.size()).isEqualTo(1);
 		Assertions.assertThat(parameters2.getFirst("pa-ram.ty-pe.na-me")).isNull();
 		Assertions.assertThat(parameters2.getFirst("pa-ram.ty-pe.num-ber")).isEqualTo("33");

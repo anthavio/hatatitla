@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 
 import org.apache.commons.httpclient.HttpMethodBase;
 
@@ -20,8 +20,8 @@ public class HttpClient3Response extends HttlResponse {
 
 	private transient HttpMethodBase httpMethod; //not serializable
 
-	public HttpClient3Response(HttlRequest request, int code, String message, HttlHeaders headers, InputStream stream,
-			HttpMethodBase httpMethod) throws IOException {
+	public HttpClient3Response(HttlRequest request, int code, String message, Multival<String> headers,
+			InputStream stream, HttpMethodBase httpMethod) throws IOException {
 		super(request, code, message, headers, stream);
 		if (httpMethod == null) {
 			throw new IllegalArgumentException("Null httpMethod");

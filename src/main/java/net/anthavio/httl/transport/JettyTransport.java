@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -91,7 +91,7 @@ public class JettyTransport implements HttlTransport {
 		exchange.setAddress(new Address(config.getHostUrl().getHost(), config.getHostUrl().getPort()));
 		exchange.setRequestURI(path);
 		*/
-		HttlHeaders headers = request.getHeaders();
+		Multival<String> headers = request.getHeaders();
 
 		if (headers != null && headers.size() > 0) {
 			for (String name : headers) {

@@ -7,7 +7,7 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.marshall.GsonUnmarshaller;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.marshall.MediaTypeMarshaller;
@@ -50,7 +50,7 @@ public class AdvancedApiTest {
 		Assertions.assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
 		Assertions.assertThat(request.getFirstHeader("Accept-Charset")).isEqualTo("ISO-8859-4"); //replaced global utf-8
 
-		Parameters parameters = request.getParameters();
+		Multival<String> parameters = request.getParameters();
 		Assertions.assertThat(parameters.getFirst("numbers")).isEqualTo("3");
 		Assertions.assertThat(parameters.getLast("numbers")).isEqualTo("1");
 	}
@@ -77,14 +77,14 @@ public class AdvancedApiTest {
 		Assertions.assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
 		Assertions.assertThat(request.getFirstHeader("Accept")).isEqualTo("application/xml");
 
-		Parameters parameters = request.getParameters();
+		Multival<String> parameters = request.getParameters();
 		Assertions.assertThat(parameters.getFirst("api-key")).isEqualTo("zxzxzx-zxzxzx-zxzxzx-zxzxzx");
 	}
 
 	static interface WithUrlParameter {
 
 		@HttlCall("PUT /store/{else}")
-		@RestHeaders({ "Content-Type: application/json", "Accept: application/xml" })
+		@HttlHeaders({ "Content-Type: application/json", "Accept: application/xml" })
 		public String store(@HttlVar("else") String elseParam, @HttlBody String body);
 	}
 
@@ -121,7 +121,7 @@ public class AdvancedApiTest {
 	static interface WithHeaderParameters {
 
 		@HttlCall("POST /something")
-		@RestHeaders({ "Content-Type: {content-type}", "Accept: {accept}" })
+		@HttlHeaders({ "Content-Type: {content-type}", "Accept: {accept}" })
 		public TestBodyBean postBody(@HttlVar("content-type") String contentType, @HttlVar("accept") String accept,
 				@HttlBody TestBodyBean bean);
 	}
@@ -146,7 +146,7 @@ public class AdvancedApiTest {
 		Assertions.assertThat(contributors.get(0).contributions).isEqualTo(333);
 	}
 
-	@RestHeaders({ //
+	@HttlHeaders({ //
 	"Content-Type: application/json; charset=utf-8", //
 			"Accept: application/json", //
 			"Accept-Charset: utf-8",//
@@ -155,7 +155,7 @@ public class AdvancedApiTest {
 	static interface SomeApi {
 
 		@HttlCall("OPTIONS /something/{awful}")
-		@RestHeaders("Accept-Charset: {accept-charset}")
+		@HttlHeaders("Accept-Charset: {accept-charset}")
 		public HttlResponse options(@HttlVar("awful") String awful, @HttlVar("accept-charset") String accept,
 				@HttlVar("numbers") int[] numbers);
 

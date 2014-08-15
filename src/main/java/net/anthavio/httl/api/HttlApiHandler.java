@@ -20,8 +20,7 @@ import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlSender.HttlHeaders;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.api.HttlApiBuilder.ApiHeaderMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiMethodMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiVarMeta;
@@ -41,11 +40,11 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 	private final Map<Method, ApiMethodMeta> methodMap;
 
-	private final HttlHeaders headers; //static global headers
+	private final Multival<String> headers; //static global headers
 
-	private final Parameters params; //static global parameters
+	private final Multival<String> params; //static global parameters
 
-	public HttlApiHandler(Class<T> apiInterface, HttlSender sender, HttlHeaders headers, Parameters params,
+	public HttlApiHandler(Class<T> apiInterface, HttlSender sender, Multival<String> headers, Multival<String> params,
 			Map<Method, ApiMethodMeta> methods) {
 		this.apiInterface = apiInterface;
 		this.sender = sender;

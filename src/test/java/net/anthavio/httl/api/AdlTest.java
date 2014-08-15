@@ -29,11 +29,11 @@ public class AdlTest {
 		System.out.println(response);
 	}
 
-	@RestHeaders("Content-type: application/json; charset=utf-8")
+	@HttlHeaders("Content-type: application/json; charset=utf-8")
 	public static interface GitHubApi {
 
 		@HttlCall(method = HttpMethod.GET, value = "/something/{awful}")
-		@RestHeaders("Custom: {custom}")
+		@HttlHeaders("Custom: {custom}")
 		public String something(@HttlVar("awful") String awful, @HttlVar("custom") String custom,
 				@HttlVar("number") int[] number);
 

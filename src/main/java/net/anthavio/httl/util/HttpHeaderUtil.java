@@ -15,14 +15,14 @@ import java.util.Date;
 import net.anthavio.cache.CacheEntry;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.cache.CachedResponse;
 
 public class HttpHeaderUtil {
 
 	public static CacheEntry<CachedResponse> buildCacheEntry(HttlRequest request, HttlResponse response) {
 
-		HttlHeaders headers = response.getHeaders();
+		Multival<String> headers = response.getHeaders();
 
 		long softTtl = 0; //seconds
 		long maxAge = 0; //seconds

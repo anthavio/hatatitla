@@ -13,8 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
 import net.anthavio.httl.util.HttpDateUtil;
@@ -42,9 +41,9 @@ public class HttlRequestBuilders {
 
 		protected final String urlPath;
 
-		protected final HttlHeaders headers;
+		protected final Multival<String> headers;
 
-		protected final Parameters parameters;
+		protected final Multival<String> parameters;
 
 		protected final HttlParameterSetter paramSetter;
 
@@ -56,8 +55,8 @@ public class HttlRequestBuilders {
 			}
 			this.sender = sender;
 
-			this.headers = new HttlHeaders();
-			this.parameters = new Parameters();
+			this.headers = new Multival<String>();
+			this.parameters = new Multival<String>();
 
 			if (method == null) {
 				throw new IllegalArgumentException("method is null");
@@ -80,11 +79,11 @@ public class HttlRequestBuilders {
 			return method;
 		}
 
-		public HttlHeaders getHeaders() {
+		public Multival<String> getHeaders() {
 			return headers;
 		}
 
-		public Parameters getParameters() {
+		public Multival<String> getParameters() {
 			return parameters;
 		}
 
@@ -182,10 +181,12 @@ public class HttlRequestBuilders {
 		/**
 		 */
 		public X param(Map<String, ?> map) {
-			Set<String> keySet = map.keySet();
-			for (String name : keySet) {
-				Object value = map.get(name);
-				paramSetter.handle(parameters, false, name, value);
+			if (map != null) {
+				Set<String> keySet = map.keySet();
+				for (String name : keySet) {
+					Object value = map.get(name);
+					paramSetter.handle(parameters, false, name, value);
+				}
 			}
 			return getX();
 		}

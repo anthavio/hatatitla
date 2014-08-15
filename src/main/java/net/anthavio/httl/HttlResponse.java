@@ -10,7 +10,7 @@ import java.nio.charset.Charset;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 	protected final String httpStatusMessage;
 
-	protected final HttlHeaders headers;
+	protected final Multival<String> headers;
 
 	protected transient InputStreamWrapper stream;
 
@@ -41,7 +41,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 	protected final String encoding;// = "utf-8";//"ISO-8859-1";
 
-	public HttlResponse(HttlRequest request, int httpCode, String message, HttlHeaders headers, InputStream stream) {
+	public HttlResponse(HttlRequest request, int httpCode, String message, Multival<String> headers, InputStream stream) {
 		this.request = request;
 		this.httpStatusCode = httpCode;
 		this.httpStatusMessage = message;
@@ -89,7 +89,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 		return httpStatusMessage;
 	}
 
-	public HttlHeaders getHeaders() {
+	public Multival<String> getHeaders() {
 		return headers;
 	}
 

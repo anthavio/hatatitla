@@ -194,11 +194,11 @@ public class SpecialApiTest {
 	static interface ForBodyWriterTest {
 
 		@HttlCall("POST /bodywriter1")
-		@RestHeaders("Content-Type: application/xml")
+		@HttlHeaders("Content-Type: application/xml")
 		String writerAsParam(HttlBodyWriter<TestBodyBean> writer, @HttlBody Object body);
 
 		@HttlCall("POST /bodywriter2")
-		@RestHeaders("Content-Type: application/xml")
+		@HttlHeaders("Content-Type: application/xml")
 		String writerAsAttribute(@HttlBody(writer = TestBodyWriter.class) TestBodyBean body);
 	}
 

@@ -70,7 +70,7 @@ public class BasicApiTest {
 
 	}
 
-	@RestHeaders("Content-Type: application/json")
+	@HttlHeaders("Content-Type: application/json")
 	static interface SimpleApi {
 
 		@HttlCall("GET /returnString")
@@ -139,7 +139,7 @@ public class BasicApiTest {
 
 	}
 
-	@RestHeaders("Content-Type: application/json")
+	@HttlHeaders("Content-Type: application/json")
 	static interface ApiWithBeans {
 
 		@HttlCall("POST /bean2void")
@@ -199,7 +199,7 @@ public class BasicApiTest {
 		reader2reader.close();
 	}
 
-	@RestHeaders("Content-Type: application/json")
+	@HttlHeaders("Content-Type: application/json")
 	static interface ApiWithStreams {
 
 		@HttlCall("POST /bytes2stream")

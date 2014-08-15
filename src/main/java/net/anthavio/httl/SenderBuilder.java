@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
-import net.anthavio.httl.HttlSender.HttlHeaders;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.marshall.HttlBytesExtractor;
 import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.marshall.MediaTypeMarshaller;
@@ -46,9 +45,9 @@ public abstract class SenderBuilder {
 
 	private ExecutorService executorService;
 
-	private final HttlHeaders defaultHeaders = new HttlHeaders();
+	private final Multival<String> defaultHeaders = new Multival<String>();
 
-	private final Parameters defaultParameters = new Parameters();
+	private final Multival<String> defaultParameters = new Multival<String>();
 
 	private HttlParameterSetter paramSetter = new ConfigurableParamSetter();
 
@@ -206,7 +205,7 @@ public abstract class SenderBuilder {
 	/**
 	 * @return Header added into every HttlRequest
 	 */
-	public HttlHeaders getDefaultHeaders() {
+	public Multival<String> getDefaultHeaders() {
 		return defaultHeaders;
 	}
 
@@ -221,7 +220,7 @@ public abstract class SenderBuilder {
 	/**
 	 * @return Parameters added into every HttlRequest
 	 */
-	public Parameters getDefaultParameters() {
+	public Multival<String> getDefaultParameters() {
 		return defaultParameters;
 	}
 

@@ -12,8 +12,7 @@ import java.net.URLEncoder;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody.Type;
-import net.anthavio.httl.HttlSender.HttlHeaders;
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
@@ -57,11 +56,11 @@ public class HttlRequest implements Serializable {
 
 	private final String pathAndQuery; // path + query
 
-	private final HttlHeaders headers;
+	private final Multival<String> headers;
 
 	private final String[] contentType;
 
-	private final Parameters parameters;
+	private final Multival<String> parameters;
 
 	private HttlBody body;
 
@@ -71,8 +70,8 @@ public class HttlRequest implements Serializable {
 		this(sender, method, urlPath, null, null, null, null);
 	}
 
-	public HttlRequest(HttlSender sender, Method method, String urlPath, Parameters parameters, HttlHeaders headers,
-			HttlBody body, Integer readTimeoutMillis) {
+	public HttlRequest(HttlSender sender, Method method, String urlPath, Multival<String> parameters,
+			Multival<String> headers, HttlBody body, Integer readTimeoutMillis) {
 
 		if (sender == null) {
 			throw new IllegalArgumentException("Null sender");
@@ -92,10 +91,10 @@ public class HttlRequest implements Serializable {
 		if (parameters != null) {
 			this.parameters = parameters;
 		} else {
-			this.parameters = new Parameters();
+			this.parameters = new Multival<String>();
 		}
 
-		Parameters defaultParams = config.getDefaultParameters();
+		Multival<String> defaultParams = config.getDefaultParameters();
 		for (String name : defaultParams) {
 			if (parameters.get(name) == null) {
 				parameters.set(name, defaultParams.get(name));
@@ -105,10 +104,10 @@ public class HttlRequest implements Serializable {
 		if (headers != null) {
 			this.headers = headers;
 		} else {
-			this.headers = new HttlHeaders();
+			this.headers = new Multival<String>();
 		}
 
-		HttlHeaders defaultHeaders = config.getDefaultHeaders();
+		Multival<String> defaultHeaders = config.getDefaultHeaders();
 		for (String name : defaultHeaders) {
 			if (headers.get(name) == null) {
 				headers.set(name, defaultHeaders.get(name));
@@ -235,7 +234,7 @@ public class HttlRequest implements Serializable {
 		return body;
 	}
 
-	public HttlHeaders getHeaders() {
+	public Multival<String> getHeaders() {
 		return this.headers;
 	}
 
@@ -266,7 +265,7 @@ public class HttlRequest implements Serializable {
 
 	//parameters section
 
-	public Parameters getParameters() {
+	public Multival<String> getParameters() {
 		return this.parameters;
 	}
 
@@ -276,7 +275,7 @@ public class HttlRequest implements Serializable {
 		return readTimeoutMillis;
 	}
 
-	protected static String[] buildUrlPathAndQuery(String urlPath, Parameters parameters) {
+	protected static String[] buildUrlPathAndQuery(String urlPath, Multival<String> parameters) {
 		StringBuilder path = new StringBuilder(urlPath);
 		StringBuilder query = new StringBuilder();
 
@@ -316,7 +315,7 @@ public class HttlRequest implements Serializable {
 		}
 	}
 
-	public static String[] digContentType(HttlHeaders headers, SenderBuilder config) {
+	public static String[] digContentType(Multival<String> headers, SenderBuilder config) {
 		return digContentType(headers.getFirst(HttlConstants.Content_Type),
 				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getEncoding());
 	}

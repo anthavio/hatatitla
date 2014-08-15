@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 
 import org.apache.http.HttpResponse;
 
@@ -20,8 +20,8 @@ public class HttpClient4Response extends HttlResponse {
 
 	private transient HttpResponse httpResponse; //non serializable
 
-	public HttpClient4Response(HttlRequest request, int code, String message, HttlHeaders headers, InputStream stream,
-			HttpResponse httpResponse) throws IOException {
+	public HttpClient4Response(HttlRequest request, int code, String message, Multival<String> headers,
+			InputStream stream, HttpResponse httpResponse) throws IOException {
 		super(request, code, message, headers, stream);
 		if (httpResponse == null) {
 			throw new IllegalArgumentException("Null HttpResponse");

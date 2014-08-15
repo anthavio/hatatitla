@@ -9,8 +9,10 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
-import net.anthavio.httl.HttlSender.Parameters;
+import net.anthavio.httl.HttlSender.Multival;
 
 /**
  * 
@@ -24,7 +26,7 @@ public interface HttlParameterSetter {
 	/**
 	 * 
 	 */
-	public void handle(Parameters parameters, boolean reset, String paramName, Object paramValue);
+	public void handle(Multival<String> parameters, boolean reset, String paramName, Object paramValue);
 
 	/**
 	 * Default RequestParamSetter implementation
@@ -86,7 +88,7 @@ public interface HttlParameterSetter {
 		}
 
 		@Override
-		public void handle(Parameters parameters, boolean reset, String paramName, Object paramValue) {
+		public void handle(Multival<String> parameters, boolean reset, String paramName, Object paramValue) {
 			if (urlEncodeNames) {
 				try {
 					if (paramName.charAt(0) != ';') {
@@ -108,7 +110,7 @@ public interface HttlParameterSetter {
 					collection(parameters, reset, paramName, (Collection<?>) paramValue);
 
 				} else if (paramValue instanceof Map) {
-					iterator(parameters, reset, paramName, (Iterator<?>) paramValue);
+					map(parameters, reset, paramName, (Map<?, ?>) paramValue);
 
 				} else if (paramValue instanceof Iterator) {
 					iterator(parameters, reset, paramName, (Iterator<?>) paramValue);
@@ -125,7 +127,7 @@ public interface HttlParameterSetter {
 			}
 		}
 
-		protected void collection(Parameters parameters, boolean reset, String paramName, Collection<?> paramValue) {
+		protected void collection(Multival<String> parameters, boolean reset, String paramName, Collection<?> paramValue) {
 			List<String> list = parameters.get(paramName, reset);
 			Collection<?> collection = (Collection<?>) paramValue;
 			for (Object element : collection) {
@@ -133,7 +135,51 @@ public interface HttlParameterSetter {
 			}
 		}
 
-		protected void iterator(Parameters parameters, boolean reset, String paramName, Iterator<?> paramValue) {
+		public void map(Multival<String> parameters, boolean reset, String paramName, Map paramValue) {
+			Set<Entry<Object, Object>> entrySet = paramValue.entrySet();
+			for (Entry<Object, Object> entry : entrySet) {
+				if (entry.getKey() != null && entry.getValue() != null) {
+					if (paramName != null) {
+						paramName = paramName + entry.getKey();
+					} else {
+						paramName = String.valueOf(entry.getKey());
+					}
+					Object valuex = entry.getValue();
+					if (valuex == null) {
+						if (keepNull) {
+							parameters.put(paramName, null, reset);
+						}
+					} else if (valuex instanceof Collection) {
+						collection(parameters, reset, paramName, (Collection) valuex);
+					} else if (valuex.getClass().isArray()) {
+						if (valuex instanceof Object[]) {
+							array(parameters, reset, paramName, valuex);
+						} else {
+							//primitive array of some sort
+							int length = Array.getLength(valuex);
+							for (int i = 0; i < length; ++i) {
+								Object object = Array.get(valuex, i);
+								if (object != null) {
+									String string = convert(paramName, object);
+									if (string != null) {
+										parameters.put(paramName, string, reset);
+									}
+								}
+							}
+						}
+
+					} else {
+						String string = convert(paramName, valuex);
+						if (string != null) {
+							parameters.put(paramName, string, reset);
+						}
+					}
+				}
+			}
+
+		}
+
+		protected void iterator(Multival<String> parameters, boolean reset, String paramName, Iterator<?> paramValue) {
 			List<String> list = parameters.get(paramName, reset);
 			Iterator<?> iterator = (Iterator<?>) paramValue;
 			while (iterator.hasNext()) {
@@ -142,7 +188,7 @@ public interface HttlParameterSetter {
 			}
 		}
 
-		protected void array(Parameters parameters, boolean reset, String paramName, Object paramValue) {
+		protected void array(Multival<String> parameters, boolean reset, String paramName, Object paramValue) {
 			List<String> list = parameters.get(paramName, reset);
 			int length = Array.getLength(paramValue);
 			for (int i = 0; i < length; i++) {
@@ -204,4 +250,5 @@ public interface HttlParameterSetter {
 			}
 		}
 	}
+
 }

@@ -22,7 +22,7 @@ import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.SenderBuilder;
 import net.anthavio.httl.util.ReaderInputStream;
@@ -106,7 +106,7 @@ public class HttpUrlTransport implements HttlTransport {
 		connection.setDoOutput(request.getBody() != null); //connection.getOutputStream() will be called
 		connection.setDoInput(true); //connection.getInputStream() will be called
 
-		HttlHeaders headers = request.getHeaders();
+		Multival<String> headers = request.getHeaders();
 
 		if (headers != null && headers.size() > 0) {
 			for (String name : headers) {
@@ -192,7 +192,7 @@ public class HttpUrlTransport implements HttlTransport {
 		if (this.logger.isDebugEnabled()) {
 			logHeaders("Response", headerFields);
 		}
-		HttlHeaders outHeaders = new HttlHeaders();
+		Multival<String> outHeaders = new Multival<String>();
 		for (Entry<String, List<String>> header : headerFields.entrySet()) {
 			String hname = header.getKey();
 			if (hname != null) { //http status is returned with null header name

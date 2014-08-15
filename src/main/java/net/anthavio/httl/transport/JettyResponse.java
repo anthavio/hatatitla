@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream;
 
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender.HttlHeaders;
+import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.transport.JettyTransport.JettyContentExchange;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -24,8 +24,8 @@ public class JettyResponse extends HttlResponse {
 				new ByteArrayInputStream(exchange.getResponseBody()));
 	}
 
-	private static HttlHeaders convert(HttpFields fields) {
-		HttlHeaders ret = new HttlHeaders();
+	private static Multival<String> convert(HttpFields fields) {
+		Multival<String> ret = new Multival<String>();
 		for (int i = 0; i < fields.size(); ++i) {
 			Field field = fields.getField(i);
 			ret.add(field.getName(), field.getValue());
