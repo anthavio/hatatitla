@@ -73,13 +73,13 @@ public class BasicApiTest {
 	@RestHeaders("Content-Type: application/json")
 	static interface SimpleApi {
 
-		@RestCall("GET /returnString")
+		@HttlCall("GET /returnString")
 		public String returnString();
 
-		@RestCall("GET /returnResponse")
+		@HttlCall("GET /returnResponse")
 		public HttlResponse returnResponse();
 
-		@RestCall("POST /void2void")
+		@HttlCall("POST /void2void")
 		public void void2void();
 
 	}
@@ -142,26 +142,26 @@ public class BasicApiTest {
 	@RestHeaders("Content-Type: application/json")
 	static interface ApiWithBeans {
 
-		@RestCall("POST /bean2void")
-		public void bean2void(@RestBody TestBodyBean bean);
+		@HttlCall("POST /bean2void")
+		public void bean2void(@HttlBody TestBodyBean bean);
 
-		@RestCall("POST /bean2string")
-		public String bean2string(@RestBody TestBodyBean bean);
+		@HttlCall("POST /bean2string")
+		public String bean2string(@HttlBody TestBodyBean bean);
 
-		@RestCall("POST /bean2response")
-		public HttlResponse bean2response(@RestBody TestBodyBean bean);
+		@HttlCall("POST /bean2response")
+		public HttlResponse bean2response(@HttlBody TestBodyBean bean);
 
-		@RestCall("POST /bean2bean")
-		public TestBodyBean bean2bean(@RestBody TestBodyBean bean);
+		@HttlCall("POST /bean2bean")
+		public TestBodyBean bean2bean(@HttlBody TestBodyBean bean);
 
-		@RestCall("POST /string2void")
-		public void string2void(@RestBody String string);
+		@HttlCall("POST /string2void")
+		public void string2void(@HttlBody String string);
 
-		@RestCall("POST /string2string")
-		public String string2string(@RestBody String string);
+		@HttlCall("POST /string2string")
+		public String string2string(@HttlBody String string);
 
-		@RestCall("POST /string2bean")
-		public TestBodyBean string2bean(@RestBody String string);
+		@HttlCall("POST /string2bean")
+		public TestBodyBean string2bean(@HttlBody String string);
 	}
 
 	@Test
@@ -202,17 +202,17 @@ public class BasicApiTest {
 	@RestHeaders("Content-Type: application/json")
 	static interface ApiWithStreams {
 
-		@RestCall("POST /bytes2stream")
-		public InputStream bytes2stream(@RestBody byte[] bytes);
+		@HttlCall("POST /bytes2stream")
+		public InputStream bytes2stream(@HttlBody byte[] bytes);
 
-		@RestCall("POST /string2reader")
-		public Reader string2reader(@RestBody String string);
+		@HttlCall("POST /string2reader")
+		public Reader string2reader(@HttlBody String string);
 
-		@RestCall("POST /stream2stream")
-		public InputStream stream2stream(@RestBody InputStream stream);
+		@HttlCall("POST /stream2stream")
+		public InputStream stream2stream(@HttlBody InputStream stream);
 
-		@RestCall("POST /reader2reader")
-		public Reader reader2reader(@RestBody Reader reader);
+		@HttlCall("POST /reader2reader")
+		public Reader reader2reader(@HttlBody Reader reader);
 	}
 
 	/**
@@ -305,8 +305,8 @@ public class BasicApiTest {
 
 	static interface MapAsParam {
 
-		@RestCall("GET /x")
-		HttlResponse map2response(@RestVar Map<Object, Object> map);
+		@HttlCall("GET /x")
+		HttlResponse map2response(@HttlVar Map<Object, Object> map);
 
 	}
 
@@ -331,15 +331,15 @@ public class BasicApiTest {
 
 	static interface WrongApiMissingName {
 
-		@RestCall("GET /missing")
-		public void missing(@RestVar String some);
+		@HttlCall("GET /missing")
+		public void missing(@HttlVar String some);
 
 	}
 
 	static interface WrongApiEmptyName {
 
-		@RestCall("GET /empty")
-		public void missing(@RestVar("") String some);
+		@HttlCall("GET /empty")
+		public void missing(@HttlVar("") String some);
 	}
 
 	@Test
@@ -355,8 +355,8 @@ public class BasicApiTest {
 
 	static interface WrongApiGetWithBody {
 
-		@RestCall("GET /whatever")
-		public void whatever(@RestBody String body); //GET with body is nonsense
+		@HttlCall("GET /whatever")
+		public void whatever(@HttlBody String body); //GET with body is nonsense
 
 	}
 }

@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Used in @RestBody writer attribute  
+ * Used in @HttlBody writer attribute  
  * 
  * Example:
  * 
- * @RestCall("POST /something")
- * public String something(@RestBody(writer=MyGreatResultSetBodyWriter.class) ResultSet resultset);
+ * @HttlCall("POST /something")
+ * public String something(@HttlBody(writer=MyGreatResultSetBodyWriter.class) ResultSet resultset);
  * 
  * @author martin.vanek
  *

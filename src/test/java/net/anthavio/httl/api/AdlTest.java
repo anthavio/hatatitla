@@ -4,7 +4,7 @@ import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseHandler;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.api.RestCall.HttpMethod;
+import net.anthavio.httl.api.HttlCall.HttpMethod;
 import net.anthavio.httl.util.MockSenderConfig;
 
 /**
@@ -32,16 +32,16 @@ public class AdlTest {
 	@RestHeaders("Content-type: application/json; charset=utf-8")
 	public static interface GitHubApi {
 
-		@RestCall(method = HttpMethod.GET, value = "/something/{awful}")
+		@HttlCall(method = HttpMethod.GET, value = "/something/{awful}")
 		@RestHeaders("Custom: {custom}")
-		public String something(@RestVar("awful") String awful, @RestVar("custom") String custom,
-				@RestVar("number") int[] number);
+		public String something(@HttlVar("awful") String awful, @HttlVar("custom") String custom,
+				@HttlVar("number") int[] number);
 
-		@RestCall("POST /entity/{id}")
-		public String post(@RestVar("id") String id, @RestBody String body/*, @Body Integer another*/);
+		@HttlCall("POST /entity/{id}")
+		public String post(@HttlVar("id") String id, @HttlBody String body/*, @Body Integer another*/);
 
-		@RestCall("GET /repos/{owner}/{repo}/contributors")
-		public String contributors(@RestVar("owner") String owner, @RestVar("repo") String repo);
+		@HttlCall("GET /repos/{owner}/{repo}/contributors")
+		public String contributors(@HttlVar("owner") String owner, @HttlVar("repo") String repo);
 
 	}
 }

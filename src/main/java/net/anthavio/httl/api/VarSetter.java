@@ -13,12 +13,12 @@ import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.api.HttlApiBuilder.ApiVarMeta;
 
 /**
- * Optional 'setter' field of @RestVar annotation must implement this interface.
+ * Optional 'setter' field of @HttlVar annotation must implement this interface.
  * 
  * Usage example:
  * 
- * @RestCall("GET /paging")
- * String paging(@RestVar(value = "page", setter = PageableSetter.class) Pageable pager);
+ * @HttlCall("GET /paging")
+ * String paging(@HttlVar(value = "page", setter = PageableSetter.class) Pageable pager);
  * 		
  * @author martin.vanek
  *

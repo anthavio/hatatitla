@@ -83,9 +83,9 @@ public class AdvancedApiTest {
 
 	static interface WithUrlParameter {
 
-		@RestCall("PUT /store/{else}")
+		@HttlCall("PUT /store/{else}")
 		@RestHeaders({ "Content-Type: application/json", "Accept: application/xml" })
-		public String store(@RestVar("else") String elseParam, @RestBody String body);
+		public String store(@HttlVar("else") String elseParam, @HttlBody String body);
 	}
 
 	@Test
@@ -120,10 +120,10 @@ public class AdvancedApiTest {
 
 	static interface WithHeaderParameters {
 
-		@RestCall("POST /something")
+		@HttlCall("POST /something")
 		@RestHeaders({ "Content-Type: {content-type}", "Accept: {accept}" })
-		public TestBodyBean postBody(@RestVar("content-type") String contentType, @RestVar("accept") String accept,
-				@RestBody TestBodyBean bean);
+		public TestBodyBean postBody(@HttlVar("content-type") String contentType, @HttlVar("accept") String accept,
+				@HttlBody TestBodyBean bean);
 	}
 
 	@Test
@@ -154,13 +154,13 @@ public class AdvancedApiTest {
 	})
 	static interface SomeApi {
 
-		@RestCall("OPTIONS /something/{awful}")
+		@HttlCall("OPTIONS /something/{awful}")
 		@RestHeaders("Accept-Charset: {accept-charset}")
-		public HttlResponse options(@RestVar("awful") String awful, @RestVar("accept-charset") String accept,
-				@RestVar("numbers") int[] numbers);
+		public HttlResponse options(@HttlVar("awful") String awful, @HttlVar("accept-charset") String accept,
+				@HttlVar("numbers") int[] numbers);
 
-		@RestCall("GET /repos/{owner}/{repo}/contributors")
-		List<Contributor> contributors(@RestVar("owner") String owner, @RestVar("repo") String repo);
+		@HttlCall("GET /repos/{owner}/{repo}/contributors")
+		List<Contributor> contributors(@HttlVar("owner") String owner, @HttlVar("repo") String repo);
 
 	}
 

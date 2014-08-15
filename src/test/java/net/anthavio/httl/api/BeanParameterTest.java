@@ -63,20 +63,20 @@ public class BeanParameterTest {
 
 	static interface BeanParamApi {
 
-		@RestCall("GET /")
-		public HttlResponse nothing(@RestVar(required = true) BeanParam param);
+		@HttlCall("GET /")
+		public HttlResponse nothing(@HttlVar(required = true) BeanParam param);
 
-		@RestCall("GET /")
-		public HttlResponse prefix(@RestVar("prefix.") BeanParam param);
+		@HttlCall("GET /")
+		public HttlResponse prefix(@HttlVar("prefix.") BeanParam param);
 	}
 
-	@RestVar
+	@HttlVar
 	static class BeanParam {
 
-		@RestVar(required = true)
+		@HttlVar(required = true)
 		private String name;
 
-		@RestVar
+		@HttlVar
 		private int number;
 
 		public BeanParam(String name, int number) {
@@ -134,20 +134,20 @@ public class BeanParameterTest {
 
 	static interface BeanParamNamedApi {
 
-		@RestCall("GET /")
-		public HttlResponse nothing(@RestVar BeanParamNamed param);
+		@HttlCall("GET /")
+		public HttlResponse nothing(@HttlVar BeanParamNamed param);
 
-		@RestCall("GET /")
-		public HttlResponse prefix(@RestVar("pa-ram.") BeanParamNamed param);
+		@HttlCall("GET /")
+		public HttlResponse prefix(@HttlVar("pa-ram.") BeanParamNamed param);
 	}
 
-	@RestVar("ty-pe.")
+	@HttlVar("ty-pe.")
 	static class BeanParamNamed {
 
-		@RestVar("na-me")
+		@HttlVar("na-me")
 		private String name;
 
-		@RestVar("num-ber")
+		@HttlVar("num-ber")
 		private int number;
 
 		public BeanParamNamed(String name, int number) {

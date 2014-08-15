@@ -14,7 +14,7 @@ import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
  */
 @Target({ ElementType.PARAMETER, ElementType.FIELD, ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RestVar {
+public @interface HttlVar {
 
 	public static final String NULL_STRING_SURROGATE = "##NULL##";
 

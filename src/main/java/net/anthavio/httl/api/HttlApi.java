@@ -11,10 +11,10 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RestApi {
+public @interface HttlApi {
 
 	/**
-	 * @return url path prefix for all @RestCall
+	 * @return url path prefix for all @HttlCall
 	 */
 	String value() default "";
 

@@ -61,8 +61,8 @@ public class SpecialApiTest {
 
 	static interface TestBuildVisitorAndExecFilter {
 
-		@RestCall("POST /intercept")
-		String intercept(@RestBody("application/json") TestBodyBean bean, HttlBuilderVisitor builderVisitor,
+		@HttlCall("POST /intercept")
+		String intercept(@HttlBody("application/json") TestBodyBean bean, HttlBuilderVisitor builderVisitor,
 				HttlExecutionFilter executionFilter);
 	}
 
@@ -137,8 +137,8 @@ public class SpecialApiTest {
 
 	static interface WrongExtractorApi {
 
-		@RestCall("POST /extractorWrong")
-		String wrongExtractorType(@RestBody("application/xml") TestBodyBean bean, TestDateExtractor extractor);
+		@HttlCall("POST /extractorWrong")
+		String wrongExtractorType(@HttlBody("application/xml") TestBodyBean bean, TestDateExtractor extractor);
 	}
 
 	static class TestDateExtractor implements HttlResponseExtractor<Date> {
@@ -193,13 +193,13 @@ public class SpecialApiTest {
 
 	static interface ForBodyWriterTest {
 
-		@RestCall("POST /bodywriter1")
+		@HttlCall("POST /bodywriter1")
 		@RestHeaders("Content-Type: application/xml")
-		String writerAsParam(HttlBodyWriter<TestBodyBean> writer, @RestBody Object body);
+		String writerAsParam(HttlBodyWriter<TestBodyBean> writer, @HttlBody Object body);
 
-		@RestCall("POST /bodywriter2")
+		@HttlCall("POST /bodywriter2")
 		@RestHeaders("Content-Type: application/xml")
-		String writerAsAttribute(@RestBody(writer = TestBodyWriter.class) TestBodyBean body);
+		String writerAsAttribute(@HttlBody(writer = TestBodyWriter.class) TestBodyBean body);
 	}
 
 	static class TestBodyWriter implements HttlBodyWriter<TestBodyBean> {
@@ -213,18 +213,18 @@ public class SpecialApiTest {
 
 	static interface SpecialApi {
 
-		@RestCall("POST /extractor")
-		Date extractor(HttlResponseExtractor<Date> extractor, @RestBody("application/xml") TestBodyBean bean);
+		@HttlCall("POST /extractor")
+		Date extractor(HttlResponseExtractor<Date> extractor, @HttlBody("application/xml") TestBodyBean bean);
 
-		@RestCall("POST /extractorSilly")
-		String wrongExtractorType(@RestBody("application/xml") TestBodyBean bean, HttlResponseExtractor<Date> extractor);
+		@HttlCall("POST /extractorSilly")
+		String wrongExtractorType(@HttlBody("application/xml") TestBodyBean bean, HttlResponseExtractor<Date> extractor);
 
-		@RestCall("GET /customSetter")
-		HttlResponse customSetter(@RestVar(name = "xpage", setter = PageableSetter.class) Pageable pager);
+		@HttlCall("GET /customSetter")
+		HttlResponse customSetter(@HttlVar(name = "xpage", setter = PageableSetter.class) Pageable pager);
 
-		@RestCall("POST /everything")
-		TestBodyBean everything(@RestVar(name = "page", setter = PageableSetter.class) Pageable pager,
-				HttlBodyWriter<Object> marshaller, @RestBody("application/json") Object body, HttlResponseExtractor extractor,
+		@HttlCall("POST /everything")
+		TestBodyBean everything(@HttlVar(name = "page", setter = PageableSetter.class) Pageable pager,
+				HttlBodyWriter<Object> marshaller, @HttlBody("application/json") Object body, HttlResponseExtractor extractor,
 				HttlBuilderVisitor builderInterceptor, HttlExecutionFilter executionInterceptor);
 	}
 

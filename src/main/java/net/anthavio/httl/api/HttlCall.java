@@ -15,7 +15,7 @@ import net.anthavio.httl.HttlRequest.Method;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RestCall {
+public @interface HttlCall {
 
 	HttpMethod method() default HttpMethod.PATH_DERIVED;
 

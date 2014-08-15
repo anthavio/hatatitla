@@ -20,9 +20,9 @@ import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.api.RestBody.NullSurrogateHttlBodyWriter;
-import net.anthavio.httl.api.RestCall.HttpMethod;
-import net.anthavio.httl.api.RestVar.NoopParamSetter;
+import net.anthavio.httl.api.HttlBody.NullSurrogateHttlBodyWriter;
+import net.anthavio.httl.api.HttlCall.HttpMethod;
+import net.anthavio.httl.api.HttlVar.NoopParamSetter;
 import net.anthavio.httl.api.VarSetter.BeanMetaVarSetter;
 import net.anthavio.httl.api.VarSetter.FieldApiVarMeta;
 import net.anthavio.httl.util.HttpHeaderUtil;
@@ -83,7 +83,7 @@ public class HttlApiBuilder {
 	}
 
 	public static <T> T build(Class<T> apiInterface, HttlSender sender, HttlHeaders headers, Parameters params) {
-		RestApi annotation = apiInterface.getAnnotation(RestApi.class);
+		HttlApi annotation = apiInterface.getAnnotation(HttlApi.class);
 		String urlPathPrefix = (annotation != null) ? annotation.value() : "";
 		Map<Method, ApiMethodMeta> methods = doApiMethods(apiInterface, urlPathPrefix);
 		InvocationHandler handler = new HttlApiHandler<T>(apiInterface, sender, headers, params, methods);
@@ -93,7 +93,7 @@ public class HttlApiBuilder {
 	private static Map<Method, ApiMethodMeta> doApiMethods(Class<?> apiInterface, String urlPathPrefix) {
 		Map<Method, ApiMethodMeta> metaMap = new HashMap<Method, ApiMethodMeta>();
 		for (Method method : apiInterface.getDeclaredMethods()) {
-			RestCall operation = method.getAnnotation(RestCall.class);
+			HttlCall operation = method.getAnnotation(HttlCall.class);
 			if (operation == null) {
 				String mname = method.getName();
 				if ("equals".equals(mname) || "hashCode".equals(mname)) {
@@ -376,11 +376,11 @@ public class HttlApiBuilder {
 
 		Annotation[] pannotations = method.getParameterAnnotations()[index];
 		for (Annotation annotation : pannotations) {
-			if (annotation instanceof RestVar) {
-				RestVar var = (RestVar) annotation;
+			if (annotation instanceof HttlVar) {
+				HttlVar var = (HttlVar) annotation;
 				name = getRestVarName(var);
 				required = var.required();
-				if (!var.defval().equals(RestVar.NULL_STRING_SURROGATE)) {
+				if (!var.defval().equals(HttlVar.NULL_STRING_SURROGATE)) {
 					nullval = var.defval();
 				}
 				if (var.setter() != NoopParamSetter.class) {
@@ -391,8 +391,8 @@ public class HttlApiBuilder {
 					}
 				}
 
-			} else if (annotation instanceof RestBody) {
-				RestBody body = (RestBody) annotation;
+			} else if (annotation instanceof HttlBody) {
+				HttlBody body = (HttlBody) annotation;
 				name = BODY; //artificial parameter name
 				target = VarTarget.BODY;
 				if (!body.value().isEmpty()) {
@@ -425,7 +425,7 @@ public class HttlApiBuilder {
 		//own setter is set -> skip default processing
 		if (setter == null) {
 
-			if (type.getAnnotation(RestVar.class) != null) {
+			if (type.getAnnotation(HttlVar.class) != null) {
 				//Custom Bean with @RestVar class anotation
 				return doBeanParameter(index, type, name, required);
 
@@ -452,9 +452,9 @@ public class HttlApiBuilder {
 
 	private static ApiVarMeta doBeanParameter(int index, Class<?> paramClazz, String paramName, boolean paramNotnull) {
 		List<FieldApiVarMeta> list = new ArrayList<FieldApiVarMeta>();
-		RestVar paramVar = paramClazz.getAnnotation(RestVar.class);
+		HttlVar paramVar = paramClazz.getAnnotation(HttlVar.class);
 		StringBuilder name = new StringBuilder();
-		if (paramName != null && !paramName.equals(RestVar.NULL_STRING_SURROGATE)) {
+		if (paramName != null && !paramName.equals(HttlVar.NULL_STRING_SURROGATE)) {
 			name.append(paramName);
 		}
 		if (getRestVarName(paramVar) != null) {
@@ -466,10 +466,10 @@ public class HttlApiBuilder {
 			boolean notnull = false;
 			String nullval = null;
 			VarSetter<Object> setter = null;
-			RestVar fieldVar = field.getAnnotation(RestVar.class);
+			HttlVar fieldVar = field.getAnnotation(HttlVar.class);
 			if (fieldVar != null) {
 				notnull = fieldVar.required();
-				if (!fieldVar.defval().equals(RestVar.NULL_STRING_SURROGATE)) {
+				if (!fieldVar.defval().equals(HttlVar.NULL_STRING_SURROGATE)) {
 					nullval = fieldVar.defval();
 				}
 				if (fieldVar.setter() != NoopParamSetter.class) {
@@ -520,12 +520,12 @@ public class HttlApiBuilder {
 	 * 
 	 * This also copes with Java annotation inability to store null as value requiring null surrogates usage
 	 */
-	private static String getRestVarName(RestVar var) {
+	private static String getRestVarName(HttlVar var) {
 		String value = var.value();
-		boolean blankValue = value == null || value.length() == 0 || value.equals(RestVar.NULL_STRING_SURROGATE);
+		boolean blankValue = value == null || value.length() == 0 || value.equals(HttlVar.NULL_STRING_SURROGATE);
 
 		String name = var.name();
-		boolean blankName = name == null || name.length() == 0 || name.equals(RestVar.NULL_STRING_SURROGATE);
+		boolean blankName = name == null || name.length() == 0 || name.equals(HttlVar.NULL_STRING_SURROGATE);
 
 		if (blankName) {
 			if (blankValue) {
