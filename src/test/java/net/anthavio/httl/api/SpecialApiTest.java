@@ -44,7 +44,7 @@ public class SpecialApiTest {
 		MockExecutionFilter exeinc = new MockExecutionFilter();
 		String returned = api.intercept(bean, bldinc, exeinc);
 
-		// Then - MockBuilderVisitor add parameter
+		// Then - MockBuilderVisitor adds parameter
 		Assertions.assertThat(exeinc.getLastRequest().getParameters().getFirst("dynamic")).isEqualTo("value");
 		// Then - filter was executed
 		Assertions.assertThat(exeinc.getLastRequest()).isEqualTo(transport.getLastRequest());
@@ -199,7 +199,7 @@ public class SpecialApiTest {
 
 		@RestCall("POST /bodywriter2")
 		@RestHeaders("Content-Type: application/xml")
-		String writerAsAttribute(@RestBody(marshaller = TestBodyWriter.class) TestBodyBean body);
+		String writerAsAttribute(@RestBody(writer = TestBodyWriter.class) TestBodyBean body);
 	}
 
 	static class TestBodyWriter implements HttlBodyWriter<TestBodyBean> {

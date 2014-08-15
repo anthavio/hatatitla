@@ -5,8 +5,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 
-import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlBuilderVisitor;
+import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.api.HttlApiBuilder.ApiMethodMeta;
@@ -14,7 +14,7 @@ import net.anthavio.httl.api.HttlApiBuilder.ApiVarMeta;
 import net.anthavio.httl.api.HttlApiBuilder.BuilderMethodMeta;
 
 /**
- * Dynamic proxy for OperationBuilder interface
+ * Dynamic proxy for HttlCallBuilder extended interfaces
  * 
  * @author martin.vanek
  *

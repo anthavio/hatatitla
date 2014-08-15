@@ -21,11 +21,14 @@ public @interface RestBody {
 	String value() default "";
 
 	/**
-	 * @return Optional RequestMarshaller to serialize request body
+	 * @return Optional HttlBodyWriter to serialize request body
 	 */
-	Class<? extends HttlBodyWriter> marshaller() default NoopHttlBodyWriter.class;
+	Class<? extends HttlBodyWriter> writer() default NullSurrogateHttlBodyWriter.class;
 
-	static class NoopHttlBodyWriter<T> implements HttlBodyWriter<T> {
+	/**
+	 * Null surrogate class as annotation do not allow null...
+	 */
+	static class NullSurrogateHttlBodyWriter<T> implements HttlBodyWriter<T> {
 
 		@Override
 		public void write(T payload, OutputStream stream) {

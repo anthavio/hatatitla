@@ -6,14 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.api.HttpMethod;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 public class OAuth2Builder {
 
 	private boolean strict = true; //some APIs has relaxed OAuth rules
 
-	private HttpMethod authMethod = HttpMethod.GET;
+	//private HttlRequest.Method authMethod = Method.GET;
 
 	private URL authUrl; //authorization endpoint url
 
@@ -23,13 +22,9 @@ public class OAuth2Builder {
 
 	private String authResponseType = "code"; //or token - response_type for authentication
 
-	//private String scope;
-
 	private String redirectUri; //callback url
 
-	//private String state; 
-
-	private HttpMethod tokenMethod = HttpMethod.POST;
+	//private HttlRequest.Method tokenMethod = Method.POST;
 
 	private URL tokenUrl; //token endpoint url
 
@@ -42,8 +37,6 @@ public class OAuth2Builder {
 	private String authQuery;
 
 	private String tokenQuery;
-
-	private String tokenUrlPath;
 
 	public OAuth2Builder(HttlSender sender) {
 		if (sender == null) {

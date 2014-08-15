@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Can contain placeholders for values supplied by method parameter
+ * Values can be {placeholders} for values supplied by method parameters
  * 
  * @author martin.vanek
  *

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import net.anthavio.httl.HttlSender.Parameters;
 
@@ -105,6 +106,9 @@ public interface HttlParameterSetter {
 			} else {
 				if (paramValue instanceof Collection) {
 					collection(parameters, reset, paramName, (Collection<?>) paramValue);
+
+				} else if (paramValue instanceof Map) {
+					iterator(parameters, reset, paramName, (Iterator<?>) paramValue);
 
 				} else if (paramValue instanceof Iterator) {
 					iterator(parameters, reset, paramName, (Iterator<?>) paramValue);

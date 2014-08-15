@@ -13,13 +13,13 @@ import org.junit.Test;
  * @author martin.vanek
  *
  */
-public class ComplexParameterTest {
+public class BeanParameterTest {
 
 	@Test
-	public void complexParam() {
+	public void prefixedNames() {
 		// When - api with nameless @RestVar
-		ComplexParamApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(ComplexParamApi.class);
-		HttlResponse response1 = api.nothing(new ComplexParam("Guido", 5));
+		BeanParamApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamApi.class);
+		HttlResponse response1 = api.nothing(new BeanParam("Guido", 5));
 
 		// Then - parameter names should be taken from field names
 		Parameters parameters1 = response1.getRequest().getParameters();
@@ -27,7 +27,7 @@ public class ComplexParameterTest {
 		Assertions.assertThat(parameters1.getFirst("number")).isEqualTo("5");
 
 		//When - with prefix
-		HttlResponse response2 = api.prefix(new ComplexParam("Vaclav", 10));
+		HttlResponse response2 = api.prefix(new BeanParam("Vaclav", 10));
 
 		//Then - with prefix
 		Parameters parameters2 = response2.getRequest().getParameters();
@@ -39,39 +39,39 @@ public class ComplexParameterTest {
 	public void complexParamNullValuesIllegal() {
 
 		//Given - api with notnull checks
-		ComplexParamApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(ComplexParamApi.class);
+		BeanParamApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamApi.class);
 
 		// When - null parameter
 		try {
 			api.nothing(null);
 			// Then
-			Assertions.fail("Previous statement must throw " + HttlRequestException.class.getName());
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
 		} catch (HttlRequestException rx) {
 			Assertions.assertThat(rx.getMessage()).contains("Complex argument on position 1 is null");
 		}
 
 		try {
 			// When - null field
-			api.nothing(new ComplexParam(null, 1));
+			api.nothing(new BeanParam(null, 1));
 			// Then
-			Assertions.fail("Previous statement must throw " + HttlRequestException.class.getName());
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
 		} catch (HttlRequestException rx) {
 			Assertions.assertThat(rx.getMessage()).startsWith("Complex argument's field 'java.lang.String name' on ");
 			Assertions.assertThat(rx.getMessage()).endsWith("is null");
 		}
 	}
 
-	static interface ComplexParamApi {
+	static interface BeanParamApi {
 
 		@RestCall("GET /")
-		public HttlResponse nothing(@RestVar(required = true) ComplexParam param);
+		public HttlResponse nothing(@RestVar(required = true) BeanParam param);
 
 		@RestCall("GET /")
-		public HttlResponse prefix(@RestVar("prefix.") ComplexParam param);
+		public HttlResponse prefix(@RestVar("prefix.") BeanParam param);
 	}
 
 	@RestVar
-	static class ComplexParam {
+	static class BeanParam {
 
 		@RestVar(required = true)
 		private String name;
@@ -79,7 +79,7 @@ public class ComplexParameterTest {
 		@RestVar
 		private int number;
 
-		public ComplexParam(String name, int number) {
+		public BeanParam(String name, int number) {
 			this.name = name;
 			this.number = number;
 		}
@@ -87,13 +87,13 @@ public class ComplexParameterTest {
 	}
 
 	@Test
-	public void complexParamNamed() {
+	public void beanParamNamed() {
 
 		// Given - api with named @RestVar
-		ComplexParamNamedApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(ComplexParamNamedApi.class);
+		BeanParamNamedApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamNamedApi.class);
 
 		// When
-		HttlResponse response1 = api.nothing(new ComplexParamNamed("Guido", 5));
+		HttlResponse response1 = api.nothing(new BeanParamNamed("Guido", 5));
 
 		// Then
 		Parameters parameters1 = response1.getRequest().getParameters();
@@ -101,7 +101,7 @@ public class ComplexParameterTest {
 		Assertions.assertThat(parameters1.getFirst("ty-pe.num-ber")).isEqualTo("5");
 
 		//When - with prefix
-		HttlResponse response2 = api.prefix(new ComplexParamNamed("Vaclav", 10));
+		HttlResponse response2 = api.prefix(new BeanParamNamed("Vaclav", 10));
 
 		//Then - with prefix
 		Parameters parameters2 = response2.getRequest().getParameters();
@@ -111,10 +111,10 @@ public class ComplexParameterTest {
 	}
 
 	@Test
-	public void complexParamNullValuesLegal() {
+	public void beanParamLegalNulls() {
 
 		//Given - api without notnull checks
-		ComplexParamNamedApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(ComplexParamNamedApi.class);
+		BeanParamNamedApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamNamedApi.class);
 
 		//When - legal null parameter
 		HttlResponse response1 = api.prefix(null);
@@ -123,7 +123,7 @@ public class ComplexParameterTest {
 		Assertions.assertThat(parameters1.size()).isEqualTo(0);
 
 		//When - legal null field
-		HttlResponse response2 = api.prefix(new ComplexParamNamed(null, 33));
+		HttlResponse response2 = api.prefix(new BeanParamNamed(null, 33));
 		//Then - null param is skipped
 		Parameters parameters2 = response2.getRequest().getParameters();
 		Assertions.assertThat(parameters2.size()).isEqualTo(1);
@@ -132,17 +132,17 @@ public class ComplexParameterTest {
 
 	}
 
-	static interface ComplexParamNamedApi {
+	static interface BeanParamNamedApi {
 
 		@RestCall("GET /")
-		public HttlResponse nothing(@RestVar ComplexParamNamed param);
+		public HttlResponse nothing(@RestVar BeanParamNamed param);
 
 		@RestCall("GET /")
-		public HttlResponse prefix(@RestVar("pa-ram.") ComplexParamNamed param);
+		public HttlResponse prefix(@RestVar("pa-ram.") BeanParamNamed param);
 	}
 
 	@RestVar("ty-pe.")
-	static class ComplexParamNamed {
+	static class BeanParamNamed {
 
 		@RestVar("na-me")
 		private String name;
@@ -150,7 +150,7 @@ public class ComplexParameterTest {
 		@RestVar("num-ber")
 		private int number;
 
-		public ComplexParamNamed(String name, int number) {
+		public BeanParamNamed(String name, int number) {
 			this.name = name;
 			this.number = number;
 		}

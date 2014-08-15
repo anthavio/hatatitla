@@ -20,9 +20,10 @@ import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlSender.HttlHeaders;
 import net.anthavio.httl.HttlSender.Parameters;
-import net.anthavio.httl.api.RestBody.NoopHttlBodyWriter;
+import net.anthavio.httl.api.RestBody.NullSurrogateHttlBodyWriter;
+import net.anthavio.httl.api.RestCall.HttpMethod;
 import net.anthavio.httl.api.RestVar.NoopParamSetter;
-import net.anthavio.httl.api.VarSetter.ComplexMetaVarSetter;
+import net.anthavio.httl.api.VarSetter.BeanMetaVarSetter;
 import net.anthavio.httl.api.VarSetter.FieldApiVarMeta;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
@@ -340,7 +341,7 @@ public class HttlApiBuilder {
 
 			} else {
 				// normal parameters here...
-				meta = doApiParameter(i, method);
+				meta = doParameter(i, method, null);
 				if (map.containsKey(meta.name)) {
 					throw new HttlApiException("Duplicate parameter named '" + meta.name + "' found", method);
 				}
@@ -352,23 +353,24 @@ public class HttlApiBuilder {
 		return metaList.toArray(new ApiVarMeta[metaList.size()]);
 	}
 
-	private static ApiVarMeta doApiParameter(int index, Method method) {
-		Annotation[][] mannotations = method.getParameterAnnotations();
-		if (mannotations.length == 0) {
-			throw new HttlApiException("Cannot determine parameter's name on position " + (index + 1)
-					+ ". No annotation present", method);
+	/*
+		private static ApiVarMeta doApiParameter(int index, Method method) {
+			Annotation[][] mannotations = method.getParameterAnnotations();
+			if (mannotations.length == 0) {
+				throw new HttlApiException("Cannot determine parameter's name on position " + (index + 1)
+						+ ". No annotation present", method);
+			}
+			return doParameter(index, method, null);
+
 		}
-		return doParameter(index, method, null);
-
-	}
-
+	*/
 	private static ApiVarMeta doParameter(int index, Method method, String defaultName) {
 
 		String name = defaultName;
 		boolean required = false;
 		String nullval = null;
 		VarSetter<Object> setter = null;
-		HttlBodyWriter<Object> marshaller = null;
+		HttlBodyWriter<Object> writer = null;
 		String variable = null;
 		VarTarget target = VarTarget.QUERY;
 
@@ -391,16 +393,16 @@ public class HttlApiBuilder {
 
 			} else if (annotation instanceof RestBody) {
 				RestBody body = (RestBody) annotation;
-				name = BODY; //artificial name
+				name = BODY; //artificial parameter name
 				target = VarTarget.BODY;
 				if (!body.value().isEmpty()) {
 					variable = body.value(); //Content-Type header
 				}
-				if (body.marshaller() != NoopHttlBodyWriter.class) {
+				if (body.writer() != NullSurrogateHttlBodyWriter.class) {
 					try {
-						marshaller = body.marshaller().newInstance();
+						writer = body.writer().newInstance();
 					} catch (Exception x) {
-						throw new HttlApiException("Cannot create " + body.marshaller().getName() + " instance ", x);
+						throw new HttlApiException("Cannot create " + body.writer().getName() + " instance ", x);
 					}
 				}
 			} else if (annotation.getClass().getName().equals("javax.inject.Named")) {
@@ -418,20 +420,37 @@ public class HttlApiBuilder {
 				}
 			}
 		}
-
 		Class<?> type = method.getParameterTypes()[index];
-		if (type.getAnnotation(RestVar.class) != null) {
-			return doComplexParameter(index, type, name, required);
-		} else if (name == null && setter == null) {
+
+		//own setter is set -> skip default processing
+		if (setter == null) {
+
+			if (type.getAnnotation(RestVar.class) != null) {
+				//Custom Bean with @RestVar class anotation
+				return doBeanParameter(index, type, name, required);
+
+			} else if (Map.class.isAssignableFrom(type)) {
+				// Map are special
+				return doMapParameter(index, type, name, required);
+			}
+		}
+
+		//fail if 
+		if (name == null && setter == null) {
 			throw new HttlApiException("Missing parameter's name on position " + (index + 1), method);
 		}
 
-		ApiVarMeta meta = new ApiVarMeta(index, type, name, required, nullval, setter, marshaller, target);
+		ApiVarMeta meta = new ApiVarMeta(index, type, name, required, nullval, setter, writer, target);
 		meta.variable = variable;
 		return meta;
 	}
 
-	private static ApiVarMeta doComplexParameter(int index, Class<?> paramClazz, String paramName, boolean paramNotnull) {
+	private static ApiVarMeta doMapParameter(int index, Class<?> paramClazz, String paramName, boolean paramNotnull) {
+		return new ApiVarMeta(index, paramClazz, paramName, paramNotnull, null, VarSetter.MapVarSetter, null,
+				VarTarget.QUERY);
+	}
+
+	private static ApiVarMeta doBeanParameter(int index, Class<?> paramClazz, String paramName, boolean paramNotnull) {
 		List<FieldApiVarMeta> list = new ArrayList<FieldApiVarMeta>();
 		RestVar paramVar = paramClazz.getAnnotation(RestVar.class);
 		StringBuilder name = new StringBuilder();
@@ -472,7 +491,7 @@ public class HttlApiBuilder {
 		if (list.size() == 0) {
 			throw new HttlApiException("No fields discovered", paramClazz);
 		}
-		ComplexMetaVarSetter setter = new ComplexMetaVarSetter(list.toArray(new FieldApiVarMeta[list.size()]));
+		BeanMetaVarSetter setter = new BeanMetaVarSetter(paramClazz, list.toArray(new FieldApiVarMeta[list.size()]));
 		return new ApiVarMeta(index, paramClazz, paramName, paramNotnull, null, setter, null, VarTarget.QUERY);
 	}
 
@@ -597,6 +616,7 @@ public class HttlApiBuilder {
 
 	}
 
+	@SuppressWarnings("rawtypes")
 	static class ApiVarMeta {
 
 		final int index;
@@ -604,13 +624,13 @@ public class HttlApiBuilder {
 		final boolean killnull;
 		final String nullval;
 		final Type type;
-		final VarSetter<Object> setter;
-		final HttlBodyWriter<Object> writer; //only for @Body
+		final VarSetter setter;
+		final HttlBodyWriter writer; //only for @Body
 		VarTarget target;
 		String variable; //@Body content type or placeholder for urlpath
 
-		public ApiVarMeta(int index, Type type, String name, boolean killnull, String nullval, VarSetter<Object> setter,
-				HttlBodyWriter<Object> marshaller, VarTarget target) {
+		public ApiVarMeta(int index, Type type, String name, boolean killnull, String nullval, VarSetter setter,
+				HttlBodyWriter marshaller, VarTarget target) {
 			this.index = index;
 			this.type = type;
 			this.name = name;

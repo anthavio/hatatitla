@@ -6,8 +6,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
+import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.AdvancedApiTest.TestBodyBean;
@@ -45,9 +49,9 @@ public class BasicApiTest {
 		Assertions.assertThat(api.equals("zzz")).isFalse();
 
 		//When
-		api.returnVoid();
+		api.void2void();
 		//Then
-		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/returnVoid");
+		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/void2void");
 
 		//When
 		String returnString = api.returnString();
@@ -64,17 +68,10 @@ public class BasicApiTest {
 		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponse)).isEqualTo(helloPlain);
 		Assertions.assertThat(new String(HttpHeaderUtil.readAsBytes(returnResponse), "utf-8")).isEqualTo(helloPlain);
 
-		transport.setStaticResponse(null);
-
-		api.void2void();
-		Assertions.assertThat(transport.getLastRequest().getPathAndQuery()).isEqualTo("/void2void");
 	}
 
 	@RestHeaders("Content-Type: application/json")
 	static interface SimpleApi {
-
-		@RestCall("GET /returnVoid")
-		public void returnVoid();
 
 		@RestCall("GET /returnString")
 		public String returnString();
@@ -178,45 +175,139 @@ public class BasicApiTest {
 		ApiWithStreams api = HttlApiBuilder.build(ApiWithStreams.class, sender);
 
 		//When
-		InputStream postBytesReturnStream = api.postBytesReturnStream(helloPlain.getBytes("utf-8"));
+		InputStream bytes2stream = api.bytes2stream(helloPlain.getBytes("utf-8"));
 		//Then
-		Assertions.assertThat(new String(IOUtils.toByteArray(postBytesReturnStream), "utf-8")).isEqualTo(helloPlain);
-		postBytesReturnStream.close();
+		Assertions.assertThat(new String(IOUtils.toByteArray(bytes2stream), "utf-8")).isEqualTo(helloPlain);
+		bytes2stream.close();
 
 		//When
-		Reader postStringReturnReader = api.postStringReturnReader(helloPlain);
+		Reader string2reader = api.string2reader(helloPlain);
 		//Then
-		Assertions.assertThat(IOUtils.toString(postStringReturnReader)).isEqualTo(helloPlain);
-		postStringReturnReader.close();
+		Assertions.assertThat(IOUtils.toString(string2reader)).isEqualTo(helloPlain);
+		string2reader.close();
 
 		//When
-		InputStream postStreamReturnStream = api.postStreamReturnStream(new ByteArrayInputStream(helloPlain
-				.getBytes("utf-8")));
+		InputStream stream2stream = api.stream2stream(new ByteArrayInputStream(helloPlain.getBytes("utf-8")));
 		//Then
-		Assertions.assertThat(IOUtils.toString(postStreamReturnStream, "utf-8")).isEqualTo(helloPlain);
-		postStreamReturnStream.close();
+		Assertions.assertThat(IOUtils.toString(stream2stream, "utf-8")).isEqualTo(helloPlain);
+		stream2stream.close();
 
 		//When
-		Reader postReaderReturnReader = api.postReaderReturnReader(new StringReader(helloPlain));
+		Reader reader2reader = api.reader2reader(new StringReader(helloPlain));
 		//Then
-		Assertions.assertThat(IOUtils.toString(postReaderReturnReader)).isEqualTo(helloPlain);
-		postReaderReturnReader.close();
+		Assertions.assertThat(IOUtils.toString(reader2reader)).isEqualTo(helloPlain);
+		reader2reader.close();
 	}
 
 	@RestHeaders("Content-Type: application/json")
 	static interface ApiWithStreams {
 
-		@RestCall("POST /returnStreamPostBytes")
-		public InputStream postBytesReturnStream(@RestBody byte[] bytes);
+		@RestCall("POST /bytes2stream")
+		public InputStream bytes2stream(@RestBody byte[] bytes);
 
-		@RestCall("POST /returnReaderPostString")
-		public Reader postStringReturnReader(@RestBody String string);
+		@RestCall("POST /string2reader")
+		public Reader string2reader(@RestBody String string);
 
-		@RestCall("POST /returnStreamPostStream")
-		public InputStream postStreamReturnStream(@RestBody InputStream stream);
+		@RestCall("POST /stream2stream")
+		public InputStream stream2stream(@RestBody InputStream stream);
 
-		@RestCall("POST /returnReaderPostReader")
-		public Reader postReaderReturnReader(@RestBody Reader reader);
+		@RestCall("POST /reader2reader")
+		public Reader reader2reader(@RestBody Reader reader);
+	}
+
+	/**
+	 * Map is prominent structure with special handling
+	 */
+	@Test
+	public void mapAsParameter() {
+		MockTransport transport = new MockTransport();
+		HttlSender sender = new MockSenderConfig(transport).build();
+
+		MapAsParam api = HttlApiBuilder.build(MapAsParam.class, sender);
+
+		//When - null
+		Map<Object, Object> map = null;
+		HttlResponse response = api.map2response(map);
+		//Then 
+		HttlRequest request = response.getRequest();
+		Assertions.assertThat(request.getParameters()).isEmpty();
+
+		//When - empty
+		map = new HashMap<Object, Object>();
+		response = api.map2response(map);
+		//Then
+		request = response.getRequest();
+		Assertions.assertThat(request.getParameters()).isEmpty();
+
+		//When - number as key
+		map.put(1, 2);
+		response = api.map2response(map);
+		//Then - ok
+		request = response.getRequest();
+		Assertions.assertThat(request.getParameters().getFirst("1")).isEqualTo("2");
+
+		map.clear();
+
+		//When - null key
+		map.put(null, "value");
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getParameters()).isEmpty();
+
+		//When - null value
+		map.put("key", null);
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getParameters()).isEmpty();
+
+		//When - empty list
+		map.put("key", new ArrayList<String>());
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/x");
+
+		ArrayList<Object> list = new ArrayList<Object>();
+		list.add("first");
+		list.add(333);
+		map.put("key", list);
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/x?key=first&key=333");
+
+		map.clear();
+
+		//When - empty array
+		map.put("key", new String[0]);
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/x");
+
+		//When - array with 2 elements
+		map.put("key", new Object[] { "first", 333 });
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/x?key=first&key=333");
+
+		//When - primitive array with 2 elements
+		map.put("key", new int[] { 111, 222 });
+		response = api.map2response(map);
+		//Then - skipped
+		request = response.getRequest();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/x?key=111&key=222");
+
+	}
+
+	static interface MapAsParam {
+
+		@RestCall("GET /x")
+		HttlResponse map2response(@RestVar Map<Object, Object> map);
+
 	}
 
 	@Test

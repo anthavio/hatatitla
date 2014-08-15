@@ -180,27 +180,8 @@ public class HttlRequestBuilders {
 		// parameters section...
 
 		/**
-		 * Set Parameters replacing all existing
 		 */
-		public X params(Map<String, ?> parameters) {
-			this.parameters.clear();
-			addParams(parameters);
-			return getX();
-		}
-
-		/**
-		 * Set Parameters replacing all existing
-		 
-		public X setParameters(Parameters parameters) {
-			this.parameters = parameters;
-			return getX();
-		}
-		*/
-
-		/**
-		 * Add Parameters
-		 */
-		public X addParams(Map<String, ?> map) {
+		public X param(Map<String, ?> map) {
 			Set<String> keySet = map.keySet();
 			for (String name : keySet) {
 				Object value = map.get(name);

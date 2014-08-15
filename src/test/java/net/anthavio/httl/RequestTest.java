@@ -10,6 +10,8 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import net.anthavio.httl.Authentication.Scheme;
 import net.anthavio.httl.HttlBody.Type;
@@ -119,7 +121,7 @@ public class RequestTest {
 	}
 
 	@Test
-	public void testPostBody() throws IOException {
+	public void requestBody() throws IOException {
 		//Given sender
 		HttlSender sender = new HttpUrlConfig("www.example.com").build();
 
@@ -218,7 +220,7 @@ public class RequestTest {
 
 		//When - caching and wrong mime type to marshall
 		try {
-			sender.POST("/whatever").body(bean, "wrong/type", true).build();
+			sender.POST("/whatever").body(bean, "unsupported/type", true).build();
 			//Then - exception intantly
 			Assertions.fail("Expected " + HttlRequestException.class.getName());
 		} catch (HttlRequestException rx) {
@@ -227,7 +229,20 @@ public class RequestTest {
 	}
 
 	@Test
-	public void dateParameter() throws UnsupportedEncodingException {
+	public void mapAsParameter() {
+		//Given - default settings
+		HttlSender sender = new HttpUrlConfig("www.example.com").build();
+		HttlRequest request;
+		//When
+		Map<String, Object> map = new HashMap<String, Object>();
+		request = sender.GET("/path").param("map", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+	}
+
+	@Test
+	public void dateAsParameter() throws UnsupportedEncodingException {
 
 		//Given - default settings
 		HttlSender sender = new HttpUrlConfig("www.example.com").build();
@@ -259,7 +274,7 @@ public class RequestTest {
 	}
 
 	@Test
-	public void multiValued() {
+	public void arraysAndCollections() {
 		HttlSender sender = new HttpUrlConfig("www.example.com").build();
 
 		SenderNobodyRequestBuilder builder = sender.DELETE("/delete");

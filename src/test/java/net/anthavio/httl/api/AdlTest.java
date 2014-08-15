@@ -1,9 +1,10 @@
 package net.anthavio.httl.api;
 
 import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseHandler;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.api.RestCall.HttpMethod;
 import net.anthavio.httl.util.MockSenderConfig;
 
 /**
