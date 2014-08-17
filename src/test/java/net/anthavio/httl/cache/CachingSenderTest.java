@@ -26,8 +26,8 @@ import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
 import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.util.Base64;
 
-import org.apache.commons.codec.binary.Base64;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -278,7 +278,7 @@ public class CachingSenderTest {
 		keyStore.load(new FileInputStream("/Users/martin.vanek/Downloads/google_privatekey.p12"),
 				"notasecret".toCharArray());
 		PrivateKey privateKey = (PrivateKey) keyStore.getKey("privatekey", "notasecret".toCharArray());
-		String header = Base64.encodeBase64String("{\"alg\":\"RS256\",\"typ\":\"JWT\"}".getBytes());
+		String header = Base64.encodeString("{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
 		System.out.println(header);
 		long iat = System.currentTimeMillis() / 1000;
 		long exp = iat + 60 * 60;
@@ -288,14 +288,14 @@ public class CachingSenderTest {
 				+ "\"aud\":\"https://accounts.google.com/o/oauth2/token\"," //
 				+ "\"exp\":" + exp + "," + "\"iat\":" + iat//
 				+ "}";
-		String claimset = Base64.encodeBase64String(data.getBytes());
+		String claimset = Base64.encodeString(data);
 		String content = header + "." + claimset;
 
 		Signature signature = Signature.getInstance("SHA256withRSA");
 		signature.initSign(privateKey);
 		signature.update(content.getBytes());
 		byte[] sign = signature.sign();
-		String digsig = Base64.encodeBase64String(sign);
+		String digsig = new String(Base64.encode(sign));
 		String assertion = content + "." + digsig;
 		System.out.println(assertion);
 		sender = new HttpClient4Config("https://accounts.google.com/o/oauth2/token").build();

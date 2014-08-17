@@ -9,8 +9,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.util.HttpHeaderUtil;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -75,12 +78,22 @@ public class OAuthServerTest extends HttpServlet {
 		//mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 		//Twitter has OAuth 1.0 - https://dev.twitter.com/docs/auth/implementing-sign-twitter
-
+		/*
 		sender = HttlSender.For("https://api.worldoftanks.eu").setHeader("Accept", "application/json").build();
 
 		builder = new OAuth2Builder(sender).setStrict(false).setAuthUrl("/wot/auth/login/")
 				.setCustomParam("application_id", "a58197e5c9dc213a5c56865014dbd08c")
 				.setRedirectUri("http://local.nature.com:3030/callback/wot").build();
+		*/
+
+		//Facebook https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/v2.1
+		sender = HttlSender.For("https://graph.facebook.com").addHeader("Accept", "application/json").build();
+
+		builder = new OAuth2Builder(sender).setAuthUrl("https://www.facebook.com/dialog/oauth")
+				.setClientId("257584864432184").setClientSecret("362da435e18c5fe6424f993541f15690").setAuthResponseType("code")
+				/*.setTokenHttpMethod(Method.GET)*/.setTokenUrl("https://graph.facebook.com/oauth/access_token")
+				.setCustomParam("display", "popup").setRedirectUri("http://localhost:3030/callback/facebook").build();
+
 		/*
 		sender = HttlSender.For("https://github.com").setHeader("Accept", "application/json").build();
 		builder = new OAuth2Builder(sender).setAuthUrl("https://github.com/login/oauth/authorize")
@@ -100,13 +113,17 @@ public class OAuthServerTest extends HttpServlet {
 
 	@Override
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		System.out.print(request.getRequestURI());
+		System.out.println(request.getParameterMap());
+
 		response.getWriter().print(request.getRequestURI());
 		response.getWriter().println(request.getParameterMap());
 
 		if (request.getRequestURI().contains("authorize")) {
 			//"public access" github
 			//String url = builder.getAuthUrl("random-state", "openid email"); //github
-			String url = builder.getAuthUrl(null, null); //github
+			//String url = builder.getAuthUrl(null, null); //wot
+			String url = builder.getAuthUrl("public_profile,email", "whatever");
 			System.out.println("Redirecting to " + url);
 			response.sendRedirect(url);
 
@@ -126,12 +143,13 @@ public class OAuthServerTest extends HttpServlet {
 				}
 			} else { //civilized OAuth
 				String error = request.getParameter("error");
+				String code = request.getParameter("code");
+				String token = request.getParameter("token");
 				if (error != null) {
 					response.getWriter().println(error);
 					response.getWriter().println(request.getParameter("error_description"));
-				} else {
-					System.out.println("Code callback!");
-					String code = request.getParameter("code");
+				} else if (code != null) {
+
 					HttlBuilderVisitor visitor = new HttlBuilderVisitor() {
 
 						@Override
@@ -140,15 +158,45 @@ public class OAuthServerTest extends HttpServlet {
 
 						}
 					};
-					OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, OAuthTokenResponse.class);
+					OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, new FacebookTokenExtractor());
 					String access_token = tokenResponse.getAccess_token();
-					ExtractedResponse<String> extract = sender.GET("/user").param("access_token", access_token)
+
+					ExtractedResponse<String> extract = sender.GET("/me").param("access_token", access_token)
 							.extract(String.class);
 					response.getWriter().print(extract);
 					response.setStatus(200);
 				}
 			}
 		} else {
+		}
+	}
+
+	/**
+	 * https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/v2.1#
+	 * 
+	 * https://developers.facebook.com/docs/facebook-login/access-tokens/
+	 */
+	class FacebookTokenExtractor implements HttlResponseExtractor<OAuthTokenResponse> {
+
+		/**
+		 * access_token={access-token}&expires={seconds-til-expiration}
+		 */
+		@Override
+		public OAuthTokenResponse extract(HttlResponse response) throws IOException {
+			if ("text/plain".equals(response.getMediaType())) {
+				String extracted = HttpHeaderUtil.readAsString(response);
+				String[] parameters = extracted.split("&");
+				for (String parameter : parameters) {
+					String[] nameValue = parameter.split("=");
+					if (nameValue[0].equals("access_token")) {
+						return new OAuthTokenResponse(nameValue[1]);
+					}
+				}
+				throw new IllegalArgumentException("access_token not found in " + extracted + " in " + response);
+
+			} else {
+				throw new IllegalArgumentException("Can't parse " + response);
+			}
 		}
 	}
 }

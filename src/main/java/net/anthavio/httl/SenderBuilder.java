@@ -197,8 +197,8 @@ public abstract class SenderBuilder {
 	/**
 	 * Header will be added into every HttlRequest
 	 */
-	public SenderBuilder setHeader(String name, String value) {
-		this.defaultHeaders.set(name, value);
+	public SenderBuilder addHeader(String name, String value) {
+		this.defaultHeaders.add(name, value);
 		return this;
 	}
 
@@ -212,8 +212,8 @@ public abstract class SenderBuilder {
 	/**
 	 * Parameter will be added into every HttlRequest
 	 */
-	public SenderBuilder setParam(String name, String value) {
-		this.defaultParameters.set(name, value);
+	public SenderBuilder addParam(String name, String value) {
+		this.defaultParameters.add(name, value);
 		return this;
 	}
 

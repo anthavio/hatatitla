@@ -14,9 +14,6 @@ import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.MemcachedClient;
 import net.spy.memcached.internal.CheckedOperationTimeoutException;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
-
 /**
  * SpyMemcached implementation
  * 
@@ -150,7 +147,7 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 		String namespace = getNamespace();
 		//use MD5 hash if the key is too long, but keep the namespace
 		if (namespace.length() + userKey.length() > MaxKeyLength) {
-			return namespace + ":" + DigestUtils.md5Hex(userKey);
+			return namespace + ":" + Cutils.md5hex(userKey);
 		} else {
 			return namespace + ":" + userKey;
 		}

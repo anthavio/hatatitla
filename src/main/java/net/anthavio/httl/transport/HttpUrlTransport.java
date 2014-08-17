@@ -25,9 +25,9 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.SenderBuilder;
+import net.anthavio.httl.util.Base64;
 import net.anthavio.httl.util.ReaderInputStream;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +58,7 @@ public class HttpUrlTransport implements HttlTransport {
 			final Authentication authentication = config.getAuthentication();
 			if (authentication.getScheme() == Scheme.BASIC && authentication.getPreemptive()) {
 				//we can use preemptive shortcut only for basic authentication
-				byte[] bytes = (authentication.getUsername() + ":" + authentication.getPassword()).getBytes(Charset
-						.forName(config.getEncoding()));
-				String encoded = Base64.encodeBase64String(bytes);
+				String encoded = Base64.encodeString(authentication.getUsername() + ":" + authentication.getPassword());
 				this.basicAuthHeader = "Basic " + encoded;
 			} else {
 				//for other authentication schemas use standard java Authenticator
