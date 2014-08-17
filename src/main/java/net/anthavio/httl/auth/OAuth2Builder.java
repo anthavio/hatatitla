@@ -5,6 +5,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
@@ -24,7 +26,7 @@ public class OAuth2Builder {
 
 	private String redirectUri; //callback url
 
-	//private HttlRequest.Method tokenMethod = Method.POST;
+	private HttlRequest.Method tokenHttpMethod = Method.POST;
 
 	private URL tokenUrl; //token endpoint url
 
@@ -103,6 +105,15 @@ public class OAuth2Builder {
 			}
 
 		}
+		return this;
+	}
+
+	public HttlRequest.Method getTokenHttpMethod() {
+		return tokenHttpMethod;
+	}
+
+	public OAuth2Builder setTokenHttpMethod(HttlRequest.Method tokenHttpMethod) {
+		this.tokenHttpMethod = tokenHttpMethod;
 		return this;
 	}
 

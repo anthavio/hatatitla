@@ -1,7 +1,8 @@
 package net.anthavio.httl.auth;
 
 import net.anthavio.httl.HttlBuilderVisitor;
-import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
+import net.anthavio.httl.HttlRequest.Method;
+import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.util.HttpHeaderUtil;
@@ -37,25 +38,33 @@ public class OAuth2 {
 	}
 
 	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, HttlResponseExtractor<T> extractor) {
-		String path = config.getTokenUrl().getPath();
-		String body = getAccessTokenQuery(code);
-		SenderBodyRequestBuilder builder = sender.POST(path).body(body, "application/x-www-form-urlencoded");
+		SenderRequestBuilder<?> builder = buildTokenRequest(code);
 		visitor.visit(builder);
 		return builder.extract(extractor).getBody();
 	}
 
 	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, Class<T> tokenClass) {
-		String path = config.getTokenUrl().getPath();
-		String body = getAccessTokenQuery(code);
-		SenderBodyRequestBuilder builder = sender.POST(path).body(body, "application/x-www-form-urlencoded");
+		SenderRequestBuilder<?> builder = buildTokenRequest(code);
 		visitor.visit(builder);
 		return builder.extract(tokenClass).getBody();
 	}
 
+	public <T> T getAccessToken(String code, HttlResponseExtractor<T> extractor) {
+		return buildTokenRequest(code).extract(extractor).getBody();
+	}
+
 	public <T> T getAccessToken(String code, Class<T> tokenClass) {
+		return buildTokenRequest(code).extract(tokenClass).getBody();
+	}
+
+	protected SenderRequestBuilder<?> buildTokenRequest(String code) {
 		String path = config.getTokenUrl().getPath();
-		String body = getAccessTokenQuery(code);
-		return sender.POST(path).body(body, "application/x-www-form-urlencoded").extract(tokenClass).getBody();
+		String query = getAccessTokenQuery(code);
+		if (config.getTokenHttpMethod() == Method.POST) {
+			return sender.POST(path).body(query, "application/x-www-form-urlencoded");
+		} else {
+			return sender.GET(path + "?" + query);
+		}
 	}
 
 	public String getAuthUrl(String state, String scope) {

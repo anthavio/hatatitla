@@ -27,7 +27,11 @@ public class OAuthTokenResponse {
 	private String error_description;
 
 	protected OAuthTokenResponse() {
+		//marshalling
+	}
 
+	public OAuthTokenResponse(String access_token) {
+		this.access_token = access_token;
 	}
 
 	public String getToken_type() {
