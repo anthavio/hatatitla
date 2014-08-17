@@ -178,23 +178,6 @@ public class HttlRequestBuilders {
 
 		// parameters section...
 
-		/**
-		 */
-		public X param(Map<String, ?> map) {
-			if (map != null) {
-				Set<String> keySet = map.keySet();
-				for (String name : keySet) {
-					Object value = map.get(name);
-					paramSetter.handle(parameters, false, name, value);
-				}
-			}
-			return getX();
-		}
-
-		public void param(boolean reset, String name, String value) {
-			paramSetter.handle(parameters, reset, name, value);
-		}
-
 		public X param(String name, int value) {
 			paramSetter.handle(parameters, false, name, value);
 			return getX();
@@ -221,7 +204,21 @@ public class HttlRequestBuilders {
 		}
 
 		/**
-		 * Set parameter with single value.
+		 *  Set parameters frm Map
+		 */
+		public X param(Map<String, ?> map) {
+			if (map != null) {
+				Set<String> keySet = map.keySet();
+				for (String name : keySet) {
+					Object value = map.get(name);
+					paramSetter.handle(parameters, false, name, value);
+				}
+			}
+			return getX();
+		}
+
+		/**
+		 * Set/Add parameter with single value.
 		 */
 		public X param(boolean reset, String name, Object value) {
 			paramSetter.handle(parameters, reset, name, value);

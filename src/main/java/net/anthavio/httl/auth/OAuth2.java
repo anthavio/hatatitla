@@ -37,6 +37,27 @@ public class OAuth2 {
 		return new OAuth2Builder(sender);
 	}
 
+	public String getAuthUrl(String scope, String state) {
+		return config.getAuthUrl() + "?" + getAuthQuery(scope, state);
+	}
+
+	protected String getAuthQuery(String scope, String state) {
+		StringBuilder sb = config.getAuthQueryBuilder();
+
+		if (scope != null) {
+			append(sb, "scope", scope);
+		} else if (config.isStrict()) {
+			throw new IllegalArgumentException("Scope is mandatory");
+		}
+
+		if (state != null) {
+			append(sb, "state", state);
+		}
+
+		return sb.toString();
+
+	}
+
 	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, HttlResponseExtractor<T> extractor) {
 		SenderRequestBuilder<?> builder = buildTokenRequest(code);
 		visitor.visit(builder);
@@ -67,28 +88,7 @@ public class OAuth2 {
 		}
 	}
 
-	public String getAuthUrl(String state, String scope) {
-		return config.getAuthUrl() + "?" + getAuthQuery(scope, state);
-	}
-
-	public String getAuthQuery(String scope, String state) {
-		StringBuilder sb = config.getAuthQueryBuilder();
-
-		if (scope != null) {
-			append(sb, "scope", scope);
-		} else if (config.isStrict()) {
-			throw new IllegalArgumentException("Scope is mandatory");
-		}
-
-		if (state != null) {
-			append(sb, "state", state);
-		}
-
-		return sb.toString();
-
-	}
-
-	public String getAccessTokenQuery(String code) {
+	protected String getAccessTokenQuery(String code) {
 
 		StringBuilder sb = config.getTokenQueryBuilder();
 		append(sb, "grant_type", "authorization_code");
@@ -102,7 +102,7 @@ public class OAuth2 {
 		return sb.toString();
 	}
 
-	public String getRefreshTokenQuery(String refresh_token) {
+	protected String getRefreshTokenQuery(String refresh_token) {
 		StringBuilder sb = config.getTokenQueryBuilder();
 		append(sb, "grant_type", "refresh_token");
 
