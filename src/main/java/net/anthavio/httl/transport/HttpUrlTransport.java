@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
+
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.Authentication.Scheme;
 import net.anthavio.httl.HttlBody;
@@ -24,7 +27,6 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
-import net.anthavio.httl.SenderBuilder;
 import net.anthavio.httl.util.Base64;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -41,15 +43,13 @@ public class HttpUrlTransport implements HttlTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final SenderBuilder config;
+	private final HttpUrlConfig config;
 
-	private String basicAuthHeader;
+	private final String basicAuthHeader;
 
 	private HttpURLConnection connection;
 
-	public HttpUrlTransport(String baseUrl) {
-		this(new HttpUrlConfig(baseUrl));
-	}
+	private final SSLSocketFactory sslSocketFactory;
 
 	public HttpUrlTransport(HttpUrlConfig config) {
 		this.config = config;
@@ -69,11 +69,25 @@ public class HttpUrlTransport implements HttlTransport {
 						return new PasswordAuthentication(authentication.getUsername(), authentication.getPassword().toCharArray());
 					}
 				});
+				this.basicAuthHeader = null;
 			}
+		} else {
+			this.basicAuthHeader = null;
 		}
 		//Great way to configure stuff...
 		//System.setProperty("http.keepAlive", "true");
 		//System.setProperty("http.maxConnections", String.valueOf(config.getPoolMaximumSize()));
+
+		if (config.getSslContext() != null && config.getUrl().getProtocol().equals("https")) {
+			this.sslSocketFactory = config.getSslContext().getSocketFactory();
+		} else {
+			this.sslSocketFactory = null; //because final
+		}
+	}
+
+	@Override
+	public HttpUrlConfig getConfig() {
+		return config;
 	}
 
 	@Override
@@ -90,15 +104,14 @@ public class HttpUrlTransport implements HttlTransport {
 
 	@Override
 	public HttlResponse call(HttlRequest request) throws IOException {
-
-		URL url = new URL(config.getUrl().getProtocol(), config.getUrl().getHost(), config.getUrl().getPort(),
-				request.getPathAndQuery());
+		String protocol = config.getUrl().getProtocol();
+		URL url = new URL(protocol, config.getUrl().getHost(), config.getUrl().getPort(), request.getPathAndQuery());
 
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		if (sslSocketFactory != null) {
+			((HttpsURLConnection) connection).setSSLSocketFactory(sslSocketFactory);
+		}
 		this.connection = connection;
-
-		//http://hc.apache.org/httpclient-3.x/sslguide.html
-		//TODO connection.setSSLSocketFactory(sslFactory); 
 
 		connection.setUseCaches(false);
 		connection.setDoOutput(request.getBody() != null); //connection.getOutputStream() will be called
@@ -151,7 +164,7 @@ public class HttpUrlTransport implements HttlTransport {
 				HttlBody body = request.getBody();
 				switch (body.getType()) {
 				case MARSHALL:
-					config.getMarshaller().marshall(request, connection.getOutputStream());
+					request.getSender().getMarshaller().marshall(request, connection.getOutputStream());
 					break;
 				case STRING:
 					String string = (String) body.getPayload();

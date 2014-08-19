@@ -9,6 +9,7 @@ import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.util.Cutils;
+import net.anthavio.httl.util.OptionalLibs;
 
 /**
  * Hatatilta's default Marshaller implementation using multiple Marshallers for different media types
@@ -36,7 +37,7 @@ public class MediaTypeMarshaller implements HttlBodyMarshaller {
 		String mediaType = request.getMediaType();
 		HttlBodyMarshaller marshaller = marshallers.get(mediaType);
 		if (marshaller == null) {
-			marshaller = OptinalLibs.findMarshaller(mediaType);
+			marshaller = OptionalLibs.findMarshaller(mediaType);
 			if (marshaller != null) {
 				marshallers.put(mediaType, marshaller);
 			}

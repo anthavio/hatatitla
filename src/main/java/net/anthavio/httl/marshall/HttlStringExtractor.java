@@ -14,7 +14,15 @@ import net.anthavio.httl.util.HttpHeaderUtil;
  */
 public class HttlStringExtractor implements HttlResponseExtractor<String> {
 
-	public static HttlStringExtractor DEFAULT = new HttlStringExtractor(200, 300);
+	/**
+	 * throws HttlStatusException when response http status is not in <200,299> range
+	 */
+	public static HttlStringExtractor STANDARD = new HttlStringExtractor(200, 299);
+
+	/**
+	 * Accepts any response http status
+	 */
+	public static HttlStringExtractor RELAXED = new HttlStringExtractor(0, 1000);
 
 	private int httpMin;
 	private int httpMax;

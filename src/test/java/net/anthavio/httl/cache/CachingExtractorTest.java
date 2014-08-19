@@ -58,7 +58,7 @@ public abstract class CachingExtractorTest {
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
 		HttlRequest request = cextractor.getSender().GET("/").build();
-		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		//soft 1s, hard 2s, synchronous refresh
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(extractor, request, 2, 1,
 				TimeUnit.SECONDS);
@@ -148,7 +148,7 @@ public abstract class CachingExtractorTest {
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 
 		HttlRequest request = cextractor.getSender().GET("/").param("sleep", 1).build();
-		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor);
@@ -195,7 +195,7 @@ public abstract class CachingExtractorTest {
 
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 		HttlRequest request = cextractor.getSender().GET("/").build();
-		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!
 
@@ -272,7 +272,7 @@ public abstract class CachingExtractorTest {
 
 		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
 		SenderRequestBuilder<?> builder = cextractor.getSender().GET("/");
-		HttlResponseExtractor<String> extractor = HttlStringExtractor.DEFAULT;
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		CachingExtractorRequest<String> cerequest = cextractor.from(builder.build()).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!
 
@@ -325,7 +325,7 @@ public abstract class CachingExtractorTest {
 	private CachingExtractor newExtractorSender(int port) {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new JavaHttpSender(url);
-		HttlSender sender = new HttpClient4Config(url).build();
+		HttlSender sender = new HttpClient4Config(url).sender().build();
 		HeapMapCache<Serializable> cache = new HeapMapCache<Serializable>();
 		Scheduler<Serializable> scheduler = new Scheduler<Serializable>(cache, executor);
 		cache.setScheduler(scheduler);

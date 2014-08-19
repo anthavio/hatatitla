@@ -60,6 +60,11 @@ public class HttpClient4Transport implements HttlTransport {
 	}
 
 	@Override
+	public HttpClient4Config getConfig() {
+		return config;
+	}
+
+	@Override
 	public void close() {
 		try {
 			httpClient.getConnectionManager().shutdown();
@@ -79,7 +84,7 @@ public class HttpClient4Transport implements HttlTransport {
 	*/
 
 	/**
-	 * Backdoor
+	 * Leak implementation to allow hacking
 	 */
 	public HttpClient getHttpClient() {
 		return httpClient;
@@ -163,7 +168,7 @@ public class HttpClient4Transport implements HttlTransport {
 			HttpEntity entity;
 			switch (body.getType()) {
 			case MARSHALL:
-				entity = new MarshallableHttpEntity(request, config.getMarshaller());
+				entity = new MarshallableHttpEntity(request, request.getSender().getMarshaller());
 				break;
 			case STRING:
 				entity = new StringEntity((String) body.getPayload(), request.getCharset());

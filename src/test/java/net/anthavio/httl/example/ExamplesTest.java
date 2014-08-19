@@ -10,11 +10,13 @@ import javax.xml.bind.Marshaller;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.Authentication;
+import net.anthavio.httl.HttlBuilder;
 import net.anthavio.httl.HttlParameterSetter;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.SenderConfigurer;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.cache.CachingSender;
 import net.anthavio.httl.cache.CachingSenderRequest;
@@ -22,8 +24,6 @@ import net.anthavio.httl.marshall.Jackson2Unmarshaller;
 import net.anthavio.httl.marshall.JaxbMarshaller;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
-import net.anthavio.httl.transport.HttpUrlConfig;
-import net.anthavio.httl.transport.JettySenderConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,11 +38,10 @@ public class ExamplesTest {
 	public static void main(String[] args) {
 		//cachingScheduled();
 		try {
-			HttlSender sender = new JettySenderConfig("http://httpbin.org/").build();
-			ExtractedResponse<String> extract = sender.GET("/get").param("prdel", "krtel").extract(String.class);
-			System.out.println(extract);
-
-			sender.close();
+			//HttlSender sender = new JettyClientConfig("http://httpbin.org/").build();
+			//ExtractedResponse<String> extract = sender.GET("/get").param("prdel", "krtel").extract(String.class);
+			//System.out.println(extract);
+			//sender.close();
 		} catch (Exception x) {
 			x.printStackTrace();
 		}
@@ -51,7 +50,7 @@ public class ExamplesTest {
 
 	public static void fluent() {
 		//Create sender with utf-8 encoding, default timeouts and connection pool
-		HttlSender sender = new HttpUrlConfig("https://api.github.com").build();
+		HttlSender sender = HttlSender.with("https://api.github.com").build();
 
 		ExtractedResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
@@ -65,7 +64,7 @@ public class ExamplesTest {
 		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
 
 		//That pesky IIS wants Cyrillic? No problem!
-		config.setEncoding("Cp1251"); //default is utf-8
+		config.setCharset("Cp1251"); //default is utf-8
 
 		//Life if boring without timeouts
 		config.setConnectTimeoutMillis(3 * 1000); //default is 5 seconds
@@ -89,37 +88,37 @@ public class ExamplesTest {
 		//XXX config.setKeepEmptyParams(false); //default is KEEP
 
 		//Tired of setting Accept Header to every request?
-		config.setResponseMediaType("application/json"); //default is none
+		SenderConfigurer configurer = config.sender();
+		configurer.setResponseMediaType("application/json"); //default is none
 
-		HttlSender sender = config.build();
+		HttlSender sender = configurer.build();
 		//...send send send...
 		sender.close();
 	}
 
 	public static void senders() {
 		//Easy to start with
-		//No additional dependency - vanilla java 
-		HttlSender urlSender = HttlSender.For("https://graph.facebook.com").build();
+		//No additional dependency - vanilla Java/Android 
+		HttlSender urlSender = HttlSender.with("https://graph.facebook.com").build();
 
 		//Recommended choice
 		//Dependency - http://hc.apache.org/httpcomponents-client-ga/
 		//java.lang.NoClassDefFoundError: org/apache/http/client/methods/HttpRequestBase
-		HttpClient4Config http4config = new HttpClient4Config("https://api.twitter.com");
-		//HttpSender http4sender = HttpSender.New(http4config);
-		HttlSender http4sender = http4config.build();
+		HttpClient4Config http4config = HttlBuilder.httpClient4("https://api.twitter.com");
+		HttlSender http4sender = http4config.sender().build();
 
 		//Legacy choice
 		//Dependency - http://hc.apache.org/httpclient-3.x/
 		//java.lang.NoClassDefFoundError: org/apache/commons/httpclient/HttpMethodBase
-		HttpClient3Config http3config = new HttpClient3Config("https://api.twitter.com");
-		HttlSender http3sender = http3config.build();
+		HttpClient3Config http3config = HttlBuilder.httpClient3("https://api.twitter.com");
+		HttlSender http3sender = http3config.sender().build();
 	}
 
 	public static void json() {
 		//Precondition is to have Jackson 1 or Jackson 2 on classpath, otherwise following exception will occur
 		//java.lang.IllegalArgumentException: Request body marshaller not found for application/json
 		//java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
-		HttlSender sender = HttlSender.For("http://httpbin.org").build();
+		HttlSender sender = HttlSender.with("http://httpbin.org").build();
 
 		//Send HttpbinIn instance marshalled as JSON document
 		HttpbinIn binIn = new HttpbinIn();
@@ -160,7 +159,7 @@ public class ExamplesTest {
 	 */
 	public static void cachingSender() {
 		//Github uses ETag and Cache control headers nicely
-		HttlSender sender = HttlSender.For("https://api.github.com").build();
+		HttlSender sender = HttlSender.with("https://api.github.com").build();
 		//Provide cache instance - Simple Heap Hashmap in this case
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		//Create caching sender

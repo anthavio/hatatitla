@@ -12,7 +12,7 @@ import net.anthavio.httl.async.ExecutorServiceBuilder;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpUrlConfig;
-import net.anthavio.httl.transport.JettySenderConfig;
+import net.anthavio.httl.transport.JettyClientConfig;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -171,43 +171,47 @@ public class TimeoutsTest {
 	}
 
 	private HttlSender newSimple(String url) {
-		HttpUrlConfig config = new HttpUrlConfig(url);
+		HttpUrlConfig config = HttlBuilder.httpUrl(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		System.setProperty("http.keepAlive", "true");
 		System.setProperty("http.maxConnections", "1");
-		config.setExecutorService(executor);
-		return config.build();
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
 	private HttlSender newHttp3(String url) {
-		HttpClient3Config config = new HttpClient3Config(url);
+		HttpClient3Config config = HttlBuilder.httpClient3(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		config.setPoolMaximumSize(1);
 		config.setPoolAcquireTimeoutMillis(300);
-		config.setExecutorService(executor);
-		return config.build();
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
 	private HttlSender newHttp4(String url) {
-		HttpClient4Config config = new HttpClient4Config(url);
+		HttpClient4Config config = HttlBuilder.httpClient4(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		config.setPoolMaximumSize(1);
 		config.setPoolAcquireTimeoutMillis(300);
-		config.setExecutorService(executor);
-		return config.build();
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
 	private HttlSender newJetty(String url) {
-		JettySenderConfig config = new JettySenderConfig(url);
+		JettyClientConfig config = new JettyClientConfig(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		config.setPoolMaximumSize(1);
 		//config.setPoolAcquireTimeoutMillis(300);
-		config.setExecutorService(executor);
-		return config.build();
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
 }

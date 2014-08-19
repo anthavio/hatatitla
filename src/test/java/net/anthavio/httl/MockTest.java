@@ -3,7 +3,7 @@ package net.anthavio.httl;
 import java.io.ByteArrayInputStream;
 
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockResponse;
 import net.anthavio.httl.util.MockTransport;
 
@@ -20,8 +20,8 @@ public class MockTest {
 	@Test
 	public void testBinary() {
 		MockTransport transport = new MockTransport();
-		MockSenderConfig config = new MockSenderConfig(transport);
-		HttlSender sender = config.build(); //copy request into response
+		MockTransConfig config = new MockTransConfig(transport);
+		HttlSender sender = config.sender().build(); //copy request into response
 		byte[] array = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
 		ByteArrayInputStream stream = new ByteArrayInputStream(array);
 		ExtractedResponse<byte[]> extract = sender.POST("/binary").body(stream, "application/octet-stream")
@@ -56,8 +56,8 @@ public class MockTest {
 	@Test
 	public void testString() {
 		MockTransport transport = new MockTransport();
-		MockSenderConfig config = new MockSenderConfig(transport);
-		HttlSender sender = config.build();
+		MockTransConfig config = new MockTransConfig(transport);
+		HttlSender sender = config.sender().build();
 
 		String body = "Hell is coming!";
 		ExtractedResponse<String> extract = sender.POST("/text").body(body, "text/plain").param("zx", "xz")

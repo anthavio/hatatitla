@@ -38,7 +38,7 @@ public class OAuthServerTest extends HttpServlet {
 	private int httpPort;
 
 	public OAuthServerTest(int port) {
-		jetty = new Server(port); //0 = dynamic port
+		jetty = new Server(port);
 		jetty.setStopAtShutdown(true);
 		ServletHolder servletHolder = new ServletHolder(this);
 
@@ -87,7 +87,7 @@ public class OAuthServerTest extends HttpServlet {
 		*/
 
 		//Facebook https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/v2.1
-		sender = HttlSender.For("https://graph.facebook.com").addHeader("Accept", "application/json").build();
+		sender = HttlSender.with("https://graph.facebook.com").config().addHeader("Accept", "application/json").build();
 
 		builder = new OAuth2Builder(sender).setAuthUrl("https://www.facebook.com/dialog/oauth")
 				.setClientId("257584864432184").setClientSecret("362da435e18c5fe6424f993541f15690").setAuthResponseType("code")

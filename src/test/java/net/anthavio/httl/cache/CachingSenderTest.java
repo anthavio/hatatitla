@@ -58,7 +58,7 @@ public class CachingSenderTest {
 	private CachingSender newCachingSender(int port) {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new SimpleHttpSender(url);
-		HttlSender sender = new HttpClient4Config(url).build();
+		HttlSender sender = new HttpClient4Config(url).sender().build();
 		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		Scheduler<CachedResponse> scheduler = new Scheduler<CachedResponse>(cache, executor);
@@ -69,8 +69,8 @@ public class CachingSenderTest {
 	@Test
 	public void testSameRequestDifferentSender() throws IOException {
 
-		HttlSender sender1 = new HttpClient4Config("127.0.0.1:" + server.getHttpPort()).build();//different host name
-		HttlSender sender2 = new HttpClient4Config("localhost:" + server.getHttpPort()).build();//different host name
+		HttlSender sender1 = new HttpClient4Config("127.0.0.1:" + server.getHttpPort()).sender().build();//different host name
+		HttlSender sender2 = new HttpClient4Config("localhost:" + server.getHttpPort()).sender().build();//different host name
 		//shared cache for 2 senders
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender1 = new CachingSender(sender1, cache);
@@ -158,14 +158,14 @@ public class CachingSenderTest {
 
 		//System.out.println("Doing initial request");
 
-		ExtractedResponse<String> extract1 = csender.extract(request, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> extract1 = csender.extract(request, HttlStringExtractor.STANDARD);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1);//count + 1
 		assertThat(extract1.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract1.getResponse()).isInstanceOf(CachedResponse.class); //is cached
 
 		//System.out.println("Going to the cache");
 
-		ExtractedResponse<String> extract2 = csender.extract(request, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> extract2 = csender.extract(request, HttlStringExtractor.STANDARD);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1); //count is same as before
 		assertThat(extract2.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract2.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -174,13 +174,13 @@ public class CachingSenderTest {
 
 		Thread.sleep(1300); //let the cache entry expire
 
-		ExtractedResponse<String> extract3 = csender.extract(request, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> extract3 = csender.extract(request, HttlStringExtractor.STANDARD);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2
 		assertThat(extract3.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract3.getResponse()).isInstanceOf(CachedResponse.class); //is cached
 		assertThat(extract3.getResponse()).isNotSameAs(extract1.getResponse()); //not equal anymore!
 
-		ExtractedResponse<String> extract4 = csender.extract(request, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> extract4 = csender.extract(request, HttlStringExtractor.STANDARD);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2
 		assertThat(extract4.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract4.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -201,7 +201,7 @@ public class CachingSenderTest {
 
 		//http headers will use ETag
 		HttlRequest request1 = csender.getSender().GET("/").param("doetag").build();
-		ExtractedResponse<String> extract1 = csender.extract(request1, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> extract1 = csender.extract(request1, HttlStringExtractor.STANDARD);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 1);//count + 1
 		assertThat(extract1.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract1.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -211,7 +211,7 @@ public class CachingSenderTest {
 		Thread.sleep(100); //
 
 		HttlRequest request2 = csender.getSender().GET("/").param("doetag").build();
-		ExtractedResponse<String> extract2 = csender.extract(request2, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> extract2 = csender.extract(request2, HttlStringExtractor.STANDARD);
 		assertThat(server.getRequestCount()).isEqualTo(requestCount + 2);//count + 2 (304 NOT_MODIFIED)
 		assertThat(extract2.getResponse().getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		assertThat(extract2.getResponse()).isInstanceOf(CachedResponse.class); //is cached
@@ -230,7 +230,7 @@ public class CachingSenderTest {
 		//Facebook uses ETag
 		//ETag: "9ea8f5a5b1d659bc8358daad6f2e347f15f6e683"
 		//Expires: Sat, 01 Jan 2000 00:00:00 GMT
-		HttlSender sender = new HttpClient4Config("https://graph.facebook.com").build();
+		HttlSender sender = new HttpClient4Config("https://graph.facebook.com").sender().build();
 		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 
@@ -241,10 +241,10 @@ public class CachingSenderTest {
 						"AAAAAAITEghMBAOK0zAh6obLGcPm5FuXt3OlqMWPmgudEF9KxrVBiNt6AjccUFCSoZAxRr8ZBvGZBi9sOdZBxebQZBJzVMwRKzIWCLZCjzxGV0cvAMkDjXu")
 				.build();
 		//request.addParameter("fields", "id,name");
-		ExtractedResponse<String> response = csender.extract(request, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> response = csender.extract(request, HttlStringExtractor.STANDARD);
 		assertThat(response.getResponse()).isInstanceOf(CachedResponse.class);
 
-		ExtractedResponse<String> response2 = csender.extract(request, HttlStringExtractor.DEFAULT);
+		ExtractedResponse<String> response2 = csender.extract(request, HttlStringExtractor.STANDARD);
 		assertThat(response2.getResponse()).isInstanceOf(CachedResponse.class);
 		assertThat(response2.getResponse()).isEqualTo(response.getResponse());
 		System.out.println(response.getBody());
@@ -259,7 +259,7 @@ public class CachingSenderTest {
 		//Cache-Control: public, max-age=86400
 		//Date: Tue, 26 Feb 2013 16:11:16 GMT
 		//Expires: Wed, 27 Feb 2013 16:11:16 GMT
-		HttlSender sender = new HttpClient4Config("http://maps.googleapis.com/maps/api/staticmap").build();
+		HttlSender sender = new HttpClient4Config("http://maps.googleapis.com/maps/api/staticmap").sender().build();
 		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 		SenderNobodyRequestBuilder request = sender.GET("/");
@@ -298,7 +298,7 @@ public class CachingSenderTest {
 		String digsig = new String(Base64.encode(sign));
 		String assertion = content + "." + digsig;
 		System.out.println(assertion);
-		sender = new HttpClient4Config("https://accounts.google.com/o/oauth2/token").build();
+		sender = new HttpClient4Config("https://accounts.google.com/o/oauth2/token").sender().build();
 		SenderBodyRequestBuilder request2 = sender.POST("");
 		request2.param("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
 		request2.param("assertion", assertion);
@@ -311,7 +311,7 @@ public class CachingSenderTest {
 		//google protect itself from being cached
 		//Expires: -1
 		//Cache-Control: private, max-age=0
-		HttlSender sender = new HttpClient4Config("http://www.google.co.uk").build();
+		HttlSender sender = new HttpClient4Config("http://www.google.co.uk").sender().build();
 		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender = new CachingSender(sender, cache);
 

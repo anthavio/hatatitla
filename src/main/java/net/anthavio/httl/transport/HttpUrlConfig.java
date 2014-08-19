@@ -2,8 +2,7 @@ package net.anthavio.httl.transport;
 
 import java.net.URL;
 
-import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.SenderBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
 /**
  * -Dhttp.keepAlive=true
@@ -13,12 +12,10 @@ import net.anthavio.httl.SenderBuilder;
  * @author martin.vanek
  *
  */
-public class HttpUrlConfig extends SenderBuilder {
+public class HttpUrlConfig extends BaseTransBuilder<HttpUrlConfig> {
 
-	private HttpUrlTransport transport;
-
-	public HttpUrlConfig(String urlString) {
-		super(urlString);
+	public HttpUrlConfig(String url) {
+		super(url);
 	}
 
 	public HttpUrlConfig(URL url) {
@@ -26,13 +23,13 @@ public class HttpUrlConfig extends SenderBuilder {
 	}
 
 	@Override
-	public HttlSender build() {
-		transport = new HttpUrlTransport(this);
-		return new HttlSender(this, transport);
+	public HttpUrlTransport build() {
+		return new HttpUrlTransport(this);
 	}
 
-	public HttpUrlTransport getTransport() {
-		return transport;
+	@Override
+	public HttpUrlConfig getSelf() {
+		return this;
 	}
 
 }

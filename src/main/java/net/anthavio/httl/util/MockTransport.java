@@ -34,7 +34,7 @@ public class MockTransport implements HttlTransport {
 
 	private boolean closed;
 
-	private MockSenderConfig config;
+	private MockTransConfig config;
 
 	private AtomicInteger executions = new AtomicInteger(0);
 
@@ -54,8 +54,13 @@ public class MockTransport implements HttlTransport {
 		setStaticResponse(responseCode, contentType, responseBody);
 	}
 
-	void setConfig(MockSenderConfig config) {
+	void setConfig(MockTransConfig config) {
 		this.config = config;
+	}
+
+	@Override
+	public MockTransConfig getConfig() {
+		return config;
 	}
 
 	/**
@@ -93,7 +98,7 @@ public class MockTransport implements HttlTransport {
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					config.getMarshaller().marshall(request, baos);
+					request.getSender().getMarshaller().marshall(request, baos);
 					response = new MockResponse(request, 200, "OK", request.getHeaders(), baos.toByteArray());
 					break;
 				case STRING:

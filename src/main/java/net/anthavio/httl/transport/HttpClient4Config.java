@@ -2,15 +2,13 @@ package net.anthavio.httl.transport;
 
 import java.io.IOException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 
 import net.anthavio.httl.Authentication;
-import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.SenderBuilder;
+import net.anthavio.httl.HttlTransport;
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
@@ -50,15 +48,13 @@ import org.apache.http.protocol.HttpContext;
  * @author martin.vanek
  * 
  */
-public class HttpClient4Config extends SenderBuilder {
+public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 
 	private int poolReleaseTimeoutMillis = 65 * 1000;
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 
 	private HttpContext authContext;
-
-	private HttpClient4Transport transport;
 
 	public HttpClient4Config(String url) {
 		super(url);
@@ -69,13 +65,13 @@ public class HttpClient4Config extends SenderBuilder {
 	}
 
 	@Override
-	public HttlSender build() {
-		transport = new HttpClient4Transport(this);
-		return new HttlSender(this, transport);
+	public HttlTransport build() {
+		return new HttpClient4Transport(this);
 	}
 
-	public HttpClient4Transport getTransport() {
-		return transport;
+	@Override
+	public HttpClient4Config getSelf() {
+		return this;
 	}
 
 	public HttpContext getAuthContext() {
@@ -145,8 +141,8 @@ public class HttpClient4Config extends SenderBuilder {
 	protected HttpProtocolParamBean buildProtocolParams(HttpParams httpParams) {
 		HttpProtocolParamBean protocolBean = new HttpProtocolParamBean(httpParams);
 		protocolBean.setVersion(HttpVersion.HTTP_1_1);
-		protocolBean.setContentCharset(getEncoding());
-		protocolBean.setHttpElementCharset(getEncoding());
+		protocolBean.setContentCharset(getCharset());
+		protocolBean.setHttpElementCharset(getCharset());
 		//paramsBean.setUseExpectContinue(true);
 
 		return protocolBean;
@@ -156,18 +152,11 @@ public class HttpClient4Config extends SenderBuilder {
 		SchemeRegistry schemeRegistry = new SchemeRegistry();
 		schemeRegistry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
 
-		//set strict hostname verifier
-		SSLContext sslcontext;
-		try {
-			sslcontext = SSLContext.getInstance("TLS");
-			sslcontext.init(null, null, null);
-		} catch (NoSuchAlgorithmException nsax) {
-			throw new IllegalArgumentException(nsax);
-		} catch (KeyManagementException kmx) {
-			throw new IllegalArgumentException(kmx);
+		SSLContext sslContext = getSslContext();
+		if (sslContext != null) {
+			SSLSocketFactory sslSocketFactory = new SSLSocketFactory(sslContext);
+			schemeRegistry.register(new Scheme("https", 443, sslSocketFactory));
 		}
-		SSLSocketFactory sslSocketFactory = new SSLSocketFactory(sslcontext, SSLSocketFactory.STRICT_HOSTNAME_VERIFIER);
-		schemeRegistry.register(new Scheme("https", 443, sslSocketFactory));
 
 		//we access only one host
 		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager(schemeRegistry,

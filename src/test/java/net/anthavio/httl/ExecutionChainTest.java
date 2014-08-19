@@ -2,7 +2,7 @@ package net.anthavio.httl;
 
 import java.io.IOException;
 
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -19,7 +19,7 @@ public class ExecutionChainTest {
 
 		//Given
 		TestExecutionFilter interceptor = new TestExecutionFilter();
-		HttlSender sender = new MockSenderConfig().addExecutionFilter(interceptor).build();
+		HttlSender sender = new MockTransConfig().sender().addExecutionFilter(interceptor).build();
 
 		//When
 		HttlRequest request = sender.GET("/").build();

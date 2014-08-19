@@ -12,10 +12,10 @@ import java.util.concurrent.TimeoutException;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
-import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlStatusException;
+import net.anthavio.httl.JokerServer;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpClient4Transport;
 
@@ -39,8 +39,7 @@ public class AsyncTest {
 			ThreadPoolExecutor executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0)
 					.setMaximumPoolSize(1).setMaximumQueueSize(0).build();
 			HttpClient4Config config = new HttpClient4Config("localhost:" + server.getHttpPort());
-			config.setExecutorService(executor);
-			HttlSender sender = config.build();
+			HttlSender sender = config.sender().setExecutorService(executor).build();
 
 			HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 			PoolingClientConnectionManager conman = (PoolingClientConnectionManager) transport.getHttpClient()
@@ -65,8 +64,8 @@ public class AsyncTest {
 
 			server.start();
 			config = new HttpClient4Config("localhost:" + server.getHttpPort());
-			config.setExecutorService(executor);
-			sender = config.build();
+			sender = config.sender().setExecutorService(executor).build();
+
 			transport = (HttpClient4Transport) sender.getTransport();
 			conman = (PoolingClientConnectionManager) transport.getHttpClient().getConnectionManager();
 

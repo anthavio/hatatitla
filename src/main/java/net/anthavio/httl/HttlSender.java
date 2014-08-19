@@ -17,13 +17,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import net.anthavio.httl.HttlBuilder.TransportChooser;
 import net.anthavio.httl.HttlExecutionChain.SenderExecutionChain;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
-import net.anthavio.httl.transport.HttpUrlConfig;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
 
@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Immutable
  * 
  * @author martin.vanek
  *
@@ -38,17 +39,17 @@ import org.slf4j.LoggerFactory;
 public class HttlSender implements SenderOperations, Closeable {
 
 	/**
-	 * Build HttpSender with underlying HttpUrlTransport
+	 * @return Ultimate builder/configurer
 	 */
-	public static HttpUrlConfig For(String url) {
-		return new HttpUrlConfig(url);
+	public static TransportChooser with(String url) {
+		return HttlBuilder.sender(url);
 	}
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final HttlTransport transport;
 
-	private final SenderBuilder config;
+	private final SenderConfigurer config;
 
 	private final ExecutorService executor; //can be null
 
@@ -58,12 +59,12 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	private final List<HttlExecutionFilter> executionFilters;
 
-	public HttlSender(SenderBuilder config, HttlTransport transport) {
+	public HttlSender(SenderConfigurer config) {
 		if (config == null) {
 			throw new IllegalArgumentException("null config");
 		}
 		this.config = config;
-		this.transport = transport;
+		this.transport = config.getTransport();
 		this.executor = config.getExecutorService();
 		this.marshaller = config.getMarshaller();
 		this.unmarshaller = config.getUnmarshaller();
@@ -86,7 +87,7 @@ public class HttlSender implements SenderOperations, Closeable {
 		return unmarshaller;
 	}
 
-	public SenderBuilder getConfig() {
+	public SenderConfigurer getConfig() {
 		return config;
 	}
 

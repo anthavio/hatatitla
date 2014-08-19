@@ -17,7 +17,7 @@ import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.AdvancedApiTest.TestBodyBean;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.util.HttpHeaderUtil;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockTransport;
 
 import org.apache.commons.io.IOUtils;
@@ -38,7 +38,7 @@ public class BasicApiTest {
 	public void testBasics() throws IOException {
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
 		String helloPlain = "Hello Inčučuna!";
 		transport.setStaticResponse(201, "text/dolly", helloPlain);
 		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
@@ -90,7 +90,7 @@ public class BasicApiTest {
 		MockTransport transport = new MockTransport();
 		Jackson2Marshaller jrm = new Jackson2Marshaller(new ObjectMapper().configure(
 				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
-		HttlSender sender = new MockSenderConfig(transport).setMarshaller(jrm).build();
+		HttlSender sender = new MockTransConfig(transport).sender().setMarshaller(jrm).build();
 
 		String helloPlain = "Hello Inčučuna!";
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
@@ -168,7 +168,7 @@ public class BasicApiTest {
 	public void testStreams() throws IOException {
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
 
 		String helloPlain = "Hello Inčučuna!";
 		transport.setStaticResponse(201, "text/dolly", helloPlain);
@@ -221,7 +221,7 @@ public class BasicApiTest {
 	@Test
 	public void mapAsParameter() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
 
 		MapAsParam api = HttlApiBuilder.build(MapAsParam.class, sender);
 
@@ -312,7 +312,7 @@ public class BasicApiTest {
 
 	@Test
 	public void emptyParamaterApis() {
-		HttlSender sender = HttlSender.For("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 		try {
 			HttlApiBuilder.with(sender).build(WrongApiMissingName.class);
 			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());
@@ -344,7 +344,7 @@ public class BasicApiTest {
 
 	@Test
 	public void wrongGetWithBody() {
-		HttlSender sender = HttlSender.For("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 		try {
 			HttlApiBuilder.with(sender).build(WrongApiGetWithBody.class);
 			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());

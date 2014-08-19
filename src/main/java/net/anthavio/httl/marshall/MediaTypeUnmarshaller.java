@@ -9,6 +9,7 @@ import net.anthavio.httl.HttlBodyUnmarshaller;
 import net.anthavio.httl.HttlProcessingException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.util.Cutils;
+import net.anthavio.httl.util.OptionalLibs;
 
 /**
  * Hatatilta's default Unmarshaller implementation using multiple Unmarshaller for different media types
@@ -28,7 +29,7 @@ public class MediaTypeUnmarshaller implements HttlBodyUnmarshaller {
 
 			//Init default
 			if (unmarshaller == null) {
-				unmarshaller = OptinalLibs.findUnmarshaller(mediaType);
+				unmarshaller = OptionalLibs.findUnmarshaller(mediaType);
 				if (unmarshaller != null) {
 					unmarshallers.put(mediaType, unmarshaller);
 				}

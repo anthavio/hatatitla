@@ -12,7 +12,8 @@ import javax.net.ssl.SSLEngine;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlTransport;
-import net.anthavio.httl.SenderBuilder;
+import net.anthavio.httl.SenderConfigurer;
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -50,17 +51,22 @@ public class NettyTransport implements HttlTransport {
 
 	private ChannelGroup channels = null;
 
-	public NettyTransport(SenderBuilder config) {
+	public NettyTransport(SenderConfigurer config) {
 		this(config, null);
 	}
 
-	public NettyTransport(SenderBuilder config, ExecutorService executor) {
+	public NettyTransport(SenderConfigurer config, ExecutorService executor) {
 		client = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool()));
 		client.setOption("connectTimeoutMillis", 10000);
 		client.setOption("keepAlive", true);
 		client.setPipelineFactory(new HttpClientPipelineFactory(true));
 		channels = new DefaultChannelGroup();
+	}
+
+	@Override
+	public BaseTransBuilder<?> getConfig() {
+		return null;
 	}
 
 	@Override
@@ -186,4 +192,5 @@ public class NettyTransport implements HttlTransport {
 			}
 		}
 	}
+
 }

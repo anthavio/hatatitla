@@ -15,13 +15,11 @@ import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.TestResponse.NameValue;
 import net.anthavio.httl.marshall.HttlBytesExtractor;
 import net.anthavio.httl.marshall.HttlStringExtractor;
-import net.anthavio.httl.transport.HttpClient3Config;
-import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpClient4Transport;
 import net.anthavio.httl.util.GenericType;
 import net.anthavio.httl.util.HttpHeaderUtil;
 import net.anthavio.httl.util.JsonBuilder;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockTransport;
 
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
@@ -53,7 +51,7 @@ public class MarshallingExtractingTest {
 	}
 
 	public void devel() {
-		HttlSender sender = new HttpClient3Config("localhost:" + 3333).build();
+		HttlSender sender = HttlSender.with("localhost:" + 3333).httpClient3().sender().build();
 		try {
 			sender.GET("/").extract(String.class);
 		} catch (HttlException sex) {
@@ -66,8 +64,8 @@ public class MarshallingExtractingTest {
 
 		//Given - Service returns http 555 and JSON with error message
 		MockTransport transport = new MockTransport();
-		MockSenderConfig config = new MockSenderConfig(transport);
-		HttlSender sender = config.build();
+		MockTransConfig config = new MockTransConfig(transport);
+		HttlSender sender = config.sender().build();
 		transport.setStaticResponse(555, "application/json", JsonBuilder.OBJECT().field("message", "Shit happend!").end()
 				.getJson());
 
@@ -94,7 +92,7 @@ public class MarshallingExtractingTest {
 		};
 
 		// When - Custom ResponseUnmarshaller
-		sender = config.setUnmarshaller(evilUnmar).build();
+		sender = config.sender().setUnmarshaller(evilUnmar).build();
 		try {
 
 			sender.GET("/evil").extract(TestBodyRequest.class);
@@ -112,7 +110,7 @@ public class MarshallingExtractingTest {
 	@Test
 	public void builtinResponseUnmarshallers() throws IOException {
 
-		HttlSender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).build();
+		HttlSender sender = HttlBuilder.httpClient4("localhost:" + server.getHttpPort()).sender().build();
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) transport.getHttpClient()
 				.getConnectionManager();
@@ -187,7 +185,7 @@ public class MarshallingExtractingTest {
 	@Test
 	public void responseHandler() throws IOException {
 		//Given - HttpClient4Sender because we can precisely track connection lasing and returning
-		HttlSender sender = new HttpClient4Config("localhost:" + server.getHttpPort()).build();
+		HttlSender sender = HttlSender.with("localhost:" + server.getHttpPort()).httpClient4().sender().build();
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) transport.getHttpClient()
 				.getConnectionManager();
@@ -290,9 +288,8 @@ public class MarshallingExtractingTest {
 		String message = "Hello čobole";
 		TestBodyRequest body = new TestBodyRequest(message);
 
-		HttpClient4Config config = new HttpClient4Config("localhost:" + server.getHttpPort());
-		config.setEncoding("ISO-8859-2");
-		HttlSender sender = config.build();
+		HttlSender sender = HttlSender.with("localhost:" + server.getHttpPort()).httpClient4().setCharset("ISO-8859-2")
+				.sender().build();
 
 		//sender.setResponseExtractor(factory, "application/json");
 		//sender.setRequestMarshaller("application/json", null);

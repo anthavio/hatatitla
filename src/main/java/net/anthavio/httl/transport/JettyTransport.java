@@ -15,6 +15,7 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 import net.anthavio.httl.util.ReaderInputStream;
 
 import org.eclipse.jetty.client.ContentExchange;
@@ -39,15 +40,15 @@ public class JettyTransport implements HttlTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final JettySenderConfig config;
+	private final JettyClientConfig config;
 
 	private HttpClient client;
 
 	public JettyTransport(String baseUrl) {
-		this(new JettySenderConfig(baseUrl));
+		this(new JettyClientConfig(baseUrl));
 	}
 
-	public JettyTransport(JettySenderConfig config) {
+	public JettyTransport(JettyClientConfig config) {
 		this.config = config;
 		this.client = config.buildHttpClient();
 		try {
@@ -58,10 +59,10 @@ public class JettyTransport implements HttlTransport {
 	}
 
 	public JettyTransport(String baseUrl, ExecutorService executor) {
-		this(new JettySenderConfig(baseUrl), executor);
+		this(new JettyClientConfig(baseUrl), executor);
 	}
 
-	public JettyTransport(JettySenderConfig config, ExecutorService executor) {
+	public JettyTransport(JettyClientConfig config, ExecutorService executor) {
 		this.config = config;
 		this.client = config.buildHttpClient();
 		try {
@@ -69,6 +70,11 @@ public class JettyTransport implements HttlTransport {
 		} catch (Exception x) {
 			throw new RuntimeException("Failed to start client", x);
 		}
+	}
+
+	@Override
+	public BaseTransBuilder<?> getConfig() {
+		return config;
 	}
 
 	@Override
@@ -141,7 +147,7 @@ public class JettyTransport implements HttlTransport {
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					config.getMarshaller().marshall(request, baos);
+					request.getSender().getMarshaller().marshall(request, baos);
 					exchange.setRequestContent(new ByteArrayBuffer(baos.toByteArray()));
 					break;
 				case STRING:

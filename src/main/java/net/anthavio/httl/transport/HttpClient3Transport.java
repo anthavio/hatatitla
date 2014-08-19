@@ -56,6 +56,11 @@ public class HttpClient3Transport implements HttlTransport {
 	}
 
 	@Override
+	public HttpClient3Config getConfig() {
+		return config;
+	}
+
+	@Override
 	public void close() {
 		try {
 			if (httpClient.getHttpConnectionManager() instanceof MultiThreadedHttpConnectionManager) {
@@ -152,7 +157,7 @@ public class HttpClient3Transport implements HttlTransport {
 			RequestEntity entity;
 			switch (body.getType()) {
 			case MARSHALL:
-				entity = new MarshallableEntity(request, config.getMarshaller());
+				entity = new MarshallableEntity(request, request.getSender().getMarshaller());
 				break;
 			case STRING:
 				entity = new StringRequestEntity((String) body.getPayload(), null, request.getCharset());
@@ -196,7 +201,7 @@ public class HttpClient3Transport implements HttlTransport {
 				throw stx;
 			} else if (x instanceof ConnectException) {
 				//enhance message with url
-				ConnectException ctx = new ConnectException("Connection refused " + config.getUrl());
+				ConnectException ctx = new ConnectException("Connection refused " + httpRequest.getPath());
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
 			} else if (x instanceof IOException) {
@@ -239,6 +244,7 @@ public class HttpClient3Transport implements HttlTransport {
 		}
 
 	}
+
 }
 
 class PatchMethod extends EntityEnclosingMethod {

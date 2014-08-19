@@ -17,6 +17,7 @@ import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttpHeaderUtil;
 
 /**
+ * Immutable
  * 
  * @author martin.vanek
  *
@@ -77,7 +78,7 @@ public class HttlRequest implements Serializable {
 			throw new IllegalArgumentException("Null sender");
 		}
 		this.sender = sender;
-		SenderBuilder config = sender.getConfig();
+		SenderConfigurer config = sender.getConfig();
 
 		if (method == null) {
 			throw new IllegalArgumentException("Null method");
@@ -121,7 +122,7 @@ public class HttlRequest implements Serializable {
 		digContentType(defaultHeaders, sender.getConfig());
 		String contentType = headers.getFirst(HttlConstants.Content_Type);
 		this.contentType = digContentType(contentType,
-				sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type), sender.getConfig().getEncoding());
+				sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type), sender.getConfig().getCharset());
 
 		//TODO multipart/form-data
 
@@ -315,9 +316,9 @@ public class HttlRequest implements Serializable {
 		}
 	}
 
-	public static String[] digContentType(Multival<String> headers, SenderBuilder config) {
+	public static String[] digContentType(Multival<String> headers, SenderConfigurer config) {
 		return digContentType(headers.getFirst(HttlConstants.Content_Type),
-				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getEncoding());
+				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getCharset());
 	}
 
 	/**

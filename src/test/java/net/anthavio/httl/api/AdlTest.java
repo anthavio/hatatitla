@@ -5,7 +5,6 @@ import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseHandler;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.HttlCall.HttpMethod;
-import net.anthavio.httl.util.MockSenderConfig;
 
 /**
  * 
@@ -18,8 +17,7 @@ public class AdlTest {
 		// http://square.github.io/retrofit/
 		// https://github.com/Netflix/feign
 
-		HttlSender sender = new MockSenderConfig().build();
-		GitHubApi api = HttlApiBuilder.build(GitHubApi.class, sender);
+		GitHubApi api = HttlSender.with("www.seznam.cz").mock().sender().api().build(GitHubApi.class);
 
 		HttlBodyMarshaller marshaller;
 		HttlResponseHandler reponseHandler;

@@ -3,6 +3,8 @@ package net.anthavio.httl;
 import java.io.Closeable;
 import java.io.IOException;
 
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+
 /**
  * 
  * @author martin.vanek
@@ -16,5 +18,7 @@ public interface HttlTransport extends Closeable {
 	 * Redeclare Closeable to surpress IOException
 	 */
 	public void close();
+
+	public BaseTransBuilder<?> getConfig();
 
 }

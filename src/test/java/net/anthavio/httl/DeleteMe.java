@@ -5,7 +5,6 @@ import java.util.Date;
 
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.transport.HttpClient4Config;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
@@ -15,7 +14,7 @@ public class DeleteMe {
 
 	public static void main(String[] args) throws IOException {
 		//HttpSender sender = new HttpURLSender("http://httpbin.org");
-		HttlSender sender = new HttpClient4Config("http://httpbin.org").build();
+		HttlSender sender = HttlSender.with("http://httpbin.org").httpClient4().sender().build();
 
 		ConfigurableParamSetter handler = new ConfigurableParamSetter(false, true, true, false,
 				ConfigurableParamSetter.DEFAULT_DATE_PATTERN);

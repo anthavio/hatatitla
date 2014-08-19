@@ -15,7 +15,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.AdvancedApiTest.TestBodyBean;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
@@ -35,7 +35,7 @@ public class SpecialApiTest {
 
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
 		TestBuildVisitorAndExecFilter api = HttlApiBuilder.with(sender).build(TestBuildVisitorAndExecFilter.class);
 
 		TestBodyBean bean = new TestBodyBean("Kvído Vymětal", new Date(), 999);
@@ -70,7 +70,7 @@ public class SpecialApiTest {
 	public void customSetter() {
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 
 		// When
@@ -86,7 +86,7 @@ public class SpecialApiTest {
 	@Test
 	public void responseExtractor() throws IOException {
 		// Given
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 		final TestBodyBean bean = new TestBodyBean("Kvído Vymětal", new Date(), 999);
 		//String bodyXml = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/xml"), bean);
@@ -100,7 +100,7 @@ public class SpecialApiTest {
 	@Test
 	public void wrongTypeExctractor() {
 		// Given
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
 		final TestBodyBean bean = new TestBodyBean("Kvído Vymětal", new Date(), 999);
 
@@ -159,7 +159,7 @@ public class SpecialApiTest {
 	@Test
 	public void requestBodyWriterAsParameter() throws IOException {
 		// Given
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 		ForBodyWriterTest api = HttlApiBuilder.with(sender).build(ForBodyWriterTest.class);
 		TestBodyBean bean = new TestBodyBean("Kvído Vymětal", new Date(), 999);
 
@@ -181,7 +181,7 @@ public class SpecialApiTest {
 	@Test
 	public void requestBodyWriterAsAttribute() throws IOException {
 		// Given
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 		ForBodyWriterTest api = HttlApiBuilder.with(sender).build(ForBodyWriterTest.class);
 		TestBodyBean bean = new TestBodyBean("Kvído Vymětal", new Date(), 999);
 

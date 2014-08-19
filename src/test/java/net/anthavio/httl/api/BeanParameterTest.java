@@ -3,7 +3,7 @@ package net.anthavio.httl.api;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -18,7 +18,7 @@ public class BeanParameterTest {
 	@Test
 	public void prefixedNames() {
 		// When - api with nameless @RestVar
-		BeanParamApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamApi.class);
+		BeanParamApi api = HttlApiBuilder.with(new MockTransConfig().sender().build()).build(BeanParamApi.class);
 		HttlResponse response1 = api.nothing(new BeanParam("Guido", 5));
 
 		// Then - parameter names should be taken from field names
@@ -39,7 +39,7 @@ public class BeanParameterTest {
 	public void complexParamNullValuesIllegal() {
 
 		//Given - api with notnull checks
-		BeanParamApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamApi.class);
+		BeanParamApi api = HttlApiBuilder.with(new MockTransConfig().sender().build()).build(BeanParamApi.class);
 
 		// When - null parameter
 		try {
@@ -90,7 +90,7 @@ public class BeanParameterTest {
 	public void beanParamNamed() {
 
 		// Given - api with named @RestVar
-		BeanParamNamedApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamNamedApi.class);
+		BeanParamNamedApi api = HttlApiBuilder.with(new MockTransConfig().sender().build()).build(BeanParamNamedApi.class);
 
 		// When
 		HttlResponse response1 = api.nothing(new BeanParamNamed("Guido", 5));
@@ -114,7 +114,7 @@ public class BeanParameterTest {
 	public void beanParamLegalNulls() {
 
 		//Given - api without notnull checks
-		BeanParamNamedApi api = HttlApiBuilder.with(new MockSenderConfig().build()).build(BeanParamNamedApi.class);
+		BeanParamNamedApi api = HttlApiBuilder.with(new MockTransConfig().sender().build()).build(BeanParamNamedApi.class);
 
 		//When - legal null parameter
 		HttlResponse response1 = api.prefix(null);

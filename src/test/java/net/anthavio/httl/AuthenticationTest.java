@@ -8,7 +8,7 @@ import java.net.HttpURLConnection;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpUrlConfig;
-import net.anthavio.httl.transport.JettySenderConfig;
+import net.anthavio.httl.transport.JettyClientConfig;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,7 +40,7 @@ public class AuthenticationTest {
 
 		//Given - sender without authentication
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new HttpUrlConfig(url).build();
+		HttlSender sender = HttlSender.with(url).build();
 
 		//When 
 		HttlResponse response = sender.GET("/").param("x", "y").execute();
@@ -68,7 +68,7 @@ public class AuthenticationTest {
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!")
 				.setRealm("MyBasicRealm");
 		config.setAuthentication(basic);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -77,7 +77,7 @@ public class AuthenticationTest {
 		response.close();
 		sender.close();
 
-		sender = config.build();
+		sender = config.sender().build();
 		//When - DIGEST protected resource
 		response = sender.GET("/digest/").execute();
 		//Then - 401
@@ -91,7 +91,7 @@ public class AuthenticationTest {
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek")
 				.setRealm("MyDigestRealm");
 		config.setAuthentication(digest);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -100,7 +100,7 @@ public class AuthenticationTest {
 		response.close();
 
 		sender.close();
-		sender = config.build();
+		sender = config.sender().build();
 		//When - DIGEST protected resource
 		response = sender.GET("/digest/").execute();
 		//Then - allowed
@@ -114,7 +114,7 @@ public class AuthenticationTest {
 
 		//Given - sender without authentication
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new HttpClient3Config(url).build();
+		HttlSender sender = new HttpClient3Config(url).sender().build();
 
 		//When - unprotected
 		HttlResponse response = sender.GET("/").param("x", "y").execute();
@@ -141,7 +141,7 @@ public class AuthenticationTest {
 		HttpClient3Config config = new HttpClient3Config(url);
 		Authentication authentication = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		config.setAuthentication(authentication);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -161,7 +161,7 @@ public class AuthenticationTest {
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -183,7 +183,7 @@ public class AuthenticationTest {
 
 		//Given - sender without authentication
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new HttpClient4Config(url).build();
+		HttlSender sender = new HttpClient4Config(url).sender().build();
 
 		//When - unprotected
 		HttlResponse response = sender.GET("/").param("x", "y").execute();
@@ -210,7 +210,7 @@ public class AuthenticationTest {
 		HttpClient4Config config = new HttpClient4Config(url);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		config.setAuthentication(basic);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -230,7 +230,7 @@ public class AuthenticationTest {
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -252,7 +252,7 @@ public class AuthenticationTest {
 
 		//Given - sender without authentication
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new JettySenderConfig(url).build();
+		HttlSender sender = new JettyClientConfig(url).sender().build();
 
 		//When - unprotected
 		HttlResponse response = sender.GET("/").param("x", "y").execute();
@@ -274,10 +274,10 @@ public class AuthenticationTest {
 
 		//Given - setup BASIC authentication
 
-		JettySenderConfig config = new JettySenderConfig(url);
+		JettyClientConfig config = new JettyClientConfig(url);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
 		config.setAuthentication(basic);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
@@ -297,7 +297,7 @@ public class AuthenticationTest {
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
-		sender = config.build();
+		sender = config.sender().build();
 
 		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();

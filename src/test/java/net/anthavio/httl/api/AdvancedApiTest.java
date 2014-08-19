@@ -12,7 +12,7 @@ import net.anthavio.httl.marshall.GsonUnmarshaller;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.marshall.SimpleXmlMarshaller;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
@@ -31,7 +31,7 @@ public class AdvancedApiTest {
 	@Test
 	public void testSomeApiOptions() {
 
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 		// Set api-key header into every passing request
 
 		// Build
@@ -58,7 +58,7 @@ public class AdvancedApiTest {
 	@Test
 	public void testWithUrlParameter() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).build();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
 
 		// Given
 		WithUrlParameter api = HttlApiBuilder.with(sender).addParam("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx")
@@ -98,7 +98,7 @@ public class AdvancedApiTest {
 		marshaller.setMarshaller(jsonMarshaller, "application/json");
 		marshaller.setMarshaller(new SimpleXmlMarshaller(), "application/xml");
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).setMarshaller(marshaller).build();
+		HttlSender sender = new MockTransConfig(transport).sender().setMarshaller(marshaller).build();
 
 		WithHeaderParameters api = HttlApiBuilder.build(WithHeaderParameters.class, sender);
 		TestBodyBean input = new TestBodyBean("Kvído Vymětal", new Date(), 999);
@@ -129,7 +129,7 @@ public class AdvancedApiTest {
 	@Test
 	public void genericListReturn() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockSenderConfig(transport).setUnmarshaller(new GsonUnmarshaller()).build();
+		HttlSender sender = new MockTransConfig(transport).sender().setUnmarshaller(new GsonUnmarshaller()).build();
 		String json = "[{\"login\":\"login-value\",\"id\":123456,\"contributions\":333}]";
 		transport.setStaticResponse(200, "application/json; charset=utf-8", json);
 

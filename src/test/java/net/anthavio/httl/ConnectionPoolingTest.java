@@ -7,13 +7,10 @@ import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient3Response;
 import net.anthavio.httl.transport.HttpClient3Transport;
-import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpClient4Response;
 import net.anthavio.httl.transport.HttpClient4Transport;
-import net.anthavio.httl.transport.HttpUrlConfig;
 
 import org.apache.commons.httpclient.HttpMethodBase;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -55,7 +52,7 @@ public class ConnectionPoolingTest {
 	public void httpUrlConnectionPooling() throws IOException, Exception {
 		//Given 
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new HttpUrlConfig(url).build();
+		HttlSender sender = HttlBuilder.sender(url).build();
 		HttlRequest request = sender.GET("/").build();
 		//connection persistence is controlled with system properties
 		System.setProperty("http.keepAlive", "true");
@@ -83,7 +80,7 @@ public class ConnectionPoolingTest {
 	@Test
 	public void httpClient3pooling() throws IOException, Exception {
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new HttpClient3Config(url).build();
+		HttlSender sender = HttlBuilder.transport(url).httpClient3().sender().build();
 		HttlRequest request = sender.POST("/").build();
 
 		//XXX this does not work in 3.1 - it manages Connection headers by itself
@@ -172,7 +169,7 @@ public class ConnectionPoolingTest {
 	@Test
 	public void httpClient4pooling() throws IOException, Exception {
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = new HttpClient4Config(url).build();
+		HttlSender sender = HttlBuilder.transport(url).httpClient4().sender().build();
 
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 		PoolingClientConnectionManager connectionManager = (PoolingClientConnectionManager) transport.getHttpClient()

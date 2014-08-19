@@ -2,8 +2,8 @@ package net.anthavio.httl.transport;
 
 import java.net.URL;
 
-import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.SenderBuilder;
+import net.anthavio.httl.HttlTransport;
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.security.Realm;
@@ -15,26 +15,26 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  *
  */
 @Deprecated
-public class JettySenderConfig extends SenderBuilder {
+public class JettyClientConfig extends BaseTransBuilder<JettyClientConfig> {
 
 	private JettyTransport transport;
 
-	public JettySenderConfig(String urlString) {
+	public JettyClientConfig(String urlString) {
 		super(urlString);
 	}
 
-	public JettySenderConfig(URL url) {
+	public JettyClientConfig(URL url) {
 		super(url);
 	}
 
 	@Override
-	public HttlSender build() {
-		transport = new JettyTransport(this);
-		return new HttlSender(this, transport);
+	public HttlTransport build() {
+		return new JettyTransport(this);
 	}
 
-	public JettyTransport getTransport() {
-		return transport;
+	@Override
+	public JettyClientConfig getSelf() {
+		return this;
 	}
 
 	public HttpClient buildHttpClient() {

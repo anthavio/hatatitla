@@ -21,8 +21,7 @@ import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.transport.HttpClient4Config;
-import net.anthavio.httl.transport.HttpUrlConfig;
-import net.anthavio.httl.util.MockSenderConfig;
+import net.anthavio.httl.util.MockTransConfig;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -38,56 +37,56 @@ public class RequestTest {
 	public void urlPath() {
 		HttlRequest request;
 
-		request = HttlSender.For("www.example.com").build().GET("/file").build();
+		request = HttlSender.with("www.example.com").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		request = HttlSender.For("www.example.com/").build().GET("/file").build();
+		request = HttlSender.with("www.example.com/").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		request = HttlSender.For("www.example.com/path").build().GET("/file").build();
+		request = HttlSender.with("www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When too many /
-		request = HttlSender.For("www.example.com/path/").build().GET("/file").build();
+		request = HttlSender.with("www.example.com/path/").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When too little /
-		request = HttlSender.For("www.example.com/path").build().GET("file").build();
+		request = HttlSender.with("www.example.com/path").build().GET("file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When port
-		request = HttlSender.For("www.example.com:8080/path").build().GET("/file").build();
+		request = HttlSender.with("www.example.com:8080/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
 		//When http
-		request = HttlSender.For("http://www.example.com/path").build().GET("/file").build();
+		request = HttlSender.with("http://www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When https
-		request = HttlSender.For("https://www.example.com/path").build().GET("/file").build();
+		request = HttlSender.with("https://www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com/path/file");
 
 		//When http + port
-		request = HttlSender.For("http://www.example.com:8080/path").build().GET("/file").build();
+		request = HttlSender.with("http://www.example.com:8080/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
 		//When https + port
-		request = HttlSender.For("https://www.example.com:9696/path").build().GET("/file").build();
+		request = HttlSender.with("https://www.example.com:9696/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
 		//When username:password in a URL - it is omitted
-		request = HttlSender.For("https://username:password@www.example.com:9696/path").build().GET("/file").build();
+		request = HttlSender.with("https://username:password@www.example.com:9696/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
 		//When query in URL - it is omitted
-		request = HttlSender.For("www.example.com/path;matrix=value?query=value").build().GET("/file").build();
+		request = HttlSender.with("www.example.com/path;matrix=value?query=value").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path;matrix=value/file");
 
 	}
 
 	@Test
 	public void parameters() {
-		HttlSender sender = new HttpUrlConfig("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 		assertThat(sender.getConfig().getUrl().toString()).isEqualTo("http://www.example.com"); //add http prefix and remove path suffix
 		//SimpleHttpSender sender = null;
 
@@ -124,7 +123,7 @@ public class RequestTest {
 	@Test
 	public void requestBody() throws IOException {
 		//Given sender
-		HttlSender sender = new HttpUrlConfig("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 
 		//When - only body
 		SenderBodyRequestBuilder builder = sender.POST("/x").body("<x></x>", "application/xml");
@@ -175,9 +174,8 @@ public class RequestTest {
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=utf-8");
 
 		//When - configure Request media type (defalut)
-		HttpUrlConfig config = new HttpUrlConfig("www.example.com");
-		config.setRequestMediaType("text/plain");
-		config.setEncoding("ISO-8859-2");
+		SenderConfigurer config = HttlSender.with("www.example.com").httpUrl().setCharset("ISO-8859-2").sender()
+				.setRequestMediaType("text/plain");
 		sender = config.build();
 
 		//Then - ok now
@@ -190,7 +188,7 @@ public class RequestTest {
 
 	@Test
 	public void postBodyCaching() {
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 
 		ByteArrayInputStream stream = new ByteArrayInputStream("brrrrrrrrrrrrr".getBytes());
 		//When - default is non caching
@@ -232,7 +230,7 @@ public class RequestTest {
 	@Test
 	public void mapAsParameter() {
 		//Given - default settings
-		HttlSender sender = new HttpUrlConfig("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 		HttlRequest request;
 
 		//When - null map
@@ -314,7 +312,7 @@ public class RequestTest {
 	public void dateAsParameter() throws UnsupportedEncodingException {
 
 		//Given - default settings
-		HttlSender sender = new HttpUrlConfig("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 
 		//When - Date as parameter
 		SenderNobodyRequestBuilder builder = sender.OPTIONS("/options");
@@ -344,7 +342,7 @@ public class RequestTest {
 
 	@Test
 	public void arraysAndCollections() {
-		HttlSender sender = new HttpUrlConfig("www.example.com").build();
+		HttlSender sender = HttlSender.with("www.example.com").build();
 
 		SenderNobodyRequestBuilder builder = sender.DELETE("/delete");
 		builder.param(";m3", 31, 32, 33);
@@ -370,7 +368,7 @@ public class RequestTest {
 
 	@Test
 	public void headersAndParams() {
-		HttlSender sender = new MockSenderConfig().build();
+		HttlSender sender = new MockTransConfig().sender().build();
 
 		HttlRequest request = sender.GET("/").build();
 		assertThat(request.getMethod()).isEqualTo(Method.GET);
@@ -463,11 +461,11 @@ public class RequestTest {
 	public void testConfigDefaults() {
 		//Given
 		String url = "http://www.example.com:8080";
-		HttlSender sender = HttlSender.For(url).build();
-		SenderBuilder config = sender.getConfig();
+		HttlSender sender = HttlSender.with(url).build();
+		SenderConfigurer config = sender.getConfig();
 		//Then
-		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
-		assertThat(sender.getConfig().getAuthentication()).isNull();
+		assertThat(sender.getConfig().getCharset()).isEqualTo("utf-8");
+		assertThat(sender.getTransport().getConfig().getAuthentication()).isNull();
 
 		//When - default authentication is BASIC and preepmtive
 		Authentication auth = new Authentication(Authentication.Scheme.BASIC, "user", "pass");
@@ -484,16 +482,16 @@ public class RequestTest {
 		assertThat(request.getCharset()).isEqualTo("utf-8");
 
 		//When
-		config.setEncoding("utf-16"); //Java capitalizes it into UTF-16
+		sender.getTransport().getConfig().setCharset("utf-16");
 		config.setRequestMediaType("application/xml");
 		config.setResponseMediaType("application/json");
 
 		request = config.build().POST("/x").body("b").build();
 		//Then
 		assertThat(request.getMediaType()).isEqualTo("application/xml");
-		assertThat(request.getCharset()).isEqualTo("UTF-16");
+		assertThat(request.getCharset()).isEqualTo("utf-16");
 
-		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/xml; charset=UTF-16");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/xml; charset=utf-16");
 		assertThat(request.getFirstHeader(HttlConstants.Accept)).isEqualTo("application/json");
 
 		sender.close();
@@ -505,11 +503,11 @@ public class RequestTest {
 		HttpClient4Config config = new HttpClient4Config(url);
 		Authentication authentication = new Authentication(Scheme.DIGEST, "user", "pass", false);
 		config.setAuthentication(authentication);
-		HttlSender sender = config.build();
+		HttlSender sender = config.sender().build();
 
 		assertThat(sender.getConfig().getUrl().toString()).isEqualTo("http://www.hostname.com:8080/somewhere"); // file(path) URL part is thrown away
-		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
-		assertThat(sender.getConfig().getAuthentication().getPreemptive()).isFalse();
+		assertThat(sender.getConfig().getCharset()).isEqualTo("utf-8");
+		assertThat(sender.getTransport().getConfig().getAuthentication().getPreemptive()).isFalse();
 
 		sender.close();
 	}
