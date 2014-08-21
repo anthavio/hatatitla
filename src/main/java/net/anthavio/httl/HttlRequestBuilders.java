@@ -206,7 +206,7 @@ public class HttlRequestBuilders {
 		/**
 		 *  Set parameters frm Map
 		 */
-		public X param(Map<String, ?> map) {
+		public X params(Map<String, ?> map) {
 			if (map != null) {
 				Set<String> keySet = map.keySet();
 				for (String name : keySet) {

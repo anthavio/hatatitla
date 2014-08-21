@@ -239,7 +239,7 @@ public class RequestTest {
 		//Then - nothing
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
 
 		//When - empty
@@ -248,7 +248,7 @@ public class RequestTest {
 		//Then - nothing
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
 
 		//When - single
@@ -258,7 +258,7 @@ public class RequestTest {
 		//Then - single
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1");
 
 		map.clear();
@@ -270,7 +270,7 @@ public class RequestTest {
 		//Then
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
 
 		//When - "" value
@@ -280,7 +280,7 @@ public class RequestTest {
 		//Then
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=");
 
 		//When - array
@@ -289,7 +289,7 @@ public class RequestTest {
 		//Then
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1&map.x=2&map.x=3");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1&x=2&x=3");
 
 		//When - list
@@ -303,7 +303,7 @@ public class RequestTest {
 		//Then
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1&map.x=2");
 		//And
-		request = sender.GET("/path").param(map).build();
+		request = sender.GET("/path").params(map).build();
 		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1&x=2");
 
 	}

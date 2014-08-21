@@ -86,14 +86,15 @@ public class OAuthServerTest extends HttpServlet {
 				.setRedirectUri("http://local.nature.com:3030/callback/wot").build();
 		*/
 
+		/*
 		//Facebook https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/v2.1
 		sender = HttlSender.with("https://graph.facebook.com").config().addHeader("Accept", "application/json").build();
 
 		builder = new OAuth2Builder(sender).setAuthUrl("https://www.facebook.com/dialog/oauth")
 				.setClientId("257584864432184").setClientSecret("362da435e18c5fe6424f993541f15690").setAuthResponseType("code")
-				/*.setTokenHttpMethod(Method.GET)*/.setTokenUrl("https://graph.facebook.com/oauth/access_token")
+				.setTokenUrl("https://graph.facebook.com/oauth/access_token")
 				.setCustomParam("display", "popup").setRedirectUri("http://localhost:3030/callback/facebook").build();
-
+		*/
 		/*
 		sender = HttlSender.For("https://github.com").setHeader("Accept", "application/json").build();
 		builder = new OAuth2Builder(sender).setAuthUrl("https://github.com/login/oauth/authorize")
@@ -102,13 +103,20 @@ public class OAuthServerTest extends HttpServlet {
 				.setRedirectUri("http://local.nature.com:3030/callback/github").build();
 		*/
 		/*
-		HttlSender sender = HttlSender.Build("https://accounts.google.com");
+		sender = HttlSender.Build("https://accounts.google.com");
 		builder = new OAuth2Builder(sender).setAuthUrl("https://accounts.google.com/o/oauth2/auth")
 				.setTokenUrl("https://accounts.google.com/o/oauth2/token")
 				.setClientId("164620382615-95h6b232a0uin7toqka3nbhdf3noip9c.apps.googleusercontent.com")
 				.setClientSecret("T3Z_hlCWtwT1hiJVuRt1WWCH").setRedirectUri("http://local.nature.com:3030/callback/google")
 				.build();
 		*/
+
+		sender = HttlSender.with("https://disqus.com").build();
+		builder = new OAuth2Builder(sender).setAuthUrl("/api/oauth/2.0/authorize/")
+				.setTokenUrl("/api/oauth/2.0/access_token/")
+				.setClientId("gOqjfpFfNaEqPBvctATwmhdvNgLA4lgMks5NQu3kDtq2oD9leufjLBGclWLhFKaE")
+				.setClientSecret("LBlyuwnClIlTy58y1GYVd8g7pS8658cZHuJuZpZnvX9wwY84gb6dYpBIPcrofoNu")
+				.setRedirectUri("http://local.nature.com:3030/callback/disqus").build();
 	}
 
 	@Override
@@ -123,7 +131,9 @@ public class OAuthServerTest extends HttpServlet {
 			//"public access" github
 			//String url = builder.getAuthUrl("random-state", "openid email"); //github
 			//String url = builder.getAuthUrl(null, null); //wot
-			String url = builder.getAuthUrl("public_profile,email", "whatever");
+			//String url = builder.getAuthUrl("public_profile,email", "whatever");//facebook
+			String url = builder.getAuthUrl("read,write", "whtever"); //Disqus
+
 			System.out.println("Redirecting to " + url);
 			response.sendRedirect(url);
 
@@ -158,11 +168,17 @@ public class OAuthServerTest extends HttpServlet {
 
 						}
 					};
-					OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, new FacebookTokenExtractor());
+					//OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, new FacebookTokenExtractor());
+					OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, OAuthTokenResponse.class);
 					String access_token = tokenResponse.getAccess_token();
 
-					ExtractedResponse<String> extract = sender.GET("/me").param("access_token", access_token)
+					//ExtractedResponse<String> extract = sender.GET("/me").param("access_token", access_token)
+					//		.extract(String.class);
+					ExtractedResponse<String> extract = sender.POST("/api/3.0/users/checkUsername.json")
+							.param("access_token", access_token).param("username", "asdewqdddd")
+							.param("api_key", "gOqjfpFfNaEqPBvctATwmhdvNgLA4lgMks5NQu3kDtq2oD9leufjLBGclWLhFKaE")
 							.extract(String.class);
+
 					response.getWriter().print(extract);
 					response.setStatus(200);
 				}

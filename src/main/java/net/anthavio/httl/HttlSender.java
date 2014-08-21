@@ -427,6 +427,10 @@ public class HttlSender implements SenderOperations, Closeable {
 			get(name, true).add(value);
 		}
 
+		public List<T> remove(String name) {
+			return this.entries.remove(name);
+		}
+
 		/**
 		 * Add value(s) keeping existing
 		 */

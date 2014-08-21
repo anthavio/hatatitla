@@ -156,6 +156,8 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 		if (sslContext != null) {
 			SSLSocketFactory sslSocketFactory = new SSLSocketFactory(sslContext);
 			schemeRegistry.register(new Scheme("https", 443, sslSocketFactory));
+		} else {
+			schemeRegistry.register(new Scheme("https", 443, SSLSocketFactory.getSystemSocketFactory()));
 		}
 
 		//we access only one host
