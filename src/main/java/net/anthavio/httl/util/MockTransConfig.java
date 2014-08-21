@@ -1,6 +1,5 @@
 package net.anthavio.httl.util;
 
-import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
 /**
@@ -31,7 +30,7 @@ public class MockTransConfig extends BaseTransBuilder<MockTransConfig> {
 	}
 
 	@Override
-	public HttlTransport build() {
+	public MockTransport build() {
 		if (transport == null) {
 			transport = new MockTransport();
 			transport.setConfig(this);

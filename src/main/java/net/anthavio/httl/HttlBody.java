@@ -86,4 +86,9 @@ public class HttlBody {
 		return type;
 	}
 
+	@Override
+	public String toString() {
+		return "HttlBody [type=" + type + ", cache=" + cache + ", payload=" + payload + "]";
+	}
+
 }

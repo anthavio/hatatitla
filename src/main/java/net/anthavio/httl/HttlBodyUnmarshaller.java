@@ -62,7 +62,7 @@ public interface HttlBodyUnmarshaller {
 						+ "," + maxHttpCode + ">");
 			}
 			if (!mediaType.equals(response.getMediaType()) && !mediaType.equals(ANY_MEDIA_TYPE)) {
-				throw new HttlProcessingException(response, "Mime type " + response.getMediaType() + " does not match "
+				throw new HttlProcessingException(response, "Mime type: " + response.getMediaType() + " does not match: "
 						+ mediaType);
 			}
 			return doUnmarshall(response, returnType);
