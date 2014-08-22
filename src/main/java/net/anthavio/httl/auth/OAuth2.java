@@ -37,7 +37,7 @@ public class OAuth2 {
 		return new OAuth2Builder(sender);
 	}
 
-	public String getAuthUrl(String scope, String state) {
+	public String getAuthorizationUrl(String scope, String state) {
 		return config.getAuthUrl() + "?" + getAuthQuery(scope, state);
 	}
 

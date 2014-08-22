@@ -87,7 +87,6 @@ public class OAuth2Builder {
 				throw new IllegalArgumentException("Token URL is required");
 			}
 		} else {
-
 			if (!tokenUrl.startsWith("http")) {
 				tokenUrl = HttpHeaderUtil.joinUrlParts(sender.getConfig().getUrl().toString(), tokenUrl);
 			}

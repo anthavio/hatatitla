@@ -132,7 +132,7 @@ public class OAuthServerTest extends HttpServlet {
 			//String url = builder.getAuthUrl("random-state", "openid email"); //github
 			//String url = builder.getAuthUrl(null, null); //wot
 			//String url = builder.getAuthUrl("public_profile,email", "whatever");//facebook
-			String url = builder.getAuthUrl("read,write", "whtever"); //Disqus
+			String url = builder.getAuthorizationUrl("read,write", "whtever"); //Disqus
 
 			System.out.println("Redirecting to " + url);
 			response.sendRedirect(url);
