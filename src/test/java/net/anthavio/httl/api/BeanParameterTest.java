@@ -47,7 +47,7 @@ public class BeanParameterTest {
 			// Then
 			Assertions.fail("Expected " + HttlRequestException.class.getName());
 		} catch (HttlRequestException rx) {
-			Assertions.assertThat(rx.getMessage()).contains("Complex argument on position 1 is null");
+			Assertions.assertThat(rx.getMessage()).contains("Illegal null Complex argument on position 1");
 		}
 
 		try {

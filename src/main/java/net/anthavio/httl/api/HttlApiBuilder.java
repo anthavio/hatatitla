@@ -86,20 +86,24 @@ public class HttlApiBuilder {
 		String urlPathPrefix = (httlApi != null) ? getRestApiUri(httlApi) : "";
 
 		Map<Type, VarSetter<Object>> sharedSetters = new HashMap<Type, VarSetter<Object>>();
-		Class<? extends VarSetter>[] setters = httlApi.setters();
-		if (setters.length != 0) {
-			for (Class<? extends VarSetter> setterClass : setters) {
-				ParameterizedType parametrized = (ParameterizedType) setterClass.getGenericInterfaces()[0];
-				Type targetType = parametrized.getActualTypeArguments()[0];
-				VarSetter<Object> setter;
-				try {
-					setter = setterClass.newInstance();
-				} catch (Exception x) {
-					throw new HttlApiException("Failed to instantiate shared setter " + setterClass, apiInterface);
+		if (httlApi != null) {
+			//Initialize shared setters
+			Class<? extends VarSetter>[] setters = httlApi.setters();
+			if (setters.length != 0) {
+				for (Class<? extends VarSetter> setterClass : setters) {
+					ParameterizedType parametrized = (ParameterizedType) setterClass.getGenericInterfaces()[0];
+					Type targetType = parametrized.getActualTypeArguments()[0];
+					VarSetter<Object> setter;
+					try {
+						setter = setterClass.newInstance();
+					} catch (Exception x) {
+						throw new HttlApiException("Failed to instantiate shared setter " + setterClass, apiInterface);
+					}
+					sharedSetters.put(targetType, setter);
 				}
-				sharedSetters.put(targetType, setter);
 			}
 		}
+
 		Map<Method, ApiMethodMeta> methods = doApiMethods(apiInterface, urlPathPrefix, sharedSetters);
 		InvocationHandler handler = new HttlApiHandler<T>(apiInterface, sender, headers, params, methods);
 		return (T) Proxy.newProxyInstance(apiInterface.getClassLoader(), new Class<?>[] { apiInterface }, handler);
