@@ -18,4 +18,14 @@ public @interface HttlApi {
 	 */
 	String value() default "";
 
+	/**
+	 * @return url path prefix for all @HttlCall
+	 */
+	String uri() default "";
+
+	/**
+	 * @return Configure commonly used VarSetter so it does not need to be decalared in every @HttlVar(setter=...)
+	 */
+	Class<? extends VarSetter>[] setters() default {};
+
 }

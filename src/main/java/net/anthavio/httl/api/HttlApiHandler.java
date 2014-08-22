@@ -101,8 +101,9 @@ public class HttlApiHandler<T> implements InvocationHandler {
 				Object arg = args[i];
 				if (arg == null) {
 					if (metaVar.killnull) {
-						throw new HttlRequestException(((metaVar.name != null) ? "Argument " + metaVar.name : "Complex argument")
-								+ " on position " + (i + 1) + " is null");
+						throw new HttlRequestException("Illegal null "
+								+ ((metaVar.name != null) ? "argument '" + metaVar.name + "'" : "Complex argument") + " on position "
+								+ (i + 1));
 					} else if (metaVar.nullval != null) {
 						arg = metaVar.nullval; //risky - different Class...?
 					}

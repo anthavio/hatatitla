@@ -11,6 +11,7 @@ import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
@@ -22,6 +23,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 /**
  * 
@@ -67,27 +69,57 @@ public class SpecialApiTest {
 	}
 
 	@Test
-	public void customSetter() {
+	public void varSetter() {
 		// Given
 		MockTransport transport = new MockTransport();
 		HttlSender sender = new MockTransConfig(transport).sender().build();
-		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
+		SetterApi api = HttlApiBuilder.with(sender).build(SetterApi.class);
 
 		// When
-		HttlResponse response = api.customSetter(new PageRequest(3, 13));
+		HttlResponse respLocal = api.localSetter(new PageRequest(3, 13));
 
-		// Then
-		Assertions.assertThat(response).isEqualTo(transport.getLastResponse());
-		Assertions.assertThat(transport.getLastRequest().getParameters().getFirst("xpage.number")).isEqualTo("3");
-		Assertions.assertThat(transport.getLastRequest().getParameters().getFirst("xpage.size")).isEqualTo("13");
-		Assertions.assertThat(transport.getLastRequest().getParameters().getFirst("xpage.sort")).isNull(); //not present
+		// Then - method setter kicks in
+		Assertions.assertThat(respLocal).isEqualTo(transport.getLastResponse());
+		Assertions.assertThat(respLocal.getRequest().getPathAndQuery()).startsWith("/setter/local");
+		Assertions.assertThat(respLocal.getRequest().getParameters().getFirst("m.number")).isEqualTo("3");
+		Assertions.assertThat(respLocal.getRequest().getParameters().getFirst("m.size")).isEqualTo("13");
+		Assertions.assertThat(respLocal.getRequest().getParameters().getFirst("m.sort")).isNull(); //not present
+
+		// When
+		HttlResponse respShared = api.sharedSetter(new PageRequest(2, 8, Sort.Direction.ASC, "z"));
+
+		// Then - shared setter kicks in
+		Assertions.assertThat(respShared).isEqualTo(transport.getLastResponse());
+		Assertions.assertThat(respShared.getRequest().getPathAndQuery()).startsWith("/setter/shared");
+		Assertions.assertThat(respShared.getRequest().getParameters().getFirst("s.number")).isEqualTo("2");
+		Assertions.assertThat(respShared.getRequest().getParameters().getFirst("s.size")).isEqualTo("8");
+		Assertions.assertThat(respShared.getRequest().getParameters().getFirst("s.sort")).isEqualTo("z: ASC");
+
+		try {
+			api.sharedSetter(null);
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
+		} catch (HttlRequestException hrx) {
+			Assertions.assertThat(hrx.getMessage()).isEqualTo("Illegal null argument 's' on position 1");
+		}
+
+	}
+
+	@HttlApi(uri = "/setter/", setters = PageableSetter.class)
+	static interface SetterApi {
+
+		@HttlCall("GET /local")
+		HttlResponse localSetter(@HttlVar(name = "m", setter = PageableSetter.class) Pageable pager);
+
+		@HttlCall("GET /shared")
+		HttlResponse sharedSetter(@HttlVar(name = "s", required = true) Pageable pager);
+
 	}
 
 	@Test
 	public void responseExtractor() throws IOException {
 		// Given
 		HttlSender sender = new MockTransConfig().sender().build();
-		SpecialApi api = HttlApiBuilder.with(sender).build(SpecialApi.class);
+		ExtractorApi api = HttlApiBuilder.with(sender).build(ExtractorApi.class);
 		final TestBodyBean bean = new TestBodyBean("Kvído Vymětal", new Date(), 999);
 		//String bodyXml = Marshallers.marshall(sender.getConfig().getRequestMarshaller("application/xml"), bean);
 
@@ -95,6 +127,12 @@ public class SpecialApiTest {
 		Date returnedDate = api.extractor(extractor, bean);
 		// Then
 		Assertions.assertThat(returnedDate).isEqualTo(bean.getDate());
+	}
+
+	static interface ExtractorApi {
+
+		@HttlCall("POST /extractor")
+		Date extractor(HttlResponseExtractor<Date> extractor, @HttlBody("application/xml") TestBodyBean bean);
 	}
 
 	@Test
@@ -213,14 +251,8 @@ public class SpecialApiTest {
 
 	static interface SpecialApi {
 
-		@HttlCall("POST /extractor")
-		Date extractor(HttlResponseExtractor<Date> extractor, @HttlBody("application/xml") TestBodyBean bean);
-
 		@HttlCall("POST /extractorSilly")
 		String wrongExtractorType(@HttlBody("application/xml") TestBodyBean bean, HttlResponseExtractor<Date> extractor);
-
-		@HttlCall("GET /customSetter")
-		HttlResponse customSetter(@HttlVar(name = "xpage", setter = PageableSetter.class) Pageable pager);
 
 		@HttlCall("POST /everything")
 		TestBodyBean everything(@HttlVar(name = "page", setter = PageableSetter.class) Pageable pager,

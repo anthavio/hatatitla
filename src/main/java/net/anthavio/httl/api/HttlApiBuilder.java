@@ -82,14 +82,31 @@ public class HttlApiBuilder {
 	}
 
 	public static <T> T build(Class<T> apiInterface, HttlSender sender, Multival<String> headers, Multival<String> params) {
-		HttlApi annotation = apiInterface.getAnnotation(HttlApi.class);
-		String urlPathPrefix = (annotation != null) ? annotation.value() : "";
-		Map<Method, ApiMethodMeta> methods = doApiMethods(apiInterface, urlPathPrefix);
+		HttlApi httlApi = apiInterface.getAnnotation(HttlApi.class);
+		String urlPathPrefix = (httlApi != null) ? getRestApiUri(httlApi) : "";
+
+		Map<Type, VarSetter<Object>> sharedSetters = new HashMap<Type, VarSetter<Object>>();
+		Class<? extends VarSetter>[] setters = httlApi.setters();
+		if (setters.length != 0) {
+			for (Class<? extends VarSetter> setterClass : setters) {
+				ParameterizedType parametrized = (ParameterizedType) setterClass.getGenericInterfaces()[0];
+				Type targetType = parametrized.getActualTypeArguments()[0];
+				VarSetter<Object> setter;
+				try {
+					setter = setterClass.newInstance();
+				} catch (Exception x) {
+					throw new HttlApiException("Failed to instantiate shared setter " + setterClass, apiInterface);
+				}
+				sharedSetters.put(targetType, setter);
+			}
+		}
+		Map<Method, ApiMethodMeta> methods = doApiMethods(apiInterface, urlPathPrefix, sharedSetters);
 		InvocationHandler handler = new HttlApiHandler<T>(apiInterface, sender, headers, params, methods);
 		return (T) Proxy.newProxyInstance(apiInterface.getClassLoader(), new Class<?>[] { apiInterface }, handler);
 	}
 
-	private static Map<Method, ApiMethodMeta> doApiMethods(Class<?> apiInterface, String urlPathPrefix) {
+	private static Map<Method, ApiMethodMeta> doApiMethods(Class<?> apiInterface, String urlPathPrefix,
+			Map<Type, VarSetter<Object>> sharedSetters) {
 		Map<Method, ApiMethodMeta> metaMap = new HashMap<Method, ApiMethodMeta>();
 		for (Method method : apiInterface.getDeclaredMethods()) {
 			HttlCall operation = method.getAnnotation(HttlCall.class);
@@ -116,7 +133,7 @@ public class HttlApiBuilder {
 			urlPath = HttpHeaderUtil.joinUrlParts(urlPathPrefix, urlPath);
 
 			//@RestVar annotations
-			ApiVarMeta[] params = doApiParameters(method);
+			ApiVarMeta[] params = doApiParameters(method, sharedSetters);
 			Map<String, ApiVarMeta> paramMap = new HashMap<String, HttlApiBuilder.ApiVarMeta>();
 			for (ApiVarMeta param : params) {
 				paramMap.put(param.name, param);
@@ -226,7 +243,7 @@ public class HttlApiBuilder {
 				paramName = toPropName(paramName);
 			}
 
-			ApiVarMeta varMeta = doParameter(0, method, paramName);
+			ApiVarMeta varMeta = doParameter(0, method, null, paramName);
 			BuilderMethodMeta methodMeta = new BuilderMethodMeta(method, varMeta, replace);
 			metaMap.put(method, methodMeta);
 		}
@@ -292,7 +309,7 @@ public class HttlApiBuilder {
 		return headerList.toArray(new ApiHeaderMeta[headerList.size()]);
 	}
 
-	private static ApiVarMeta[] doApiParameters(Method method) {
+	private static ApiVarMeta[] doApiParameters(Method method, Map<Type, VarSetter<Object>> sharedSetters) {
 		Map<String, ApiVarMeta> map = new HashMap<String, ApiVarMeta>();//only for duplicate name checks
 		Class<?>[] types = method.getParameterTypes();
 		List<ApiVarMeta> metaList = new ArrayList<ApiVarMeta>();
@@ -340,7 +357,7 @@ public class HttlApiBuilder {
 
 			} else {
 				// normal parameters here...
-				meta = doParameter(i, method, null);
+				meta = doParameter(i, method, sharedSetters, null);
 				if (map.containsKey(meta.name)) {
 					throw new HttlApiException("Duplicate parameter named '" + meta.name + "' found", method);
 				}
@@ -363,7 +380,8 @@ public class HttlApiBuilder {
 
 		}
 	*/
-	private static ApiVarMeta doParameter(int index, Method method, String defaultName) {
+	private static ApiVarMeta doParameter(int index, Method method, Map<Type, VarSetter<Object>> sharedSetters,
+			String defaultName) {
 
 		String name = defaultName;
 		boolean required = false;
@@ -432,6 +450,11 @@ public class HttlApiBuilder {
 				// Map are special
 				return doMapParameter(index, type, name, required);
 			}
+		}
+
+		if (setter == null && sharedSetters != null) {
+			setter = sharedSetters.get(type);//can be null...
+
 		}
 
 		//fail if 
@@ -520,12 +543,16 @@ public class HttlApiBuilder {
 	 * This also copes with Java annotation inability to store null as value requiring null surrogates usage
 	 */
 	private static String getRestVarName(HttlVar var) {
-		String value = var.value();
+		return getAnnotationValue(var.value(), var.name(), "name");
+	}
+
+	private static String getRestApiUri(HttlApi api) {
+		return getAnnotationValue(api.value(), api.uri(), "uri");
+	}
+
+	private static String getAnnotationValue(String value, String preferred, String preferredName) {
 		boolean blankValue = value == null || value.length() == 0 || value.equals(HttlVar.NULL_STRING_SURROGATE);
-
-		String name = var.name();
-		boolean blankName = name == null || name.length() == 0 || name.equals(HttlVar.NULL_STRING_SURROGATE);
-
+		boolean blankName = preferred == null || preferred.length() == 0 || preferred.equals(HttlVar.NULL_STRING_SURROGATE);
 		if (blankName) {
 			if (blankValue) {
 				return null;
@@ -534,10 +561,10 @@ public class HttlApiBuilder {
 			}
 		} else {
 			if (blankValue) {
-				return name;
+				return preferred;
 			} else {
-				throw new HttlApiException("Do not use both value='" + value + "' and name='" + name + "' in @RestVar",
-						(Exception) null);
+				throw new HttlApiException("Do not use both value='" + value + "' and " + preferredName + "='" + preferred
+						+ "' in annotation", (Exception) null);
 			}
 		}
 	}
