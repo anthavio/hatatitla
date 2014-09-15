@@ -17,7 +17,7 @@ public class AdlTest {
 		// http://square.github.io/retrofit/
 		// https://github.com/Netflix/feign
 
-		GitHubApi api = HttlSender.with("www.seznam.cz").mock().sender().api().build(GitHubApi.class);
+		GitHubApi api = HttlSender.url("www.seznam.cz").mock().sender().api().build(GitHubApi.class);
 
 		HttlBodyMarshaller marshaller;
 		HttlResponseHandler reponseHandler;

@@ -37,56 +37,56 @@ public class RequestTest {
 	public void urlPath() {
 		HttlRequest request;
 
-		request = HttlSender.with("www.example.com").build().GET("/file").build();
+		request = HttlSender.url("www.example.com").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		request = HttlSender.with("www.example.com/").build().GET("/file").build();
+		request = HttlSender.url("www.example.com/").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		request = HttlSender.with("www.example.com/path").build().GET("/file").build();
+		request = HttlSender.url("www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When too many /
-		request = HttlSender.with("www.example.com/path/").build().GET("/file").build();
+		request = HttlSender.url("www.example.com/path/").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When too little /
-		request = HttlSender.with("www.example.com/path").build().GET("file").build();
+		request = HttlSender.url("www.example.com/path").build().GET("file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When port
-		request = HttlSender.with("www.example.com:8080/path").build().GET("/file").build();
+		request = HttlSender.url("www.example.com:8080/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
 		//When http
-		request = HttlSender.with("http://www.example.com/path").build().GET("/file").build();
+		request = HttlSender.url("http://www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
 		//When https
-		request = HttlSender.with("https://www.example.com/path").build().GET("/file").build();
+		request = HttlSender.url("https://www.example.com/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com/path/file");
 
 		//When http + port
-		request = HttlSender.with("http://www.example.com:8080/path").build().GET("/file").build();
+		request = HttlSender.url("http://www.example.com:8080/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
 		//When https + port
-		request = HttlSender.with("https://www.example.com:9696/path").build().GET("/file").build();
+		request = HttlSender.url("https://www.example.com:9696/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
 		//When username:password in a URL - it is omitted
-		request = HttlSender.with("https://username:password@www.example.com:9696/path").build().GET("/file").build();
+		request = HttlSender.url("https://username:password@www.example.com:9696/path").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
 		//When query in URL - it is omitted
-		request = HttlSender.with("www.example.com/path;matrix=value?query=value").build().GET("/file").build();
+		request = HttlSender.url("www.example.com/path;matrix=value?query=value").build().GET("/file").build();
 		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path;matrix=value/file");
 
 	}
 
 	@Test
 	public void parameters() {
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 		assertThat(sender.getConfig().getUrl().toString()).isEqualTo("http://www.example.com"); //add http prefix and remove path suffix
 		//SimpleHttpSender sender = null;
 
@@ -123,7 +123,7 @@ public class RequestTest {
 	@Test
 	public void requestBody() throws IOException {
 		//Given sender
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 
 		//When - only body
 		SenderBodyRequestBuilder builder = sender.POST("/x").body("<x></x>", "application/xml");
@@ -174,7 +174,7 @@ public class RequestTest {
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=utf-8");
 
 		//When - configure Request media type (defalut)
-		SenderConfigurer config = HttlSender.with("www.example.com").httpUrl().setCharset("ISO-8859-2").sender()
+		SenderConfigurer config = HttlSender.url("www.example.com").httpUrl().setCharset("ISO-8859-2").sender()
 				.setRequestMediaType("text/plain");
 		sender = config.build();
 
@@ -230,7 +230,7 @@ public class RequestTest {
 	@Test
 	public void mapAsParameter() {
 		//Given - default settings
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 		HttlRequest request;
 
 		//When - null map
@@ -312,7 +312,7 @@ public class RequestTest {
 	public void dateAsParameter() throws UnsupportedEncodingException {
 
 		//Given - default settings
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 
 		//When - Date as parameter
 		SenderNobodyRequestBuilder builder = sender.OPTIONS("/options");
@@ -342,7 +342,7 @@ public class RequestTest {
 
 	@Test
 	public void arraysAndCollections() {
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 
 		SenderNobodyRequestBuilder builder = sender.DELETE("/delete");
 		builder.param(";m3", 31, 32, 33);
@@ -461,7 +461,7 @@ public class RequestTest {
 	public void testConfigDefaults() {
 		//Given
 		String url = "http://www.example.com:8080";
-		HttlSender sender = HttlSender.with(url).build();
+		HttlSender sender = HttlSender.url(url).build();
 		SenderConfigurer config = sender.getConfig();
 		//Then
 		assertThat(sender.getConfig().getCharset()).isEqualTo("utf-8");

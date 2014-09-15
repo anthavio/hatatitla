@@ -60,10 +60,16 @@ public class SSLContextBuilder {
 		return new SSLContextBuilder("SSL");
 	}
 
+	/**
+	 * @param protocol - SSL, SSLv3, TLS, TLSv1.2
+	 */
 	public static SSLContextBuilder Protocol(String protocol) {
 		return new SSLContextBuilder(protocol);
 	}
 
+	/**
+	 * @param protocol - SSL, SSLv3, TLS, TLSv1.2
+	 */
 	public SSLContextBuilder(String protocol) {
 		if (Cutils.isBlank(protocol)) {
 			throw new IllegalArgumentException("Invalid protocol: " + protocol);

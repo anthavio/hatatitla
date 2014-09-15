@@ -312,7 +312,7 @@ public class BasicApiTest {
 
 	@Test
 	public void emptyParamaterApis() {
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 		try {
 			HttlApiBuilder.with(sender).build(WrongApiMissingName.class);
 			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());
@@ -344,7 +344,7 @@ public class BasicApiTest {
 
 	@Test
 	public void wrongGetWithBody() {
-		HttlSender sender = HttlSender.with("www.example.com").build();
+		HttlSender sender = HttlSender.url("www.example.com").build();
 		try {
 			HttlApiBuilder.with(sender).build(WrongApiGetWithBody.class);
 			Assertions.fail("Expected " + HttlApiException.class.getSimpleName());

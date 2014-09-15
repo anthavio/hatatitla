@@ -38,10 +38,10 @@ public class OAuth2 {
 	}
 
 	public String getAuthorizationUrl(String scope, String state) {
-		return config.getAuthUrl() + "?" + getAuthQuery(scope, state);
+		return config.getAuthUrl() + "?" + getAuthorizationQuery(scope, state);
 	}
 
-	protected String getAuthQuery(String scope, String state) {
+	protected String getAuthorizationQuery(String scope, String state) {
 		StringBuilder sb = config.getAuthQueryBuilder();
 
 		if (scope != null) {
@@ -58,29 +58,56 @@ public class OAuth2 {
 
 	}
 
+	/**
+	 * Trade Code for Token
+	 */
 	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, HttlResponseExtractor<T> extractor) {
-		SenderRequestBuilder<?> builder = buildTokenRequest(code);
+		SenderRequestBuilder<?> builder = buildCodeTokenRequest(code);
 		visitor.visit(builder);
 		return builder.extract(extractor).getBody();
 	}
 
+	/**
+	 * Trade Code for Token
+	 */
 	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, Class<T> tokenClass) {
-		SenderRequestBuilder<?> builder = buildTokenRequest(code);
+		SenderRequestBuilder<?> builder = buildCodeTokenRequest(code);
 		visitor.visit(builder);
 		return builder.extract(tokenClass).getBody();
 	}
 
+	/**
+	 * Trade Code for Token
+	 */
 	public <T> T getAccessToken(String code, HttlResponseExtractor<T> extractor) {
-		return buildTokenRequest(code).extract(extractor).getBody();
+		return buildCodeTokenRequest(code).extract(extractor).getBody();
 	}
 
+	/**
+	 * Trade Code for Token
+	 */
 	public <T> T getAccessToken(String code, Class<T> tokenClass) {
-		return buildTokenRequest(code).extract(tokenClass).getBody();
+		return buildCodeTokenRequest(code).extract(tokenClass).getBody();
 	}
 
-	protected SenderRequestBuilder<?> buildTokenRequest(String code) {
+	/**
+	 * Trade username & password for Token
+	 */
+	public <T> T getAccessToken(String username, String password, Class<T> tokenClass) {
+		return buildPasswordTokenRequest(username, password).extract(tokenClass).getBody();
+	}
+
+	/**
+	 * Trade Code for Token
+	 */
+	protected SenderRequestBuilder<?> buildCodeTokenRequest(String code) {
 		String path = config.getTokenUrl().getPath();
-		String query = getAccessTokenQuery(code);
+		String senderPath = sender.getConfig().getUrl().getPath();
+		if (senderPath != null && path.startsWith(senderPath)) {
+			path = path.substring(senderPath.length() + 1);
+		}
+
+		String query = getCodeTokenQuery(code);
 		if (config.getTokenHttpMethod() == Method.POST) {
 			return sender.POST(path).body(query, "application/x-www-form-urlencoded");
 		} else {
@@ -88,7 +115,10 @@ public class OAuth2 {
 		}
 	}
 
-	protected String getAccessTokenQuery(String code) {
+	/**
+	 * Trade Code for Token
+	 */
+	protected String getCodeTokenQuery(String code) {
 
 		StringBuilder sb = config.getTokenQueryBuilder();
 		append(sb, "grant_type", "authorization_code");
@@ -97,6 +127,38 @@ public class OAuth2 {
 			throw new IllegalStateException("code is required");
 		} else {
 			append(sb, "code", code);
+		}
+
+		return sb.toString();
+	}
+
+	/**
+	 * Trade username & password for Token
+	 */
+	protected SenderRequestBuilder<?> buildPasswordTokenRequest(String username, String password) {
+		String path = config.getTokenUrl().getPath();
+		String query = getPasswordTokenQuery(username, password);
+		if (config.getTokenHttpMethod() == Method.POST) {
+			return sender.POST(path).body(query, "application/x-www-form-urlencoded");
+		} else {
+			return sender.GET(path + "?" + query);
+		}
+	}
+
+	protected String getPasswordTokenQuery(String username, String password) {
+		StringBuilder sb = config.getTokenQueryBuilder();
+		append(sb, "grant_type", "password");
+
+		if (username == null || username.isEmpty()) {
+			throw new IllegalStateException("username is required");
+		} else {
+			append(sb, "username", username);
+		}
+
+		if (password == null || password.isEmpty()) {
+			throw new IllegalStateException("password is required");
+		} else {
+			append(sb, "password", password);
 		}
 
 		return sb.toString();

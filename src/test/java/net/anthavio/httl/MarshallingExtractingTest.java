@@ -51,7 +51,7 @@ public class MarshallingExtractingTest {
 	}
 
 	public void devel() {
-		HttlSender sender = HttlSender.with("localhost:" + 3333).httpClient3().sender().build();
+		HttlSender sender = HttlSender.url("localhost:" + 3333).httpClient3().sender().build();
 		try {
 			sender.GET("/").extract(String.class);
 		} catch (HttlException sex) {
@@ -185,7 +185,7 @@ public class MarshallingExtractingTest {
 	@Test
 	public void responseHandler() throws IOException {
 		//Given - HttpClient4Sender because we can precisely track connection lasing and returning
-		HttlSender sender = HttlSender.with("localhost:" + server.getHttpPort()).httpClient4().sender().build();
+		HttlSender sender = HttlSender.url("localhost:" + server.getHttpPort()).httpClient4().sender().build();
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) transport.getHttpClient()
 				.getConnectionManager();
@@ -288,7 +288,7 @@ public class MarshallingExtractingTest {
 		String message = "Hello čobole";
 		TestBodyRequest body = new TestBodyRequest(message);
 
-		HttlSender sender = HttlSender.with("localhost:" + server.getHttpPort()).httpClient4().setCharset("ISO-8859-2")
+		HttlSender sender = HttlSender.url("localhost:" + server.getHttpPort()).httpClient4().setCharset("ISO-8859-2")
 				.sender().build();
 
 		//sender.setResponseExtractor(factory, "application/json");

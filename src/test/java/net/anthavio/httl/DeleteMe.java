@@ -14,7 +14,7 @@ public class DeleteMe {
 
 	public static void main(String[] args) throws IOException {
 		//HttpSender sender = new HttpURLSender("http://httpbin.org");
-		HttlSender sender = HttlSender.with("http://httpbin.org").httpClient4().sender().build();
+		HttlSender sender = HttlSender.url("http://httpbin.org").httpClient4().sender().build();
 
 		ConfigurableParamSetter handler = new ConfigurableParamSetter(false, true, true, false,
 				ConfigurableParamSetter.DEFAULT_DATE_PATTERN);

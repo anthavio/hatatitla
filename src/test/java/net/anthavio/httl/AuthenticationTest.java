@@ -40,7 +40,7 @@ public class AuthenticationTest {
 
 		//Given - sender without authentication
 		String url = "http://localhost:" + server.getHttpPort();
-		HttlSender sender = HttlSender.with(url).build();
+		HttlSender sender = HttlSender.url(url).build();
 
 		//When 
 		HttlResponse response = sender.GET("/").param("x", "y").execute();

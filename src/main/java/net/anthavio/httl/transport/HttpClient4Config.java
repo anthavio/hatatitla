@@ -50,7 +50,7 @@ import org.apache.http.protocol.HttpContext;
  */
 public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 
-	private int poolReleaseTimeoutMillis = 65 * 1000;
+	private int poolReleaseTimeoutMillis = 15 * 1000; //apache 2.0 and NGINX
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 

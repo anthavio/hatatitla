@@ -11,7 +11,6 @@ import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.HttlBuilder;
-import net.anthavio.httl.HttlParameterSetter;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
@@ -50,7 +49,7 @@ public class ExamplesTest {
 
 	public static void fluent() {
 		//Create sender with utf-8 encoding, default timeouts and connection pool
-		HttlSender sender = HttlSender.with("https://api.github.com").build();
+		HttlSender sender = HttlSender.url("https://api.github.com").build();
 
 		ExtractedResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
@@ -68,28 +67,34 @@ public class ExamplesTest {
 
 		//Life if boring without timeouts
 		config.setConnectTimeoutMillis(3 * 1000); //default is 5 seconds
-		config.setReadTimeoutMillis(10 * 1000); //default is 20 seconds
+		config.setReadTimeoutMillis(20 * 1000); //default is 10 seconds
 
 		//Connection pooling for maximal throughput
 		config.setPoolMaximumSize(60); //default is 10
 		//Timeout for getting connection from pool
 		config.setPoolAcquireTimeoutMillis(5 * 1000); //default is 3 seconds
 		//TTL for connections in pool
-		config.setPoolReleaseTimeoutMillis(5 * 60 * 1000); //default is 65 seconds
+		config.setPoolReleaseTimeoutMillis(5 * 60 * 1000); //default is 15 seconds
 
 		//BASIC and DIGEST Autentication at your service! BASIC is preemptive by default.
 		config.setAuthentication(Authentication.BASIC("myusername", "mypassword"));
 
 		config.setFollowRedirects(true); //default is false
 
-		HttlParameterSetter paramHandler = new ConfigurableParamSetter();
-		//What to do with null or "" parameters?
-		//XXX config.setKeepNullParams(true); //default is KEEP
-		//XXX config.setKeepEmptyParams(false); //default is KEEP
-
 		//Tired of setting Accept Header to every request?
 		SenderConfigurer configurer = config.sender();
 		configurer.setResponseMediaType("application/json"); //default is none
+
+		//How to treat null or "" parameter values?
+		boolean keepNullParams = false;
+		boolean keepEmptyParams = true;
+		boolean urlEncodeNames = false;
+		boolean urlEncodeValues = true;
+		String dateParamPattern = "dd-MM-yyyy";
+		ConfigurableParamSetter paramSetter = new ConfigurableParamSetter(keepNullParams, keepEmptyParams, urlEncodeNames,
+				urlEncodeValues, dateParamPattern);
+
+		configurer.setParamSetter(paramSetter);
 
 		HttlSender sender = configurer.build();
 		//...send send send...
@@ -99,12 +104,12 @@ public class ExamplesTest {
 	public static void senders() {
 		//Easy to start with
 		//No additional dependency - vanilla Java/Android 
-		HttlSender urlSender = HttlSender.with("https://graph.facebook.com").build();
+		HttlSender urlSender = HttlSender.url("https://graph.facebook.com").build();
 
 		//Recommended choice
 		//Dependency - http://hc.apache.org/httpcomponents-client-ga/
 		//java.lang.NoClassDefFoundError: org/apache/http/client/methods/HttpRequestBase
-		HttpClient4Config http4config = HttlBuilder.httpClient4("https://api.twitter.com");
+		HttpClient4Config http4config = HttlSender.url("https://api.twitter.com").httpClient4();
 		HttlSender http4sender = http4config.sender().build();
 
 		//Legacy choice
@@ -118,7 +123,7 @@ public class ExamplesTest {
 		//Precondition is to have Jackson 1 or Jackson 2 on classpath, otherwise following exception will occur
 		//java.lang.IllegalArgumentException: Request body marshaller not found for application/json
 		//java.lang.IllegalArgumentException: No extractor factory found for mime type application/json
-		HttlSender sender = HttlSender.with("http://httpbin.org").build();
+		HttlSender sender = HttlSender.url("http://httpbin.org").build();
 
 		//Send HttpbinIn instance marshalled as JSON document
 		HttpbinIn binIn = new HttpbinIn();
@@ -134,15 +139,15 @@ public class ExamplesTest {
 		sender.close();
 
 		//Configure JAXB xml Marshaller
-		JaxbMarshaller requestMarshaller = new JaxbMarshaller();
-		sender.getConfig().setMarshaller(requestMarshaller);
-		requestMarshaller.getMarshallerProperties().put(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+		JaxbMarshaller jaxbMarshaller = new JaxbMarshaller();
+		sender.getConfig().setMarshaller(jaxbMarshaller);
+		jaxbMarshaller.getMarshallerProperties().put(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		//Set indented output
 
 		//Configure Jackson JSON Marshaller
 		ObjectMapper mapper = new ObjectMapper().setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-		Jackson2Unmarshaller jsonExtractor = new Jackson2Unmarshaller(mapper);
-		sender.getConfig().setUnmarshaller(jsonExtractor);
+		Jackson2Unmarshaller jacksonUnmarshaller = new Jackson2Unmarshaller(mapper);
+		sender.getConfig().setUnmarshaller(jacksonUnmarshaller);
 		/*
 		config.setAuthentication(Authentication.DIGEST("myusername", "mypassword"));
 		sender = config.buildSender();
@@ -159,7 +164,7 @@ public class ExamplesTest {
 	 */
 	public static void cachingSender() {
 		//Github uses ETag and Cache control headers nicely
-		HttlSender sender = HttlSender.with("https://api.github.com").build();
+		HttlSender sender = HttlSender.url("https://api.github.com").build();
 		//Provide cache instance - Simple Heap Hashmap in this case
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		//Create caching sender

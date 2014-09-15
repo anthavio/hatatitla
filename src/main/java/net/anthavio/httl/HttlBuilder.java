@@ -31,14 +31,22 @@ public class HttlBuilder {
 	 * Commence new HttpClient4 Transport creation
 	 */
 	public static HttpClient4Config httpClient4(String url) {
-		return new HttpClient4Config(url);
+		if (OptionalLibs.isHttpClient4) {
+			return new HttpClient4Config(url);
+		} else {
+			throw new IllegalStateException("HttClient 4 classes not found in classpath");
+		}
 	}
 
 	/**
 	 * Commence new HttpClient3 Transport creation
 	 */
 	public static HttpClient3Config httpClient3(String url) {
-		return new HttpClient3Config(url);
+		if (OptionalLibs.isHttpClient3) {
+			return new HttpClient3Config(url);
+		} else {
+			throw new IllegalStateException("HttClient 3.1 classes not found in classpath");
+		}
 	}
 
 	/**
@@ -71,6 +79,7 @@ public class HttlBuilder {
 
 	/**
 	 * Commence new SSLContext creation...
+	 * @param protocol - TLS, TLSv1.2, SSL, SSLv3
 	 */
 	public static SSLContextBuilder sslContext(String protocol) {
 		return new SSLContextBuilder(protocol);
@@ -96,7 +105,7 @@ public class HttlBuilder {
 		}
 
 		/**
-		 * Shortcut for Sender
+		 * Build final HttlSender
 		 * 
 		 * @return Java HttpURLConnection based Sender
 		 */

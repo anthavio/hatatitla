@@ -34,7 +34,7 @@ import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
  */
 public class HttpClient3Config extends BaseTransBuilder<HttpClient3Config> {
 
-	private int poolReleaseTimeoutMillis = 35 * 1000;
+	private int poolReleaseTimeoutMillis = 15 * 1000;
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 

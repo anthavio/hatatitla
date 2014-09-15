@@ -41,7 +41,7 @@ public class HttlSender implements SenderOperations, Closeable {
 	/**
 	 * @return Ultimate builder/configurer
 	 */
-	public static TransportChooser with(String url) {
+	public static TransportChooser url(String url) {
 		return HttlBuilder.sender(url);
 	}
 
@@ -182,7 +182,8 @@ public class HttlSender implements SenderOperations, Closeable {
 	}
 
 	/**
-	 * 
+	 * To overcome Java generics shortcomings use HttlSender#extract(request, new GenericType<List<String>> {})
+	 * to extract Generic collection
 	 */
 	public <T> ExtractedResponse<T> extract(HttlRequest request, GenericType<T> resultType) {
 		if (resultType == null) {

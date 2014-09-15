@@ -384,6 +384,13 @@ public class HttlRequestBuilders {
 			HttlRequest request = build();
 			sender.start(request, handler);
 		}
+
+		@Override
+		public String toString() {
+			return "SenderRequestBuilder [sender=" + sender + ", method=" + method + ", urlPath=" + urlPath + ", headers="
+					+ headers + ", parameters=" + parameters + "]";
+		}
+
 	}
 
 	/**

@@ -16,8 +16,14 @@ import net.anthavio.httl.util.SSLContextBuilder;
  */
 public interface TransportBuilder<S extends TransportBuilder<?>> {
 
+	/**
+	 * @return final HttlTransport
+	 */
 	public HttlTransport build();
 
+	/**
+	 * @return generic self
+	 */
 	public S getSelf();
 
 	/**
