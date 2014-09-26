@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.ParseException;
@@ -321,6 +323,34 @@ public class HttpHeaderUtil {
 		//String strans = response.getFirstHeader("Transfer-Encoding"); //chunked
 
 		return blength;
+	}
+
+	/**
+	 * Strip path out of url so only protocol, host and port remain
+	 * 
+	 * Example
+	 * https://somewhere/whatever -> https://somewhere
+	 * http://somewhere:8080/something -> http://somewhere:8080
+	 * 
+	 */
+	public static String[] splitUrlPath(String url) {
+		URL u;
+		try {
+			u = new URL(url);
+		} catch (MalformedURLException mux) {
+			throw new IllegalArgumentException("Malformed url: " + url);
+		}
+		return splitUrlPath(u);
+	}
+
+	public static String[] splitUrlPath(URL url) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(url.getProtocol()).append("://").append(url.getHost());
+		if (url.getPort() != -1) {
+			sb.append(url.getPort());
+		}
+
+		return new String[] { sb.toString(), url.getFile() };
 	}
 
 	public static String joinUrlParts(String left, String right) {

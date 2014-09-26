@@ -56,7 +56,7 @@ public class AdvancedApiTest {
 	}
 
 	@Test
-	public void testWithUrlParameter() {
+	public void testUrlParameter() {
 		MockTransport transport = new MockTransport();
 		HttlSender sender = new MockTransConfig(transport).sender().build();
 
@@ -89,7 +89,7 @@ public class AdvancedApiTest {
 	}
 
 	@Test
-	public void testWithHeaderParamaters() {
+	public void testHeaderParamaters() {
 		//Given
 		Jackson2Marshaller jsonMarshaller = new Jackson2Marshaller(new ObjectMapper().configure(
 				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
@@ -116,6 +116,7 @@ public class AdvancedApiTest {
 		Assertions.assertThat(transport.getLastRequest().getMediaType()).isEqualTo("application/xml");
 		Assertions.assertThat(transport.getLastRequest().getFirstHeader("Accept")).isEqualTo("application/json");
 		Assertions.assertThat(asJson).isEqualToComparingFieldByField(input);
+
 	}
 
 	static interface WithHeaderParameters {
@@ -124,10 +125,31 @@ public class AdvancedApiTest {
 		@HttlHeaders({ "Content-Type: {content-type}", "Accept: {accept}" })
 		public TestBodyBean postBody(@HttlVar("content-type") String contentType, @HttlVar("accept") String accept,
 				@HttlBody TestBodyBean bean);
+
 	}
 
 	@Test
-	public void genericListReturn() {
+	public void testPartialHeaderReplacement() {
+		MockTransport transport = new MockTransport();
+		HttlSender sender = new MockTransConfig(transport).sender().build();
+
+		WithPartialHeaderParam api = HttlApiBuilder.build(WithPartialHeaderParam.class, sender);
+		String token = "zx-zx-zx";
+		// When
+		api.authorization(token);
+		// Then
+		Assertions.assertThat(transport.getLastRequest().getFirstHeader("Authorization")).isEqualTo("Bearer " + token);
+	}
+
+	static interface WithPartialHeaderParam {
+
+		@HttlCall("POST /whatever")
+		@HttlHeaders("Authorization: Bearer {access_token}")
+		public String authorization(@HttlVar("access_token") String accessToken);
+	}
+
+	@Test
+	public void testGenericListReturn() {
 		MockTransport transport = new MockTransport();
 		HttlSender sender = new MockTransConfig(transport).sender().setUnmarshaller(new GsonUnmarshaller()).build();
 		String json = "[{\"login\":\"login-value\",\"id\":123456,\"contributions\":333}]";
@@ -142,6 +164,7 @@ public class AdvancedApiTest {
 		List<Contributor> contributors = api.contributors("anthavio", "hatatitla");
 		// Assert
 		Assertions.assertThat(contributors.size()).isEqualTo(1);
+		System.out.println(contributors);
 		Assertions.assertThat(contributors.get(0).login).isEqualTo("login-value");
 		Assertions.assertThat(contributors.get(0).contributions).isEqualTo(333);
 	}

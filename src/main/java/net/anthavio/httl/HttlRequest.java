@@ -137,11 +137,18 @@ public class HttlRequest implements Serializable {
 				} else {
 					this.pathAndQuery = path;
 				}
+
+				String contentTypeValue;
+				if (sender.getConfig().isSkipCharset()) {
+					contentTypeValue = this.contentType[0];
+				} else {
+					contentTypeValue = this.contentType[0] + "; charset=" + this.contentType[1];
+				}
 				//Set header before asking for Marshaller
-				headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
+				headers.set(HttlConstants.Content_Type, contentTypeValue);
 
 				this.body = body;
-				if (body.isCache()) {
+				if (body.isBuffer()) {
 					try {
 						if (body.getType() == Type.MARSHALL) {
 							ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -167,7 +174,13 @@ public class HttlRequest implements Serializable {
 				}
 				this.body = new HttlBody(query);
 				this.pathAndQuery = path;
-				headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
+				String contentTypeValue;
+				if (sender.getConfig().isSkipCharset()) {
+					contentTypeValue = this.contentType[0];
+				} else {
+					contentTypeValue = this.contentType[0] + "; charset=" + this.contentType[1];
+				}
+				headers.set(HttlConstants.Content_Type, contentTypeValue);
 
 			} else {
 				//no body & no query - Content-Type not needed

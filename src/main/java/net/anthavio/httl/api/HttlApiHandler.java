@@ -81,7 +81,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 		//Class declared headers
 		ApiHeaderMeta[] mheaders = metaMethod.headers;
 		for (ApiHeaderMeta mheader : mheaders) {
-			if (!mheader.templated) { //Skip templated as the are populated from arguments
+			if (mheader.parameter == null) { //Skip templated as the are populated from arguments
 				builder.header(mheader.name, mheader.value);
 			}
 		}
@@ -131,7 +131,9 @@ public class HttlApiHandler<T> implements InvocationHandler {
 						if (arg == null) {
 							throw new IllegalArgumentException("Header parameter '" + metaVar.name + "' value is null");
 						}
-						builder.header(metaVar.variable, String.valueOf(arg)); //replace header value
+						ApiHeaderMeta headerMeta = metaMethod.headersMap.get(metaVar.variable);
+						String value = headerMeta.value.replace("{" + metaVar.name + "}", String.valueOf(arg));
+						builder.header(headerMeta.name, value); //replace header value
 						break;
 					case PATH:
 						builder.param("{" + metaVar.name + "}", arg);
@@ -235,7 +237,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 		if (metaMethod.builder != null) {
 			return extract(metaMethod.builder.returnType, response);
 		} else {
-			return extract(metaMethod.returnType, response);
+			return extract(metaMethod.method.getGenericReturnType(), response);
 		}
 
 	}

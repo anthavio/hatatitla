@@ -57,6 +57,13 @@ public class HttlBuilder {
 	}
 
 	/**
+	 * Commence new Mock Transport creation
+	 */
+	public static MockTransConfig mock(String url) {
+		return new MockTransConfig(url);
+	}
+
+	/**
 	 * Commence new Sender creation...
 	 */
 	public static TransportChooser sender(String url) {

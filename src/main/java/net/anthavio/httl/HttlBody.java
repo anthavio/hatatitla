@@ -35,47 +35,47 @@ public class HttlBody {
 
 	private final Type type;
 
-	private final boolean cache;
+	private final boolean buffer;
 
 	public HttlBody(String string) {
 		this.payload = string;
 		this.type = Type.STRING;
-		this.cache = true;
+		this.buffer = true;
 	}
 
 	public HttlBody(byte[] bytes) {
 		this.payload = bytes;
 		this.type = Type.BYTES;
-		this.cache = true;
+		this.buffer = true;
 	}
 
-	public HttlBody(InputStream stream, boolean cache) {
+	public HttlBody(InputStream stream, boolean buffer) {
 		this.payload = stream;
 		this.type = Type.STREAM;
-		this.cache = cache;
+		this.buffer = buffer;
 	}
 
-	public HttlBody(Reader reader, boolean cache) {
+	public HttlBody(Reader reader, boolean buffer) {
 		this.payload = reader;
 		this.type = Type.READER;
-		this.cache = cache;
+		this.buffer = buffer;
 	}
 
 	/**
 	 * Sky is the limit! Just implement Marshaller and you can send even JDBC connections
 	 */
-	public HttlBody(Object payload, boolean cache) {
+	public HttlBody(Object payload, boolean buffer) {
 		this.payload = payload;
 		this.type = Type.MARSHALL;
-		this.cache = cache;
+		this.buffer = buffer;
 	}
 
 	/**
 	 * true - marshall payload or read stream into cached byte[]
 	 * false - mashall payload or write stream directly into output stream
 	 */
-	public boolean isCache() {
-		return cache;
+	public boolean isBuffer() {
+		return buffer;
 	}
 
 	public Object getPayload() {
@@ -88,7 +88,7 @@ public class HttlBody {
 
 	@Override
 	public String toString() {
-		return "HttlBody [type=" + type + ", cache=" + cache + ", payload=" + payload + "]";
+		return "HttlBody [type=" + type + ", buffer=" + buffer + ", payload=" + payload + "]";
 	}
 
 }

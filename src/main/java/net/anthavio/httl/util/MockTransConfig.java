@@ -29,6 +29,9 @@ public class MockTransConfig extends BaseTransBuilder<MockTransConfig> {
 		return transport;
 	}
 
+	/**
+	 * Build MockTransport
+	 */
 	@Override
 	public MockTransport build() {
 		if (transport == null) {

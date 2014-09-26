@@ -3,6 +3,7 @@ package net.anthavio.httl.auth;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import net.anthavio.httl.HttlRequest;
@@ -12,39 +13,39 @@ import net.anthavio.httl.util.HttpHeaderUtil;
 
 public class OAuth2Builder {
 
-	private boolean strict = true; //some APIs has relaxed OAuth rules
+	private static final List<String[]> EMPTY = Collections.emptyList();
 
-	//private HttlRequest.Method authMethod = Method.GET;
+	private boolean strict = true; //some APIs has relaxed OAuth rules
 
 	private URL authUrl; //authorization endpoint url
 
-	private String clientId;
+	private String clientId; // client_id=...
 
-	private String clientSecret;
+	private String clientSecret;// client_secret=...
 
-	private String authResponseType = "code"; //or token - response_type for authentication
+	private String authResponseType = "code"; //response_type=code|token - response_type for authentication
 
-	private String redirectUri; //callback url
+	private String authAccessType; // access_type=online|offline
 
-	private HttlRequest.Method tokenHttpMethod = Method.POST;
+	private String redirectUri; //redirect_uri=http://... - callback url
+
+	private HttlRequest.Method tokenHttpMethod = Method.POST; //some weirdos are using GET
 
 	private URL tokenUrl; //token endpoint url
 
-	private List<String[]> customAuthParams;
+	private List<String[]> authParams;
 
-	private List<String[]> customTokenParams;
+	private List<String[]> tokenHeaders;
+
+	private List<String[]> tokenParams;
 
 	private HttlSender sender;
 
-	private String authQuery;
+	private String authQuery; //build() product
 
-	private String tokenQuery;
+	private String tokenQuery; //build() product
 
-	public OAuth2Builder(HttlSender sender) {
-		if (sender == null) {
-			throw new IllegalArgumentException("Null HttlSender");
-		}
-		this.sender = sender;
+	public OAuth2Builder() {
 	}
 
 	public boolean isStrict() {
@@ -60,12 +61,12 @@ public class OAuth2Builder {
 		return authUrl;
 	}
 
-	public OAuth2Builder setAuthUrl(String authUrl) {
+	public OAuth2Builder setAuthorizationUrl(String authUrl) {
 		if (authUrl == null || authUrl.isEmpty()) {
 			throw new IllegalArgumentException("Authorization URL is required");
 		}
 
-		if (!authUrl.startsWith("http")) {
+		if (!authUrl.startsWith("http") && sender != null) {
 			authUrl = HttpHeaderUtil.joinUrlParts(sender.getConfig().getUrl().toString(), authUrl);
 		}
 		try {
@@ -81,29 +82,36 @@ public class OAuth2Builder {
 		return tokenUrl;
 	}
 
-	public OAuth2Builder setTokenUrl(String tokenUrl) {
-		if (tokenUrl == null || tokenUrl.isEmpty()) {
-			if (strict) {
-				throw new IllegalArgumentException("Token URL is required");
-			}
-		} else {
-			if (!tokenUrl.startsWith("http")) {
-				tokenUrl = HttpHeaderUtil.joinUrlParts(sender.getConfig().getUrl().toString(), tokenUrl);
-			}
-			try {
-				this.tokenUrl = new URL(tokenUrl);
-				URL senderUrl = sender.getConfig().getUrl();
-				if (!senderUrl.getProtocol().equals(this.tokenUrl.getProtocol())
-						|| !senderUrl.getHost().equals(this.tokenUrl.getHost()) || senderUrl.getPort() != this.tokenUrl.getPort()) {
-					throw new IllegalArgumentException("Mismatch between HttlSender URL: " + senderUrl + " and Token URL: "
-							+ this.tokenUrl);
-				}
+	public OAuth2Builder setTokenEndpointUrl(String tokenUrl) {
+		String host = HttpHeaderUtil.splitUrlPath(tokenUrl)[0];
+		return setTokenEndpoint(HttlSender.url(host).build(), tokenUrl);
+	}
 
-			} catch (MalformedURLException mux) {
-				throw new IllegalArgumentException("Token URL is malformed: " + tokenUrl);
-			}
-
+	public OAuth2Builder setTokenEndpoint(HttlSender sender, String url) {
+		if (sender == null) {
+			throw new IllegalArgumentException("Null HttlSender");
 		}
+		this.sender = sender;
+
+		if (url == null || url.isEmpty()) {
+			throw new IllegalArgumentException("Token URL is required");
+		}
+		if (!url.startsWith("http")) {
+			url = HttpHeaderUtil.joinUrlParts(sender.getConfig().getUrl().toString(), url);
+		}
+		try {
+			this.tokenUrl = new URL(url);
+			URL senderUrl = sender.getConfig().getUrl();
+			if (!senderUrl.getProtocol().equals(this.tokenUrl.getProtocol())
+					|| !senderUrl.getHost().equals(this.tokenUrl.getHost()) || senderUrl.getPort() != this.tokenUrl.getPort()) {
+				throw new IllegalArgumentException("Mismatch between HttlSender URL: " + senderUrl + " and Token URL: "
+						+ this.tokenUrl);
+			}
+
+		} catch (MalformedURLException mux) {
+			throw new IllegalArgumentException("Token URL is malformed: " + url);
+		}
+
 		return this;
 	}
 
@@ -116,51 +124,124 @@ public class OAuth2Builder {
 		return this;
 	}
 
+	/**
+	 * @return client_id
+	 */
 	public String getClientId() {
 		return clientId;
 	}
 
+	/**
+	 * @param clientId client_id
+	 */
 	public OAuth2Builder setClientId(String clientId) {
 		this.clientId = clientId;
 		return this;
 	}
 
+	/**
+	 * @return client_secret parameter
+	 */
 	public String getClientSecret() {
 		return clientSecret;
 	}
 
+	/**
+	 * @param clientSecret client_secret parameter
+	 */
 	public OAuth2Builder setClientSecret(String clientSecret) {
 		this.clientSecret = clientSecret;
 		return this;
 	}
 
+	/**
+	 * response_type=code|token
+	 * 
+	 * @return response_type auth parameter
+	 */
 	public String getAuthResponseType() {
 		return authResponseType;
 	}
 
+	/**
+	 * response_type=code|token
+	 * 
+	 * @param responseType response_type auth parameter
+	 */
 	public OAuth2Builder setAuthResponseType(String responseType) {
 		this.authResponseType = responseType;
 		return this;
 	}
 
+	/**
+	 * Optional authorization parameter
+	 * access_type=online|offline
+	 * 
+	 * @return access_type auth parameter
+	 */
+	public String getAuthAccessType() {
+		return authAccessType;
+	}
+
+	/**
+	 * Optional authorization parameter
+	 * access_type=online|offline
+	 * 
+	 * @param accessType access_type auth parameter
+	 */
+	public OAuth2Builder setAuthAccessType(String accessType) {
+		this.authAccessType = accessType;
+		return this;
+	}
+
+	/**
+	 * @return redirect_uri parameter
+	 */
 	public String getRedirectUri() {
 		return redirectUri;
 	}
 
+	/**
+	 * @param redirectUri redirect_uri parameter
+	 */
 	public OAuth2Builder setRedirectUri(String redirectUri) {
 		this.redirectUri = redirectUri;
 		return this;
 	}
 
-	public List<String[]> getCustomAuthParams() {
-		return customAuthParams;
+	public List<String[]> getAuthParams() {
+		return authParams;
 	}
 
-	public OAuth2Builder setCustomParam(String name, String value) {
-		if (this.customAuthParams == null) {
-			this.customAuthParams = new ArrayList<String[]>();
+	public OAuth2Builder setAuthParam(String name, String value) {
+		if (this.authParams == null) {
+			this.authParams = new ArrayList<String[]>();
 		}
-		customAuthParams.add(new String[] { name, value });
+		authParams.add(new String[] { name, value });
+		return this;
+	}
+
+	public List<String[]> getTokenParams() {
+		return tokenParams;
+	}
+
+	public OAuth2Builder setTokenParam(String name, String value) {
+		if (this.tokenParams == null) {
+			this.tokenParams = new ArrayList<String[]>();
+		}
+		tokenParams.add(new String[] { name, value });
+		return this;
+	}
+
+	public List<String[]> getTokenHeaders() {
+		return tokenHeaders;
+	}
+
+	public OAuth2Builder setTokenHeader(String name, String value) {
+		if (this.tokenHeaders == null) {
+			this.tokenHeaders = new ArrayList<String[]>();
+		}
+		tokenHeaders.add(new String[] { name, value });
 		return this;
 	}
 
@@ -177,7 +258,11 @@ public class OAuth2Builder {
 		if (authUrl == null) {
 			throw new IllegalStateException("Authorization URL is required");
 		}
+		/*
+		if (!authUrl.startsWith("http") && sender != null) {
 
+		}
+		*/
 		if (tokenUrl == null) {
 			if (strict) {
 				throw new IllegalStateException("Token URL is required");
@@ -189,6 +274,10 @@ public class OAuth2Builder {
 
 		if (authResponseType != null) {
 			OAuth2.append(authQuery, "response_type", authResponseType);
+		}
+
+		if (authAccessType != null) {
+			OAuth2.append(authQuery, "access_type", authAccessType);
 		}
 
 		if (redirectUri == null || redirectUri.isEmpty()) {
@@ -217,14 +306,14 @@ public class OAuth2Builder {
 			OAuth2.append(tokenQuery, "client_secret", clientSecret);
 		}
 
-		if (customAuthParams != null) {
-			for (String[] param : customAuthParams) {
+		if (authParams != null) {
+			for (String[] param : authParams) {
 				OAuth2.append(authQuery, param[0], param[1]);
 			}
 		}
 
-		if (customTokenParams != null) {
-			for (String[] param : customTokenParams) {
+		if (tokenParams != null) {
+			for (String[] param : tokenParams) {
 				OAuth2.append(tokenQuery, param[0], param[1]);
 			}
 		}

@@ -19,7 +19,7 @@ public interface HttlResponseHandler {
 	public void onResponse(HttlResponse response) throws IOException;
 
 	/**
-	 * Invoked when exception occurs during Response processing (including onResponse method)
+	 * Invoked when exception occurs during Request execution 
 	 */
 	public void onFailure(HttlRequest request, Exception exception);
 }

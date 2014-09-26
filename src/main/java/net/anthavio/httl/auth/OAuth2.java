@@ -1,5 +1,7 @@
 package net.anthavio.httl.auth;
 
+import java.util.List;
+
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
@@ -33,14 +35,35 @@ public class OAuth2 {
 		this.config = config;
 	}
 
-	public static OAuth2Builder Builder(HttlSender sender) {
-		return new OAuth2Builder(sender);
+	/**
+	 * @return Builder for OAuth2
+	 */
+	public static OAuth2Builder Builder() {
+		return new OAuth2Builder();
 	}
 
+	/**
+	 * 
+	 * @param scope space separated list of requited scopes
+	 * @return authorization url for redirect
+	 */
+	public String getAuthorizationUrl(String scope) {
+		return config.getAuthUrl() + "?" + getAuthorizationQuery(scope, null);
+	}
+
+	/**
+	 * @param scope space separated list of requited scopes
+	 * @param state optional state to check on redirect
+	 * @return authorization url for redirect
+	 */
 	public String getAuthorizationUrl(String scope, String state) {
 		return config.getAuthUrl() + "?" + getAuthorizationQuery(scope, state);
 	}
 
+	/**
+	 * @param scope space separated list of requited scopes
+	 * @param state optional state to check on redirect
+	 */
 	protected String getAuthorizationQuery(String scope, String state) {
 		StringBuilder sb = config.getAuthQueryBuilder();
 
@@ -58,65 +81,112 @@ public class OAuth2 {
 
 	}
 
-	/**
-	 * Trade Code for Token
-	 */
-	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, HttlResponseExtractor<T> extractor) {
-		SenderRequestBuilder<?> builder = buildCodeTokenRequest(code);
-		visitor.visit(builder);
-		return builder.extract(extractor).getBody();
+	public static interface FirstTokenStep {
+
+		public LastTokenStep access(String code);
+
+		public LastTokenStep refresh(String offline_token);
+
+		public LastTokenStep password(String username, String password);
+
+	}
+
+	public static interface LastTokenStep {
+
+		public LastTokenStep visitor(HttlBuilderVisitor visitor);
+
+		public OAuthTokenResponse get();
+
+		public <T> T get(Class<T> tokenClass);
+
+		public <T> T get(HttlResponseExtractor<T> extractor);
+
+	}
+
+	public FirstTokenStep token() {
+		return new TokenRequestBuilder(this);
 	}
 
 	/**
-	 * Trade Code for Token
+	 * Trade code for access_token
+	 * 
+	 * For OpenID Connect compatible OAuth2 providers
+	 * 
 	 */
-	public <T> T getAccessToken(String code, HttlBuilderVisitor visitor, Class<T> tokenClass) {
-		SenderRequestBuilder<?> builder = buildCodeTokenRequest(code);
-		visitor.visit(builder);
-		return builder.extract(tokenClass).getBody();
+	public LastTokenStep access(String code) {
+		return new TokenRequestBuilder(this).access(code);
 	}
 
 	/**
-	 * Trade Code for Token
+	 * Trade refresh_token for access_token
+	 * 
+	 * AKA Offline access
+	 * 
 	 */
-	public <T> T getAccessToken(String code, HttlResponseExtractor<T> extractor) {
-		return buildCodeTokenRequest(code).extract(extractor).getBody();
+	public LastTokenStep refresh(String offline_token) {
+		return new TokenRequestBuilder(this).refresh(offline_token);
 	}
 
 	/**
-	 * Trade Code for Token
+	 * Trade username & password for access_token
+	 * 
+	 * Quite rare to see used
 	 */
-	public <T> T getAccessToken(String code, Class<T> tokenClass) {
-		return buildCodeTokenRequest(code).extract(tokenClass).getBody();
+	public LastTokenStep password(String username, String password) {
+		return new TokenRequestBuilder(this).password(username, password);
 	}
 
 	/**
-	 * Trade username & password for Token
-	 */
-	public <T> T getAccessToken(String username, String password, Class<T> tokenClass) {
-		return buildPasswordTokenRequest(username, password).extract(tokenClass).getBody();
-	}
-
-	/**
-	 * Trade Code for Token
+	 * Trade code for access_token
 	 */
 	protected SenderRequestBuilder<?> buildCodeTokenRequest(String code) {
+		String query = getCodeTokenQuery(code);
+		return buildTokenRequest(query);
+	}
+
+	/**
+	 * Trade refresh_token for access_token
+	 */
+	protected SenderRequestBuilder<?> buildRefreshTokenRequest(String refresh_token) {
+		String query = getRefreshTokenQuery(refresh_token);
+		return buildTokenRequest(query);
+	}
+
+	/**
+	 * Trade username & password for access_token
+	 */
+	protected SenderRequestBuilder<?> buildPasswordTokenRequest(String username, String password) {
+		String query = getPasswordTokenQuery(username, password);
+		return buildTokenRequest(query);
+	}
+
+	protected SenderRequestBuilder<?> buildTokenRequest(String query) {
+
 		String path = config.getTokenUrl().getPath();
 		String senderPath = sender.getConfig().getUrl().getPath();
 		if (senderPath != null && path.startsWith(senderPath)) {
 			path = path.substring(senderPath.length() + 1);
 		}
 
-		String query = getCodeTokenQuery(code);
+		SenderRequestBuilder<?> builder;
 		if (config.getTokenHttpMethod() == Method.POST) {
-			return sender.POST(path).body(query, "application/x-www-form-urlencoded");
+			builder = sender.POST(path).body(query, "application/x-www-form-urlencoded");
 		} else {
-			return sender.GET(path + "?" + query);
+			builder = sender.GET(path + "?" + query);
 		}
+
+		List<String[]> headers = config.getTokenHeaders();
+		if (headers != null) {
+			for (String[] header : headers) {
+				builder.setHeader(header[0], header[1]);
+			}
+		}
+
+		return builder;
 	}
 
 	/**
-	 * Trade Code for Token
+	 * Trade code for access_token
 	 */
 	protected String getCodeTokenQuery(String code) {
 
@@ -133,18 +203,24 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Trade username & password for Token
+	 * Trade refresh_token for access_token
 	 */
-	protected SenderRequestBuilder<?> buildPasswordTokenRequest(String username, String password) {
-		String path = config.getTokenUrl().getPath();
-		String query = getPasswordTokenQuery(username, password);
-		if (config.getTokenHttpMethod() == Method.POST) {
-			return sender.POST(path).body(query, "application/x-www-form-urlencoded");
+	protected String getRefreshTokenQuery(String refresh_token) {
+		StringBuilder sb = config.getTokenQueryBuilder();
+		append(sb, "grant_type", "refresh_token");
+
+		if (refresh_token == null || refresh_token.isEmpty()) {
+			throw new IllegalStateException("refresh_token is required");
 		} else {
-			return sender.GET(path + "?" + query);
+			append(sb, "refresh_token", refresh_token);
 		}
+
+		return sb.toString();
 	}
 
+	/**
+	 * Trade username & password for access_token
+	 */
 	protected String getPasswordTokenQuery(String username, String password) {
 		StringBuilder sb = config.getTokenQueryBuilder();
 		append(sb, "grant_type", "password");
@@ -159,19 +235,6 @@ public class OAuth2 {
 			throw new IllegalStateException("password is required");
 		} else {
 			append(sb, "password", password);
-		}
-
-		return sb.toString();
-	}
-
-	protected String getRefreshTokenQuery(String refresh_token) {
-		StringBuilder sb = config.getTokenQueryBuilder();
-		append(sb, "grant_type", "refresh_token");
-
-		if (refresh_token == null || refresh_token.isEmpty()) {
-			throw new IllegalStateException("refresh_token is required");
-		} else {
-			append(sb, "refresh_token", refresh_token);
 		}
 
 		return sb.toString();

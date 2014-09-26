@@ -51,6 +51,8 @@ public class SenderConfigurer {
 
 	private final String charset;
 
+	private boolean skipCharset = false;
+
 	public SenderConfigurer(HttlTransport transport) {
 		if (transport == null) {
 			throw new IllegalArgumentException("Null transport");
@@ -70,7 +72,7 @@ public class SenderConfigurer {
 	}
 
 	/**
-	 * Builder's build method right?
+	 * Build final HttlSender
 	 */
 	public HttlSender build() {
 		return new HttlSender(this);
@@ -219,6 +221,18 @@ public class SenderConfigurer {
 
 	public SenderConfigurer setExecutorService(ExecutorService executorService) {
 		this.executorService = executorService;
+		return this;
+	}
+
+	public boolean isSkipCharset() {
+		return skipCharset;
+	}
+
+	/**
+	 * When true, 'Content-Type' header 'charset' fragment will be skipped (not set)
+	 */
+	public SenderConfigurer setSkipCharset(boolean omitCharset) {
+		this.skipCharset = omitCharset;
 		return this;
 	}
 

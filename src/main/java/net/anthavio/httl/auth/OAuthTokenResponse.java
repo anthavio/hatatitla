@@ -14,13 +14,13 @@ public class OAuthTokenResponse {
 
 	private String access_token;
 
-	private Integer expires_in;
+	private Integer expires_in; // seconds
 
 	private String id_token;
 
-	private String refresh_token;
+	private String refresh_token; // when offline access is requested
 
-	private String scope;
+	private String scope; // optionaly
 
 	private String error;
 

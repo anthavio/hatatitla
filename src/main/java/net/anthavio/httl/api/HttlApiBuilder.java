@@ -82,9 +82,9 @@ public class HttlApiBuilder {
 	}
 
 	public static <T> T build(Class<T> apiInterface, HttlSender sender, Multival<String> headers, Multival<String> params) {
-		HttlApi httlApi = apiInterface.getAnnotation(HttlApi.class);
-		String urlPathPrefix = (httlApi != null) ? getRestApiUri(httlApi) : "";
+		final HttlApi httlApi = apiInterface.getAnnotation(HttlApi.class);
 
+		final String urlPathPrefix = (httlApi != null) ? getRestApiUri(httlApi) : "";
 		Map<Type, VarSetter<Object>> sharedSetters = new HashMap<Type, VarSetter<Object>>();
 		if (httlApi != null) {
 			//Initialize shared setters
@@ -97,7 +97,7 @@ public class HttlApiBuilder {
 					try {
 						setter = setterClass.newInstance();
 					} catch (Exception x) {
-						throw new HttlApiException("Failed to instantiate shared setter " + setterClass, apiInterface);
+						throw new HttlApiException("Failed to instantiate shared VarSetter " + setterClass, apiInterface);
 					}
 					sharedSetters.put(targetType, setter);
 				}
@@ -134,7 +134,9 @@ public class HttlApiBuilder {
 				http = HttpMethod.valueOf(segments[0]);
 				urlPath = segments[1];
 			}
-			urlPath = HttpHeaderUtil.joinUrlParts(urlPathPrefix, urlPath);
+			if (urlPathPrefix != null) {
+				urlPath = HttpHeaderUtil.joinUrlParts(urlPathPrefix, urlPath);
+			}
 
 			//@RestVar annotations
 			ApiVarMeta[] params = doApiParameters(method, sharedSetters);
@@ -165,12 +167,12 @@ public class HttlApiBuilder {
 			ApiHeaderMeta[] headers = doApiHeaders(apiInterface, method);
 			Map<String, ApiHeaderMeta> headerMap = new HashMap<String, HttlApiBuilder.ApiHeaderMeta>();
 			for (ApiHeaderMeta header : headers) {
-				if (header.templated) {
-					ApiVarMeta param = paramMap.get(header.value); //Templated @Header needs @Param with value
+				if (header.parameter != null) {
+					ApiVarMeta param = paramMap.get(header.parameter); //Templated @Header needs @Param with value
 					if (param != null) {
 						param.setTargetHeader(header.name);
 					} else {
-						throw new HttlApiException("Templated Header '" + header.value + "' not found as parameter", method);
+						throw new HttlApiException("Templated Header '" + header.parameter + "' not found as parameter", method);
 					}
 				}
 				headerMap.put(header.name, header);
@@ -265,15 +267,15 @@ public class HttlApiBuilder {
 		if (cheaders != null && cheaders.value().length != 0) {
 			for (String header : cheaders.value()) {
 				if (header.indexOf('{') != -1 && header.indexOf('}') != -1) {
-					throw new HttlApiException("Static headers cannot be templated: " + header, clazz);
+					throw new HttlApiException("Global headers cannot be templated: " + header, clazz);
 				}
 				int idx = header.indexOf(':');
 				if (idx == -1 || idx > header.length() - 2) {
-					throw new HttlApiException("Static header syntax error: " + header, clazz);
+					throw new HttlApiException("Global header syntax error: " + header, clazz);
 				}
 				String name = header.substring(0, idx).trim();
 				String value = header.substring(idx + 1).trim();
-				ApiHeaderMeta metaHeader = new ApiHeaderMeta(name, value, false);
+				ApiHeaderMeta metaHeader = new ApiHeaderMeta(name, value, null);
 				headerList.add(metaHeader);
 				headerMap.put(name, headerList.size() - 1);
 			}
@@ -289,19 +291,18 @@ public class HttlApiBuilder {
 				}
 				String name = header.substring(0, idx).trim();
 				String value = header.substring(idx + 1).trim();
-				boolean templated = false;
+				String parameter = null;
 
 				int idxOpn = value.indexOf('{');
 				int idxCls = value.indexOf('}', idxOpn + 1);
 				if (idxOpn != -1) {
 					if (idxCls != -1) {
-						value = value.substring(idxOpn + 1, idxCls);
-						templated = true;
+						parameter = value.substring(idxOpn + 1, idxCls);
 					} else {
 						throw new HttlApiException("Unpaired brackets in method header: " + header, method);
 					}
 				}
-				ApiHeaderMeta metaHeader = new ApiHeaderMeta(name, value, templated);
+				ApiHeaderMeta metaHeader = new ApiHeaderMeta(name, value, parameter);
 				Integer index = headerMap.get(name);
 				if (index != null) {
 					headerList.set(index, metaHeader); //replace shared if exists
@@ -431,7 +432,7 @@ public class HttlApiBuilder {
 					Method mvalue = annotation.getClass().getMethod("value");
 					name = (String) mvalue.invoke(annotation);
 				} catch (Exception x) {
-					throw new IllegalStateException("Reflective invocation javax.inject.Named.value()", x);
+					throw new HttlApiException("Reflective invocation javax.inject.Named.value()", x);
 				}
 			} else { // Any other annotation
 				String annoClassName = annotation.getClass().getName();
@@ -441,23 +442,29 @@ public class HttlApiBuilder {
 				}
 			}
 		}
-		Class<?> type = method.getParameterTypes()[index];
+		Class<?> paramClass = method.getParameterTypes()[index];
 
-		//own setter is set -> skip default processing
-		if (setter == null) {
+		if (setter != null) {
+			// check that VarSetter<X> generic parameter type is compatible with parameter type
+			Type setterArgType = ((ParameterizedType) setter.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
+			if (isCompatible(paramClass, (Class<?>) setterArgType) == false) {
+				throw new HttlApiException("Incompatible VarSetter<" + setterArgType + "> for parameter '" + name + "' type "
+						+ paramClass.getSimpleName(), method);
+			}
+		} else {
 
-			if (type.getAnnotation(HttlVar.class) != null) {
+			if (paramClass.getAnnotation(HttlVar.class) != null) {
 				//Custom Bean with @RestVar class anotation
-				return doBeanParameter(index, type, name, required);
+				return doBeanParameter(index, paramClass, name, required);
 
-			} else if (Map.class.isAssignableFrom(type)) {
+			} else if (Map.class.isAssignableFrom(paramClass)) {
 				// Map are special
-				return doMapParameter(index, type, name, required);
+				return doMapParameter(index, paramClass, name, required);
 			}
 		}
-
+		//still nothing -> try shared setter
 		if (setter == null && sharedSetters != null) {
-			setter = sharedSetters.get(type);//can be null...
+			setter = sharedSetters.get(paramClass);//can be null...
 
 		}
 
@@ -466,7 +473,7 @@ public class HttlApiBuilder {
 			throw new HttlApiException("Missing parameter's name on position " + (index + 1), method);
 		}
 
-		ApiVarMeta meta = new ApiVarMeta(index, type, name, required, nullval, setter, writer, target);
+		ApiVarMeta meta = new ApiVarMeta(index, paramClass, name, required, nullval, setter, writer, target);
 		meta.variable = variable;
 		return meta;
 	}
@@ -610,7 +617,7 @@ public class HttlApiBuilder {
 		final String urlPath;
 		final ApiVarMeta[] parameters;
 		final ApiHeaderMeta[] headers;
-		final Type returnType;
+		final Map<String, ApiHeaderMeta> headersMap;
 		final BuilderMeta builder;
 
 		public ApiMethodMeta(Method method, HttpMethod httpMethod, String urlPath, ApiVarMeta[] parameters,
@@ -620,8 +627,12 @@ public class HttlApiBuilder {
 			this.urlPath = urlPath;
 			this.parameters = parameters;
 			this.headers = headers;
-			this.returnType = method.getGenericReturnType();
+			this.headersMap = new HashMap<String, ApiHeaderMeta>();
+			for (ApiHeaderMeta header : headers) {
+				headersMap.put(header.name, header);
+			}
 			this.builder = builderMeta;
+
 		}
 
 	}
@@ -636,12 +647,12 @@ public class HttlApiBuilder {
 
 		final String name;
 		final String value;
-		final boolean templated; //value is template
+		final String parameter; //value is {parameter}
 
-		public ApiHeaderMeta(String name, String value, boolean templated) {
+		public ApiHeaderMeta(String name, String value, String parameter) {
 			this.name = name;
 			this.value = value;
-			this.templated = templated;
+			this.parameter = parameter;
 		}
 
 	}
@@ -680,6 +691,34 @@ public class HttlApiBuilder {
 			this.target = VarTarget.HEADER;
 		}
 
+	}
+
+	public static boolean isCompatible(Class<?> fromClass, Class<?> intoClass) {
+		if (fromClass.isPrimitive()) {
+			//autoboxing rules apply here
+			if (fromClass == Integer.TYPE && intoClass == Integer.class) {
+				return true;
+			} else if (fromClass == Long.TYPE && intoClass == Long.class) {
+				return true;
+			} else if (fromClass == Float.TYPE && intoClass == Float.class) {
+				return true;
+			} else if (fromClass == Double.TYPE && intoClass == Double.class) {
+				return true;
+			} else if (fromClass == Byte.TYPE && intoClass == Byte.class) {
+				return true;
+			} else if (fromClass == Character.TYPE && intoClass == Character.class) {
+				return true;
+			} else if (fromClass == Boolean.TYPE && intoClass == Boolean.class) {
+				return true;
+			} else if (fromClass == Short.TYPE && intoClass == Short.class) {
+				return true;
+			}
+		} else {
+			if (intoClass.isAssignableFrom(fromClass)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

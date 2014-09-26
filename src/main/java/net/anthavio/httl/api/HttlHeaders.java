@@ -8,6 +8,12 @@ import java.lang.annotation.Target;
 /**
  * Values can be {placeholders} for values supplied by method parameters
  * 
+ * Examples:
+ * 
+ * @HttlHeaders("User-Agent: Hatatitla")
+ * 
+ * @HttlHeaders({"User-Agent: {user_agent}", "Accept: application/json"})
+ * 
  * @author martin.vanek
  *
  */

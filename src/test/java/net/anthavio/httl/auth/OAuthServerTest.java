@@ -110,13 +110,23 @@ public class OAuthServerTest extends HttpServlet {
 				.setClientSecret("T3Z_hlCWtwT1hiJVuRt1WWCH").setRedirectUri("http://local.nature.com:3030/callback/google")
 				.build();
 		*/
-
+		/*
 		sender = HttlSender.with("https://disqus.com").build();
 		builder = new OAuth2Builder(sender).setAuthUrl("/api/oauth/2.0/authorize/")
 				.setTokenUrl("/api/oauth/2.0/access_token/")
 				.setClientId("gOqjfpFfNaEqPBvctATwmhdvNgLA4lgMks5NQu3kDtq2oD9leufjLBGclWLhFKaE")
 				.setClientSecret("LBlyuwnClIlTy58y1GYVd8g7pS8658cZHuJuZpZnvX9wwY84gb6dYpBIPcrofoNu")
 				.setRedirectUri("http://local.nature.com:3030/callback/disqus").build();
+		*/
+
+		sender = HttlSender.url("https://login.salesforce.com").httpClient4().sender().build();
+
+		builder = OAuth2.Builder().setAuthorizationUrl("/services/oauth2/authorize")
+				.setTokenEndpoint(sender, "/services/oauth2/token")
+				.setClientId("3MVG9A_f29uWoVQs9OTALjR7nPS40H71arZb6KCiJTZSTqBf2yTLqemMxAoXWSj75X9ReK7OIePpbFytVpg_r")
+				.setClientSecret("9045636227386680652").setRedirectUri("https://local.nature.com:3030/callback/salesforce")
+				.build();
+
 	}
 
 	@Override
@@ -128,11 +138,33 @@ public class OAuthServerTest extends HttpServlet {
 		response.getWriter().println(request.getParameterMap());
 
 		if (request.getRequestURI().contains("authorize")) {
-			//"public access" github
-			//String url = builder.getAuthUrl("random-state", "openid email"); //github
-			//String url = builder.getAuthUrl(null, null); //wot
-			//String url = builder.getAuthUrl("public_profile,email", "whatever");//facebook
-			String url = builder.getAuthorizationUrl("read,write", "whtever"); //Disqus
+			String url;
+			if (request.getRequestURI().contains("github")) {
+				//"public access" github				
+				url = builder.getAuthorizationUrl("random-state", "openid email"); //github
+
+			} else if (request.getRequestURI().contains("wot")) {
+				url = builder.getAuthorizationUrl(null, null); //wot
+
+			} else if (request.getRequestURI().contains("facebook")) {
+				url = builder.getAuthorizationUrl("public_profile,email", "whatever");//facebook
+
+			} else if (request.getRequestURI().contains("disqus")) {
+				url = builder.getAuthorizationUrl("read,write", "whatever"); //Disqus
+
+			} else if (request.getRequestURI().contains("loop")) {
+				url = builder.getAuthorizationUrl("openid profile email", "whtever"); //Loop
+
+			} else if (request.getRequestURI().contains("salesforce")) {
+				OAuthTokenResponse token = builder.password("anthavio@post.cz", "dhrv5haq" + "Bu5YU13kOOrSZeh49BHCM0Dp").get();
+				System.out.println(token.getAccess_token());
+				response.getWriter().print(token.getAccess_token());
+
+				return;
+
+			} else {
+				throw new IllegalArgumentException("Authorize for what?!? " + request.getRequestURI());
+			}
 
 			System.out.println("Redirecting to " + url);
 			response.sendRedirect(url);
@@ -169,15 +201,23 @@ public class OAuthServerTest extends HttpServlet {
 						}
 					};
 					//OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, new FacebookTokenExtractor());
-					OAuthTokenResponse tokenResponse = builder.getAccessToken(code, visitor, OAuthTokenResponse.class);
+					OAuthTokenResponse tokenResponse = builder.access(code).visitor(visitor).get();
 					String access_token = tokenResponse.getAccess_token();
 
-					//ExtractedResponse<String> extract = sender.GET("/me").param("access_token", access_token)
-					//		.extract(String.class);
-					ExtractedResponse<String> extract = sender.POST("/api/3.0/users/checkUsername.json")
-							.param("access_token", access_token).param("username", "asdewqdddd")
-							.param("api_key", "gOqjfpFfNaEqPBvctATwmhdvNgLA4lgMks5NQu3kDtq2oD9leufjLBGclWLhFKaE")
-							.extract(String.class);
+					ExtractedResponse<String> extract;
+
+					if (request.getRequestURI().contains("loop")) {
+						extract = sender.GET("/api/v1/profile/me").header("Authorization", "Bearer " + access_token)
+								.extract(String.class);
+
+					} else if (request.getRequestURI().contains("disqus")) {
+						extract = sender.POST("/api/3.0/users/checkUsername.json").param("access_token", access_token)
+								.param("username", "asdewqdddd")
+								.param("api_key", "gOqjfpFfNaEqPBvctATwmhdvNgLA4lgMks5NQu3kDtq2oD9leufjLBGclWLhFKaE")
+								.extract(String.class);
+					} else {
+						throw new IllegalArgumentException("Callback for what?!? " + request.getRequestURI());
+					}
 
 					response.getWriter().print(extract);
 					response.setStatus(200);
