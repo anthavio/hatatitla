@@ -57,24 +57,23 @@ public abstract class HttlResponse implements Closeable, Serializable {
 			this.encoding = "utf-8";
 		}
 
-		String responseEncoding = headers.getFirst("Content-Encoding");
-		if (stream != null && responseEncoding != null) {
-			if (responseEncoding.indexOf("gzip") != -1) {
-				try {
-					stream = new GZIPInputStream(stream);
-				} catch (IOException iox) {
-					throw new HttlProcessingException(this, iox);
-				}
-			} else if (responseEncoding.indexOf("deflate") != -1) {
-				stream = new InflaterInputStream(stream);
-			}
-		}
 		if (stream != null) {
+			String responseEncoding = headers.getFirst("Content-Encoding");
+			if (responseEncoding != null) {
+				if (responseEncoding.indexOf("gzip") != -1) {
+					try {
+						stream = new GZIPInputStream(stream);
+					} catch (IOException iox) {
+						throw new HttlProcessingException(this, iox);
+					}
+				} else if (responseEncoding.indexOf("deflate") != -1) {
+					stream = new InflaterInputStream(stream);
+				}
+			}
 			this.stream = new InputStreamWrapper(stream);
 		} else {
 			this.stream = null; //null for 304 Not Modified
 		}
-
 	}
 
 	public HttlRequest getRequest() {
@@ -224,4 +223,5 @@ public abstract class HttlResponse implements Closeable, Serializable {
 			return stream.toString();
 		}
 	}
+
 }

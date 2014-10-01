@@ -185,7 +185,7 @@ public class HttlSender implements SenderOperations, Closeable {
 	 * To overcome Java generics shortcomings use HttlSender#extract(request, new GenericType<List<String>> {})
 	 * to extract Generic collection
 	 */
-	public <T> ExtractedResponse<T> extract(HttlRequest request, GenericType<T> resultType) {
+	public <T> ExtractedResponse<T> extract(HttlRequest request, GenericType<T> resultType) throws HttlException {
 		if (resultType == null) {
 			throw new IllegalArgumentException("resultType is null");
 		}
