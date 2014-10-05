@@ -11,13 +11,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.anthavio.httl.HttlBuilder;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.api.AdvancedApiTest.TestBodyBean;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
-import net.anthavio.httl.util.HttpHeaderUtil;
-import net.anthavio.httl.util.MockTransConfig;
+import net.anthavio.httl.util.HttlUtil;
 import net.anthavio.httl.util.MockTransport;
 
 import org.apache.commons.io.IOUtils;
@@ -38,9 +38,10 @@ public class BasicApiTest {
 	public void testBasics() throws IOException {
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().build();
 		String helloPlain = "Hello Inčučuna!";
 		transport.setStaticResponse(201, "text/dolly", helloPlain);
+
+		HttlSender sender = HttlBuilder.sender(transport).build();
 		SimpleApi api = HttlApiBuilder.build(SimpleApi.class, sender);
 
 		Assertions.assertThat(api.toString()).startsWith(
@@ -65,8 +66,8 @@ public class BasicApiTest {
 		Assertions.assertThat(returnResponse.getHttpStatusCode()).isEqualTo(201);
 		Assertions.assertThat(returnResponse.getMediaType()).isEqualTo("text/dolly");
 		Assertions.assertThat(returnResponse.getHeaders()).hasSize(1); //Content-Type
-		Assertions.assertThat(HttpHeaderUtil.readAsString(returnResponse)).isEqualTo(helloPlain);
-		Assertions.assertThat(new String(HttpHeaderUtil.readAsBytes(returnResponse), "utf-8")).isEqualTo(helloPlain);
+		Assertions.assertThat(HttlUtil.readAsString(returnResponse)).isEqualTo(helloPlain);
+		Assertions.assertThat(new String(HttlUtil.readAsBytes(returnResponse), "utf-8")).isEqualTo(helloPlain);
 
 	}
 
@@ -90,7 +91,7 @@ public class BasicApiTest {
 		MockTransport transport = new MockTransport();
 		Jackson2Marshaller jrm = new Jackson2Marshaller(new ObjectMapper().configure(
 				SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true));
-		HttlSender sender = new MockTransConfig(transport).sender().setMarshaller(jrm).build();
+		HttlSender sender = transport.sender().setMarshaller(jrm).build();
 
 		String helloPlain = "Hello Inčučuna!";
 		//sender.setStaticResponse(201, "text/dolly", helloPlain);
@@ -124,7 +125,7 @@ public class BasicApiTest {
 		Assertions.assertThat(transport.getLastRequest().getBody()).isNull();
 
 		HttlResponse bean2response = api.bean2response(beanIn);
-		Assertions.assertThat(HttpHeaderUtil.readAsString(bean2response)).isEqualTo(jsonbean);
+		Assertions.assertThat(HttlUtil.readAsString(bean2response)).isEqualTo(jsonbean);
 
 		TestBodyBean bean2bean = api.bean2bean(beanIn);
 		Assertions.assertThat(bean2bean).isEqualToComparingFieldByField(beanIn);
@@ -168,10 +169,10 @@ public class BasicApiTest {
 	public void testStreams() throws IOException {
 		// Given
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().build();
-
 		String helloPlain = "Hello Inčučuna!";
 		transport.setStaticResponse(201, "text/dolly", helloPlain);
+
+		HttlSender sender = HttlBuilder.sender(transport).build();
 		ApiWithStreams api = HttlApiBuilder.build(ApiWithStreams.class, sender);
 
 		//When
@@ -221,8 +222,7 @@ public class BasicApiTest {
 	@Test
 	public void mapAsParameter() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().build();
-
+		HttlSender sender = HttlBuilder.sender(transport).build();
 		MapAsParam api = HttlApiBuilder.build(MapAsParam.class, sender);
 
 		//When - null

@@ -2,7 +2,7 @@ package net.anthavio.httl;
 
 import java.io.IOException;
 
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 /**
  * Exception including response http status code
@@ -22,7 +22,7 @@ public class HttlStatusException extends HttlException {
 		super(response.getHttpStatusCode() + " " + response.getHttpStatusMessage());
 		this.response = response;
 		try {
-			this.responseBody = HttpHeaderUtil.readAsString(response);
+			this.responseBody = HttlUtil.readAsString(response);
 		} catch (IOException iox) {
 			//XXX maybe log some warning...
 			throw new HttlProcessingException(response, iox);

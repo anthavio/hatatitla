@@ -11,6 +11,7 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
+import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class MockTransport implements HttlTransport {
+public class MockTransport extends BaseTransBuilder<MockTransport> implements HttlTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -34,8 +35,6 @@ public class MockTransport implements HttlTransport {
 
 	private boolean closed;
 
-	private MockTransConfig config;
-
 	private AtomicInteger executions = new AtomicInteger(0);
 
 	public MockTransport() {
@@ -43,6 +42,7 @@ public class MockTransport implements HttlTransport {
 	}
 
 	public MockTransport(HttlResponse response) {
+		super("http://mock.mock.mock:6363/");
 		this.staticResponse = response;
 	}
 
@@ -51,16 +51,23 @@ public class MockTransport implements HttlTransport {
 	}
 
 	public MockTransport(int responseCode, String contentType, String responseBody) {
+		super("http://mock.mock.mock:6363/");
 		setStaticResponse(responseCode, contentType, responseBody);
 	}
 
-	void setConfig(MockTransConfig config) {
-		this.config = config;
+	@Override
+	public MockTransport getSelf() {
+		return this;
 	}
 
 	@Override
-	public MockTransConfig getConfig() {
-		return config;
+	public MockTransport getConfig() {
+		return this;
+	}
+
+	@Override
+	public MockTransport build() {
+		return this;
 	}
 
 	/**

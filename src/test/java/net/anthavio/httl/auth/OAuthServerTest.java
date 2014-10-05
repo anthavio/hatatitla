@@ -13,7 +13,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -240,7 +240,7 @@ public class OAuthServerTest extends HttpServlet {
 		@Override
 		public OAuthTokenResponse extract(HttlResponse response) throws IOException {
 			if ("text/plain".equals(response.getMediaType())) {
-				String extracted = HttpHeaderUtil.readAsString(response);
+				String extracted = HttlUtil.readAsString(response);
 				String[] parameters = extracted.split("&");
 				for (String parameter : parameters) {
 					String[] nameValue = parameter.split("=");

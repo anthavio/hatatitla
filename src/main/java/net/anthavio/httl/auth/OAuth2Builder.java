@@ -9,7 +9,7 @@ import java.util.List;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 public class OAuth2Builder {
 
@@ -67,7 +67,7 @@ public class OAuth2Builder {
 		}
 
 		if (!authUrl.startsWith("http") && sender != null) {
-			authUrl = HttpHeaderUtil.joinUrlParts(sender.getConfig().getUrl().toString(), authUrl);
+			authUrl = HttlUtil.joinUrlParts(sender.getConfig().getUrl().toString(), authUrl);
 		}
 		try {
 			this.authUrl = new URL(authUrl);
@@ -83,7 +83,7 @@ public class OAuth2Builder {
 	}
 
 	public OAuth2Builder setTokenEndpointUrl(String tokenUrl) {
-		String host = HttpHeaderUtil.splitUrlPath(tokenUrl)[0];
+		String host = HttlUtil.splitUrlPath(tokenUrl)[0];
 		return setTokenEndpoint(HttlSender.url(host).build(), tokenUrl);
 	}
 
@@ -97,7 +97,7 @@ public class OAuth2Builder {
 			throw new IllegalArgumentException("Token URL is required");
 		}
 		if (!url.startsWith("http")) {
-			url = HttpHeaderUtil.joinUrlParts(sender.getConfig().getUrl().toString(), url);
+			url = HttlUtil.joinUrlParts(sender.getConfig().getUrl().toString(), url);
 		}
 		try {
 			this.tokenUrl = new URL(url);

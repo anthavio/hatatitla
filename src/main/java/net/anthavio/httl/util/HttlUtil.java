@@ -20,7 +20,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.cache.CachedResponse;
 
-public class HttpHeaderUtil {
+public class HttlUtil {
 
 	public static CacheEntry<CachedResponse> buildCacheEntry(HttlRequest request, HttlResponse response) {
 
@@ -173,33 +173,6 @@ public class HttpHeaderUtil {
 	private static final Charset DEFAULT_CONTENT_CHARSET = Charset.forName("ISO-8859-1");
 
 	/**
-	 * Returns the charset specified in the Content-Type of this header,
-	 * or the HTTP default (ISO-8859-1) if none can be found.
-	 * For response...
-	 
-	public static Charset getCharset(String contentType) {
-		//String contentType = headers.get("Content-Type");
-		if (contentType != null) {
-			String[] params = contentType.split(";");
-			for (int i = 1; i < params.length; i++) {
-				String[] pair = params[i].trim().split("=");
-				if (pair.length == 2) {
-					if (pair[0].equals("charset")) {
-						try {
-							return Charset.forName(pair[1]);
-						} catch (UnsupportedCharsetException ucx) {
-							//TODO log some warning
-							return DEFAULT_CONTENT_CHARSET;
-						}
-					}
-				}
-			}
-		}
-
-		return DEFAULT_CONTENT_CHARSET;
-	}
-	*/
-	/**
 	 * Try to detect if content type is textual or binary
 	 */
 	public static boolean isTextContent(HttlResponse response) {
@@ -215,7 +188,8 @@ public class HttpHeaderUtil {
 
 	public static boolean isTextContent(String mediaType) {
 		boolean istext = false;
-		if (mediaType.startsWith("text")) { //text/...
+		if (mediaType.startsWith("text")) {
+			//text/html ...
 			istext = true;
 		} else if (mediaType.endsWith("json")) {
 			//application/json

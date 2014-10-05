@@ -12,7 +12,7 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.Cutils;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +47,9 @@ public class CachedResponse extends HttlResponse implements Serializable {
 		this.request = request;
 		try {
 			if (response.isBinaryContent()) {
-				contentBinary = HttpHeaderUtil.readAsBytes(response);
+				contentBinary = HttlUtil.readAsBytes(response);
 			} else {
-				contentString = HttpHeaderUtil.readAsString(response);
+				contentString = HttlUtil.readAsString(response);
 			}
 		} catch (IOException iox) {
 			throw new HttlException(iox);

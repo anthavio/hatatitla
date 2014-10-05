@@ -3,6 +3,7 @@ package net.anthavio.httl.api;
 import java.util.Date;
 import java.util.List;
 
+import net.anthavio.httl.HttlBuilder;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlResponse;
@@ -12,7 +13,6 @@ import net.anthavio.httl.marshall.GsonUnmarshaller;
 import net.anthavio.httl.marshall.Jackson2Marshaller;
 import net.anthavio.httl.marshall.MediaTypeMarshaller;
 import net.anthavio.httl.marshall.SimpleXmlMarshaller;
-import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
@@ -31,7 +31,7 @@ public class AdvancedApiTest {
 	@Test
 	public void testSomeApiOptions() {
 
-		HttlSender sender = new MockTransConfig().sender().build();
+		HttlSender sender = new MockTransport().sender().build();
 		// Set api-key header into every passing request
 
 		// Build
@@ -58,7 +58,7 @@ public class AdvancedApiTest {
 	@Test
 	public void testUrlParameter() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().build();
+		HttlSender sender = transport.sender().build();
 
 		// Given
 		WithUrlParameter api = HttlApiBuilder.with(sender).addParam("api-key", "zxzxzx-zxzxzx-zxzxzx-zxzxzx")
@@ -98,7 +98,7 @@ public class AdvancedApiTest {
 		marshaller.setMarshaller(jsonMarshaller, "application/json");
 		marshaller.setMarshaller(new SimpleXmlMarshaller(), "application/xml");
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().setMarshaller(marshaller).build();
+		HttlSender sender = transport.sender().setMarshaller(marshaller).build();
 
 		WithHeaderParameters api = HttlApiBuilder.build(WithHeaderParameters.class, sender);
 		TestBodyBean input = new TestBodyBean("Kvído Vymětal", new Date(), 999);
@@ -131,7 +131,7 @@ public class AdvancedApiTest {
 	@Test
 	public void testPartialHeaderReplacement() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().build();
+		HttlSender sender = HttlBuilder.sender(transport).build();
 
 		WithPartialHeaderParam api = HttlApiBuilder.build(WithPartialHeaderParam.class, sender);
 		String token = "zx-zx-zx";
@@ -151,7 +151,7 @@ public class AdvancedApiTest {
 	@Test
 	public void testGenericListReturn() {
 		MockTransport transport = new MockTransport();
-		HttlSender sender = new MockTransConfig(transport).sender().setUnmarshaller(new GsonUnmarshaller()).build();
+		HttlSender sender = transport.sender().setUnmarshaller(new GsonUnmarshaller()).build();
 		String json = "[{\"login\":\"login-value\",\"id\":123456,\"contributions\":333}]";
 		transport.setStaticResponse(200, "application/json; charset=utf-8", json);
 

@@ -5,7 +5,7 @@ import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpUrlConfig;
 import net.anthavio.httl.transport.HttpUrlTransport;
-import net.anthavio.httl.util.MockTransConfig;
+import net.anthavio.httl.util.MockTransport;
 import net.anthavio.httl.util.OptionalLibs;
 import net.anthavio.httl.util.SSLContextBuilder;
 
@@ -59,8 +59,8 @@ public class HttlBuilder {
 	/**
 	 * Commence new Mock Transport creation
 	 */
-	public static MockTransConfig mock(String url) {
-		return new MockTransConfig(url);
+	public static MockTransport mock(String url) {
+		return new MockTransport(url);
 	}
 
 	/**
@@ -152,8 +152,8 @@ public class HttlBuilder {
 		/**
 		 * @return Mocking Transport Configurer
 		 */
-		public MockTransConfig mock() {
-			return new MockTransConfig(url);
+		public MockTransport mock() {
+			return new MockTransport(url);
 		}
 	}
 

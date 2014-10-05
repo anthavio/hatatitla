@@ -21,7 +21,7 @@ import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
 import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
 import net.anthavio.httl.transport.HttpClient4Config;
-import net.anthavio.httl.util.MockTransConfig;
+import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -188,7 +188,7 @@ public class RequestTest {
 
 	@Test
 	public void postBodyCaching() {
-		HttlSender sender = new MockTransConfig().sender().build();
+		HttlSender sender = new MockTransport().sender().build();
 
 		ByteArrayInputStream stream = new ByteArrayInputStream("brrrrrrrrrrrrr".getBytes());
 		//When - default is non caching
@@ -368,7 +368,7 @@ public class RequestTest {
 
 	@Test
 	public void headersAndParams() {
-		HttlSender sender = new MockTransConfig().sender().build();
+		HttlSender sender = new MockTransport().sender().build();
 
 		HttlRequest request = sender.GET("/").build();
 		assertThat(request.getMethod()).isEqualTo(Method.GET);

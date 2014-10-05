@@ -11,7 +11,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import net.anthavio.httl.HttlSender.Multival;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 
 		String contentType = headers.getFirst("Content-Type");
 		if (contentType != null) {
-			String[] parts = HttpHeaderUtil.splitContentType(contentType, "utf-8");
+			String[] parts = HttlUtil.splitContentType(contentType, "utf-8");
 			this.mediaType = parts[0];
 			this.encoding = parts[1];
 		} else {
@@ -112,7 +112,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 	 * @return guess if Content-Type is NOT of any known textual media types.
 	 */
 	public boolean isBinaryContent() {
-		return !HttpHeaderUtil.isTextContent(mediaType);
+		return !HttlUtil.isTextContent(mediaType);
 	}
 
 	/**
@@ -140,7 +140,7 @@ public abstract class HttlResponse implements Closeable, Serializable {
 	public void close() {
 		if (stream != null && !stream.isClosed()) {
 			try {
-				HttpHeaderUtil.close(this);
+				HttlUtil.close(this);
 			} catch (IOException iox) {
 				logger.warn("Closing problem: " + iox);
 			}

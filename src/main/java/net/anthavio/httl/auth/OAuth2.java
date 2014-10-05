@@ -7,7 +7,7 @@ import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 /**
  * Google:
@@ -245,7 +245,7 @@ public class OAuth2 {
 			if (sb.length() != 0) {
 				sb.append("&");
 			}
-			sb.append(name).append("=").append(HttpHeaderUtil.urlencode(value));
+			sb.append(name).append("=").append(HttlUtil.urlencode(value));
 		}
 	}
 

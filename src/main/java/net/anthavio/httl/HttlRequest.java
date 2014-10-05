@@ -14,7 +14,7 @@ import java.util.List;
 import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.Cutils;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 /**
  * Immutable
@@ -116,7 +116,7 @@ public class HttlRequest implements Serializable {
 		}
 
 		String[] upaq = buildUrlPathAndQuery(urlPath, parameters);
-		String path = HttpHeaderUtil.joinUrlParts(config.getUrl().getPath(), upaq[0]);
+		String path = HttlUtil.joinUrlParts(config.getUrl().getPath(), upaq[0]);
 		String query = upaq[1];
 
 		digContentType(defaultHeaders, sender.getConfig());
@@ -156,10 +156,10 @@ public class HttlRequest implements Serializable {
 							sender.getConfig().getMarshaller().marshall(this, baos);
 							this.body = new HttlBody(baos.toByteArray());
 						} else if (body.getType() == Type.STREAM) {
-							byte[] bytes = HttpHeaderUtil.readAsBytes((InputStream) body.getPayload(), HttpHeaderUtil.KILO16);
+							byte[] bytes = HttlUtil.readAsBytes((InputStream) body.getPayload(), HttlUtil.KILO16);
 							this.body = new HttlBody(bytes);
 						} else if (body.getType() == Type.READER) {
-							String string = HttpHeaderUtil.readAsString((Reader) body.getPayload(), HttpHeaderUtil.KILO16);
+							String string = HttlUtil.readAsString((Reader) body.getPayload(), HttlUtil.KILO16);
 							this.body = new HttlBody(string);
 						}
 					} catch (IOException iox) {
@@ -302,15 +302,15 @@ public class HttlRequest implements Serializable {
 					if (idx == -1) {
 						throw new IllegalArgumentException("Path parameter " + name + " not found in " + path);
 					}
-					value = HttpHeaderUtil.urlencode(value);
+					value = HttlUtil.urlencode(value);
 					path.replace(idx, idx + name.length(), value);
 
 				} else if (name.charAt(0) == ';') { //matrix parameter
-					path.append(';').append(HttpHeaderUtil.urlencode(name.substring(1))).append('=')
-							.append(HttpHeaderUtil.urlencode(value));
+					path.append(';').append(HttlUtil.urlencode(name.substring(1))).append('=')
+							.append(HttlUtil.urlencode(value));
 
 				} else { // query parameter
-					query.append('&').append(HttpHeaderUtil.urlencode(name)).append('=').append(HttpHeaderUtil.urlencode(value));
+					query.append('&').append(HttlUtil.urlencode(name)).append('=').append(HttlUtil.urlencode(value));
 				}
 			}
 		}

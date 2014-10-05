@@ -5,7 +5,7 @@ import java.io.IOException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlStatusException;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 /**
  * 
@@ -37,7 +37,7 @@ public class HttlStringExtractor implements HttlResponseExtractor<String> {
 		if (response.getHttpStatusCode() > httpMax || response.getHttpStatusCode() < httpMin) {
 			throw new HttlStatusException(response);
 		} else {
-			return HttpHeaderUtil.readAsString(response);
+			return HttlUtil.readAsString(response);
 		}
 	}
 

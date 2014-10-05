@@ -24,7 +24,7 @@ import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.api.HttlApiBuilder.ApiHeaderMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiMethodMeta;
 import net.anthavio.httl.api.HttlApiBuilder.ApiVarMeta;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 /**
  * 
@@ -251,10 +251,10 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			return response;
 
 		} else if (returnType == String.class) {
-			return HttpHeaderUtil.readAsString(response);
+			return HttlUtil.readAsString(response);
 
 		} else if (returnType == byte[].class) {
-			return HttpHeaderUtil.readAsBytes(response);
+			return HttlUtil.readAsBytes(response);
 
 		} else if (returnType == Reader.class) {
 			return response.getReader();

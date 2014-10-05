@@ -9,7 +9,7 @@ import net.anthavio.httl.HttlBuilder;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlSender;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 import net.anthavio.httl.util.MockTransport;
 
 import org.apache.http.NameValuePair;
@@ -90,7 +90,7 @@ public class OAuth2Test {
 		List<NameValuePair> parameters = URLEncodedUtils.parse(body, Charset.forName("utf-8"));
 
 		// Then
-		String[] splitted = HttpHeaderUtil.splitUrlPath(request.getUrl().toString());
+		String[] splitted = HttlUtil.splitUrlPath(request.getUrl().toString());
 		Assertions.assertThat(splitted[0]).isEqualTo("https://login.example.com");
 		Assertions.assertThat(splitted[1]).startsWith("/oauth/token");
 

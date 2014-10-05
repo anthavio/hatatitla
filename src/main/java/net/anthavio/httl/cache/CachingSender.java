@@ -24,7 +24,7 @@ import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.cache.Builders.CachingRequestBuilder;
 import net.anthavio.httl.util.Cutils;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -270,7 +270,7 @@ public class CachingSender implements SenderOperations, ExtractionOperations, Cl
 		}
 
 		if (response.getHttpStatusCode() < 300) {
-			CacheEntry<CachedResponse> entryNew = HttpHeaderUtil.buildCacheEntry(request, response);
+			CacheEntry<CachedResponse> entryNew = HttlUtil.buildCacheEntry(request, response);
 			if (entryNew != null) {
 				cache.set(cacheKey, entryNew);
 				return entryNew.getValue();

@@ -17,9 +17,8 @@ import net.anthavio.httl.marshall.HttlBytesExtractor;
 import net.anthavio.httl.marshall.HttlStringExtractor;
 import net.anthavio.httl.transport.HttpClient4Transport;
 import net.anthavio.httl.util.GenericType;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 import net.anthavio.httl.util.JsonBuilder;
-import net.anthavio.httl.util.MockTransConfig;
 import net.anthavio.httl.util.MockTransport;
 
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
@@ -64,8 +63,7 @@ public class MarshallingExtractingTest {
 
 		//Given - Service returns http 555 and JSON with error message
 		MockTransport transport = new MockTransport();
-		MockTransConfig config = new MockTransConfig(transport);
-		HttlSender sender = config.sender().build();
+		HttlSender sender = transport.sender().build();
 		transport.setStaticResponse(555, "application/json", JsonBuilder.OBJECT().field("message", "Shit happend!").end()
 				.getJson());
 
@@ -92,7 +90,7 @@ public class MarshallingExtractingTest {
 		};
 
 		// When - Custom ResponseUnmarshaller
-		sender = config.sender().setUnmarshaller(evilUnmar).build();
+		sender = transport.sender().setUnmarshaller(evilUnmar).build();
 		try {
 
 			sender.GET("/evil").extract(TestBodyRequest.class);
@@ -345,7 +343,7 @@ class TestResponseBodyExtractor implements HttlResponseExtractor<String> {
 			simulatedException.fillInStackTrace();
 			throw simulatedException;
 		}
-		return HttpHeaderUtil.readAsString(response);
+		return HttlUtil.readAsString(response);
 	}
 
 }

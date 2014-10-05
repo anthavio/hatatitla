@@ -24,7 +24,7 @@ import net.anthavio.httl.api.HttlCall.HttpMethod;
 import net.anthavio.httl.api.HttlVar.NoopParamSetter;
 import net.anthavio.httl.api.VarSetter.BeanMetaVarSetter;
 import net.anthavio.httl.api.VarSetter.FieldApiVarMeta;
-import net.anthavio.httl.util.HttpHeaderUtil;
+import net.anthavio.httl.util.HttlUtil;
 
 /**
  * 
@@ -135,7 +135,7 @@ public class HttlApiBuilder {
 				urlPath = segments[1];
 			}
 			if (urlPathPrefix != null) {
-				urlPath = HttpHeaderUtil.joinUrlParts(urlPathPrefix, urlPath);
+				urlPath = HttlUtil.joinUrlParts(urlPathPrefix, urlPath);
 			}
 
 			//@RestVar annotations
