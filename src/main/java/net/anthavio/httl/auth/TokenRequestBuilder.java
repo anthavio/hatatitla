@@ -3,15 +3,15 @@ package net.anthavio.httl.auth;
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
-import net.anthavio.httl.auth.OAuth2.FirstTokenStep;
-import net.anthavio.httl.auth.OAuth2.LastTokenStep;
+import net.anthavio.httl.auth.OAuth2.SelectTypeBuildStep;
+import net.anthavio.httl.auth.OAuth2.FinalBuildStep;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class TokenRequestBuilder implements FirstTokenStep, LastTokenStep {
+public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep {
 
 	private final OAuth2 oauth;
 
@@ -29,7 +29,7 @@ public class TokenRequestBuilder implements FirstTokenStep, LastTokenStep {
 		this.oauth = oauth;
 	}
 
-	public LastTokenStep access(String code) {
+	public FinalBuildStep access(String code) {
 		if (code == null || code.isEmpty()) {
 			throw new IllegalArgumentException("Empty code");
 		}
@@ -38,7 +38,7 @@ public class TokenRequestBuilder implements FirstTokenStep, LastTokenStep {
 		return this;
 	}
 
-	public LastTokenStep refresh(String offline_token) {
+	public FinalBuildStep refresh(String offline_token) {
 		if (offline_token == null || offline_token.isEmpty()) {
 			throw new IllegalArgumentException("Empty offline_token");
 		}
@@ -47,7 +47,7 @@ public class TokenRequestBuilder implements FirstTokenStep, LastTokenStep {
 		return this;
 	}
 
-	public LastTokenStep password(String username, String password) {
+	public FinalBuildStep password(String username, String password) {
 		if (username == null || username.isEmpty()) {
 			throw new IllegalArgumentException("Empty username");
 		}
@@ -62,7 +62,7 @@ public class TokenRequestBuilder implements FirstTokenStep, LastTokenStep {
 	}
 
 	@Override
-	public LastTokenStep visitor(HttlBuilderVisitor visitor) {
+	public FinalBuildStep visitor(HttlBuilderVisitor visitor) {
 
 		if (visitor == null) {
 			throw new IllegalArgumentException("Null visitor");

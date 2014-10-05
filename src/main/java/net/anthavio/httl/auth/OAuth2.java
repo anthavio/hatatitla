@@ -44,7 +44,7 @@ public class OAuth2 {
 
 	/**
 	 * 
-	 * @param scope space separated list of requited scopes
+	 * @param  ' ' or , separated list of requited scopes
 	 * @return authorization url for redirect
 	 */
 	public String getAuthorizationUrl(String scope) {
@@ -52,7 +52,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * @param scope space separated list of requited scopes
+	 * @param scope ' ' or , separated list of requited scopes
 	 * @param state optional state to check on redirect
 	 * @return authorization url for redirect
 	 */
@@ -61,7 +61,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * @param scope space separated list of requited scopes
+	 * @param scope ' ' or , separated list of requited scopes
 	 * @param state optional state to check on redirect
 	 */
 	protected String getAuthorizationQuery(String scope, String state) {
@@ -81,19 +81,19 @@ public class OAuth2 {
 
 	}
 
-	public static interface FirstTokenStep {
+	public static interface SelectTypeBuildStep {
 
-		public LastTokenStep access(String code);
+		public FinalBuildStep access(String code);
 
-		public LastTokenStep refresh(String offline_token);
+		public FinalBuildStep refresh(String offline_token);
 
-		public LastTokenStep password(String username, String password);
+		public FinalBuildStep password(String username, String password);
 
 	}
 
-	public static interface LastTokenStep {
+	public static interface FinalBuildStep {
 
-		public LastTokenStep visitor(HttlBuilderVisitor visitor);
+		public FinalBuildStep visitor(HttlBuilderVisitor visitor);
 
 		public OAuthTokenResponse get();
 
@@ -103,7 +103,7 @@ public class OAuth2 {
 
 	}
 
-	public FirstTokenStep token() {
+	public SelectTypeBuildStep token() {
 		return new TokenRequestBuilder(this);
 	}
 
@@ -113,7 +113,7 @@ public class OAuth2 {
 	 * For OpenID Connect compatible OAuth2 providers
 	 * 
 	 */
-	public LastTokenStep access(String code) {
+	public FinalBuildStep access(String code) {
 		return new TokenRequestBuilder(this).access(code);
 	}
 
@@ -123,7 +123,7 @@ public class OAuth2 {
 	 * AKA Offline access
 	 * 
 	 */
-	public LastTokenStep refresh(String offline_token) {
+	public FinalBuildStep refresh(String offline_token) {
 		return new TokenRequestBuilder(this).refresh(offline_token);
 	}
 
@@ -132,7 +132,7 @@ public class OAuth2 {
 	 * 
 	 * Quite rare to see used
 	 */
-	public LastTokenStep password(String username, String password) {
+	public FinalBuildStep password(String username, String password) {
 		return new TokenRequestBuilder(this).password(username, password);
 	}
 
