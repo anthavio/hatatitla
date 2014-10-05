@@ -13,8 +13,8 @@
 	<version>2.0.0-SNAPSHOT</version>	
 	
 	<name>hatatitla</name>
-	<inceptionYear>2013</inceptionYear>
 	<description>Compact but tweakable REST client library you have been dreaming of</description>
+	<inceptionYear>2013</inceptionYear>
 	
 	<url>http://anthavio.github.com/hatatitla</url>
 	
@@ -44,7 +44,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.5</version>
+			<version>1.7.7</version>
 		</dependency>
 		
 		<!-- commons-logging substitution -->
@@ -52,7 +52,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
-			<version>1.7.5</version>
+			<version>1.7.7</version>
 			<optional>true</optional>
 		</dependency>
 		
