@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>net.anthavio.maven</groupId>
 		<artifactId>anthavio-super-pom</artifactId>
-		<version>3-SNAPSHOT</version>
+		<version>3</version>
 	</parent>
 
 	<groupId>net.anthavio</groupId>
@@ -37,7 +37,6 @@
   
   <properties>
 		<project.build.java.target>1.6</project.build.java.target>
-		<enforce.java.version>1.6</enforce.java.version>
   </properties>
 
 	<dependencies>
