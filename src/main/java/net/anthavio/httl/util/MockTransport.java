@@ -37,21 +37,21 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 
 	private AtomicInteger executions = new AtomicInteger(0);
 
+	public MockTransport(String url) {
+		super(url);
+	}
+
 	public MockTransport() {
 		this((HttlResponse) null);
 	}
 
 	public MockTransport(HttlResponse response) {
-		super("http://mock.mock.mock:6363/");
+		super("http://mock.mock.mock:6363");
 		this.staticResponse = response;
 	}
 
-	public MockTransport(String responseBody) {
-		this(200, "text/plain", responseBody);
-	}
-
 	public MockTransport(int responseCode, String contentType, String responseBody) {
-		super("http://mock.mock.mock:6363/");
+		super("http://mock.mock.mock:6363");
 		setStaticResponse(responseCode, contentType, responseBody);
 	}
 
