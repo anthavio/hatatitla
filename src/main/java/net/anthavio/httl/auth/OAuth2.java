@@ -110,7 +110,7 @@ public class OAuth2 {
 	/**
 	 * Trade code for access_token
 	 * 
-	 * For OpenID Connect compatible OAuth2 providers
+	 * Standard OAuth for Web Server Applications
 	 * 
 	 */
 	public FinalBuildStep access(String code) {
@@ -120,7 +120,7 @@ public class OAuth2 {
 	/**
 	 * Trade refresh_token for access_token
 	 * 
-	 * AKA Offline access
+	 * So called Offline access
 	 * 
 	 */
 	public FinalBuildStep refresh(String offline_token) {
@@ -130,7 +130,7 @@ public class OAuth2 {
 	/**
 	 * Trade username & password for access_token
 	 * 
-	 * Quite rare to see used
+	 * Usualy only for privileged applications
 	 */
 	public FinalBuildStep password(String username, String password) {
 		return new TokenRequestBuilder(this).password(username, password);
@@ -146,6 +146,8 @@ public class OAuth2 {
 
 	/**
 	 * Trade refresh_token for access_token
+	 * 
+	 * So called Offline access
 	 */
 	protected SenderRequestBuilder<?> buildRefreshTokenRequest(String refresh_token) {
 		String query = getRefreshTokenQuery(refresh_token);
@@ -154,6 +156,8 @@ public class OAuth2 {
 
 	/**
 	 * Trade username & password for access_token
+	 * 
+	 * Usualy only for privileged applications
 	 */
 	protected SenderRequestBuilder<?> buildPasswordTokenRequest(String username, String password) {
 		String query = getPasswordTokenQuery(username, password);
@@ -187,6 +191,8 @@ public class OAuth2 {
 
 	/**
 	 * Trade code for access_token
+	 * 
+	 * Standard OAuth for Web Server Applications
 	 */
 	protected String getCodeTokenQuery(String code) {
 
@@ -204,6 +210,8 @@ public class OAuth2 {
 
 	/**
 	 * Trade refresh_token for access_token
+	 * 
+	 * So called Offline access
 	 */
 	protected String getRefreshTokenQuery(String refresh_token) {
 		StringBuilder sb = config.getTokenQueryBuilder();
@@ -220,6 +228,8 @@ public class OAuth2 {
 
 	/**
 	 * Trade username & password for access_token
+	 * 
+	 * Usualy only for privileged applications
 	 */
 	protected String getPasswordTokenQuery(String username, String password) {
 		StringBuilder sb = config.getTokenQueryBuilder();
