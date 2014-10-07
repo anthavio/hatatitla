@@ -55,7 +55,7 @@ public abstract class CachingExtractorTest {
 
 	@Test
 	public void syncRefreshExtraction() throws Exception {
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
 
 		HttlRequest request = cextractor.getSender().GET("/").build();
 		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
@@ -145,7 +145,7 @@ public abstract class CachingExtractorTest {
 
 	@Test
 	public void backgroundRefreshExtraction() throws Exception {
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
 
 		HttlRequest request = cextractor.getSender().GET("/").param("sleep", 1).build();
 		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
@@ -193,7 +193,7 @@ public abstract class CachingExtractorTest {
 	@Test
 	public void asyncRefreshExtraction() throws Exception {
 
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
 		HttlRequest request = cextractor.getSender().GET("/").build();
 		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
@@ -270,7 +270,7 @@ public abstract class CachingExtractorTest {
 	@Test
 	public void asyncNonDuplicateRefreshOnSameResourceExtraction() throws Exception {
 
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
 		SenderRequestBuilder<?> builder = cextractor.getSender().GET("/");
 		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		CachingExtractorRequest<String> cerequest = cextractor.from(builder.build()).cache(2, 1, TimeUnit.SECONDS)

@@ -39,7 +39,7 @@ public class AuthenticationTest {
 		System.setProperty("http.keepAlive", "false");
 
 		//Given - sender without authentication
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = HttlSender.url(url).build();
 
 		//When 
@@ -113,7 +113,7 @@ public class AuthenticationTest {
 	public void httpClient3() throws IOException {
 
 		//Given - sender without authentication
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = new HttpClient3Config(url).sender().build();
 
 		//When - unprotected
@@ -182,7 +182,7 @@ public class AuthenticationTest {
 	public void httpClient4() throws IOException {
 
 		//Given - sender without authentication
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = new HttpClient4Config(url).sender().build();
 
 		//When - unprotected
@@ -251,7 +251,7 @@ public class AuthenticationTest {
 	public void jetty() throws IOException {
 
 		//Given - sender without authentication
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = new JettyClientConfig(url).sender().build();
 
 		//When - unprotected

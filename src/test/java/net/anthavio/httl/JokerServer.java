@@ -38,13 +38,17 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +58,15 @@ public class JokerServer {
 
 	private Server jetty;
 
-	private int httpPort;
+	private int portHttp;
+
+	private int portHttps;
+
+	private int portHttpsMutual;
 
 	private ServerSocket serverSocket;
 
 	private int frozenPort;
-
-	private int nonHttpPort;
 
 	private int httpCode = HttpURLConnection.HTTP_OK;
 
@@ -73,7 +79,27 @@ public class JokerServer {
 	public JokerServer() {
 		try {
 			//httper
-			jetty = new Server(0); //dynamic port
+			jetty = new Server();
+			SelectChannelConnector conHttp = new SelectChannelConnector();
+			conHttp.setPort(0);//dynamic port
+
+			//server ssl
+			SslContextFactory sslFactory = new SslContextFactory("src/test/resources/localhost.jks");
+			sslFactory.setKeyStorePassword("password");
+			sslFactory.setKeyManagerPassword("password");
+			SslSelectChannelConnector conHttps = new SslSelectChannelConnector(sslFactory);
+			conHttps.setPort(0);//dynamic port
+
+			//mutual ssl (require client cert)
+			SslContextFactory sslFactoryMut = new SslContextFactory("src/test/resources/localhost.jks");
+			sslFactoryMut.setKeyStorePassword("password");
+			sslFactoryMut.setKeyManagerPassword("password");
+			sslFactoryMut.setCertAlias("localhost");
+			sslFactoryMut.setNeedClientAuth(true);
+			SslSelectChannelConnector conHttpMut = new SslSelectChannelConnector(sslFactoryMut);
+			conHttpMut.setPort(0);//dynamic port
+
+			jetty.setConnectors(new Connector[] { conHttp, conHttps, conHttpMut });
 
 			jetty.setStopAtShutdown(true);
 
@@ -151,8 +177,10 @@ public class JokerServer {
 		} catch (Exception x) {
 			throw new RuntimeException(x);
 		}
-		httpPort = jetty.getConnectors()[0].getLocalPort();
-		logger.info("Http is listening on port " + httpPort);
+		portHttp = jetty.getConnectors()[0].getLocalPort();
+		portHttps = jetty.getConnectors()[1].getLocalPort();
+		portHttpsMutual = jetty.getConnectors()[2].getLocalPort();
+		logger.info("Http is listening on port " + portHttp + ", " + portHttps + "," + portHttpsMutual);
 		logger.info("Freezer is listening on port " + frozenPort);
 		return this;
 	}
@@ -177,8 +205,16 @@ public class JokerServer {
 		this.httpCode = httpCode;
 	}
 
-	public int getHttpPort() {
-		return httpPort;
+	public int getPortHttp() {
+		return portHttp;
+	}
+
+	public int getPortHttps() {
+		return portHttps;
+	}
+
+	public int getPortHttpsMutual() {
+		return portHttpsMutual;
 	}
 
 	public int getRequestCount() {

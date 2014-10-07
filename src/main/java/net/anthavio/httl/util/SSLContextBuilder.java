@@ -104,23 +104,23 @@ public class SSLContextBuilder {
 		return this;
 	}
 
-	public SSLContextBuilder addKeyManager(URL storeUrl, String storePassword, String keyPassword) {
+	public SSLContextBuilder addKeyStore(URL storeUrl, String storePassword, String keyPassword) {
 		if (storeUrl == null) {
 			throw new IllegalArgumentException("Null keystore url");
 		}
 		KeyStore keyStore = loadKeyStore(storeUrl, storePassword);
-		return addKeyManager(keyStore, keyPassword);
+		return addKeyStore(keyStore, keyPassword);
 	}
 
-	public SSLContextBuilder addTrustManager(URL storeUrl, String storePassword) {
+	public SSLContextBuilder addTrustStore(URL storeUrl, String storePassword) {
 		if (storeUrl == null) {
 			throw new IllegalArgumentException("Null keystore url");
 		}
 		KeyStore keyStore = loadKeyStore(storeUrl, storePassword);
-		return addTrustManager(keyStore);
+		return addTrustStore(keyStore);
 	}
 
-	public SSLContextBuilder addTrustManager(KeyStore keystore) {
+	public SSLContextBuilder addTrustStore(KeyStore keystore) {
 		try {
 			TrustManager[] managers = createTrustManagers(keystore);
 			for (TrustManager manager : managers) {
@@ -132,7 +132,7 @@ public class SSLContextBuilder {
 		return this;
 	}
 
-	public SSLContextBuilder addKeyManager(KeyStore keystore, String password) {
+	public SSLContextBuilder addKeyStore(KeyStore keystore, String password) {
 		try {
 			KeyManager[] managers = createKeyManagers(keystore, password);
 			for (KeyManager manager : managers) {

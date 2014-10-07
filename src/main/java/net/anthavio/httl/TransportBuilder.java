@@ -34,7 +34,7 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 	 */
 	public static abstract class BaseTransBuilder<S extends BaseTransBuilder<?>> implements TransportBuilder<S> {
 
-		private final URL url;
+		private URL url;
 
 		private SSLContext sslContext;
 
@@ -57,6 +57,10 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 		}
 
 		public BaseTransBuilder(String urlString) {
+			setUrl(urlString);
+		}
+
+		public S setUrl(String urlString) {
 			if (Cutils.isBlank(urlString)) {
 				throw new IllegalArgumentException("URL is blank");
 			}
@@ -74,6 +78,7 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 				throw new IllegalArgumentException("URL has no host " + urlString);
 			}
 			this.url = trimUrl(url);
+			return getSelf();
 		}
 
 		/**

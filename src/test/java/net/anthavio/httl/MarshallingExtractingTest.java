@@ -108,7 +108,7 @@ public class MarshallingExtractingTest {
 	@Test
 	public void builtinResponseUnmarshallers() throws IOException {
 
-		HttlSender sender = HttlBuilder.httpClient4("localhost:" + server.getHttpPort()).sender().build();
+		HttlSender sender = HttlBuilder.httpClient4("localhost:" + server.getPortHttp()).sender().build();
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) transport.getHttpClient()
 				.getConnectionManager();
@@ -183,7 +183,7 @@ public class MarshallingExtractingTest {
 	@Test
 	public void responseHandler() throws IOException {
 		//Given - HttpClient4Sender because we can precisely track connection lasing and returning
-		HttlSender sender = HttlSender.url("localhost:" + server.getHttpPort()).httpClient4().sender().build();
+		HttlSender sender = HttlSender.url("localhost:" + server.getPortHttp()).httpClient4().sender().build();
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
 		PoolingClientConnectionManager cmanager = (PoolingClientConnectionManager) transport.getHttpClient()
 				.getConnectionManager();
@@ -286,7 +286,7 @@ public class MarshallingExtractingTest {
 		String message = "Hello čobole";
 		TestBodyRequest body = new TestBodyRequest(message);
 
-		HttlSender sender = HttlSender.url("localhost:" + server.getHttpPort()).httpClient4().setCharset("ISO-8859-2")
+		HttlSender sender = HttlSender.url("localhost:" + server.getPortHttp()).httpClient4().setCharset("ISO-8859-2")
 				.sender().build();
 
 		//sender.setResponseExtractor(factory, "application/json");

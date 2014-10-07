@@ -37,7 +37,7 @@ public class TimeoutsTest {
 	@BeforeClass
 	public static void setup() throws Exception {
 		server.start();
-		urlSingle = "http://localhost:" + server.getHttpPort() + "/";
+		urlSingle = "http://localhost:" + server.getPortHttp() + "/";
 		//this.urlFrozen = "http://localhost:" + this.server.getFrozenPort() + "/";
 		//this.urlFrozen = "http://www.google.com:81/";
 		urlFrozen = "http://10.254.254.254/";

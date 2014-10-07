@@ -38,7 +38,7 @@ public class AsyncTest {
 
 			ThreadPoolExecutor executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0)
 					.setMaximumPoolSize(1).setMaximumQueueSize(0).build();
-			HttpClient4Config config = new HttpClient4Config("localhost:" + server.getHttpPort());
+			HttpClient4Config config = new HttpClient4Config("localhost:" + server.getPortHttp());
 			HttlSender sender = config.sender().setExecutorService(executor).build();
 
 			HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();
@@ -63,7 +63,7 @@ public class AsyncTest {
 			sender.close();
 
 			server.start();
-			config = new HttpClient4Config("localhost:" + server.getHttpPort());
+			config = new HttpClient4Config("localhost:" + server.getPortHttp());
 			sender = config.sender().setExecutorService(executor).build();
 
 			transport = (HttpClient4Transport) sender.getTransport();

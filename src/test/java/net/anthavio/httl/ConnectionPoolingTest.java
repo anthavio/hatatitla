@@ -51,7 +51,7 @@ public class ConnectionPoolingTest {
 	@Test
 	public void httpUrlConnectionPooling() throws IOException, Exception {
 		//Given 
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = HttlBuilder.sender(url).build();
 		HttlRequest request = sender.GET("/").build();
 		//connection persistence is controlled with system properties
@@ -79,7 +79,7 @@ public class ConnectionPoolingTest {
 
 	@Test
 	public void httpClient3pooling() throws IOException, Exception {
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = HttlBuilder.transport(url).httpClient3().sender().build();
 		HttlRequest request = sender.POST("/").build();
 
@@ -168,7 +168,7 @@ public class ConnectionPoolingTest {
 	 */
 	@Test
 	public void httpClient4pooling() throws IOException, Exception {
-		String url = "http://localhost:" + server.getHttpPort();
+		String url = "http://localhost:" + server.getPortHttp();
 		HttlSender sender = HttlBuilder.transport(url).httpClient4().sender().build();
 
 		HttpClient4Transport transport = (HttpClient4Transport) sender.getTransport();

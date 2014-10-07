@@ -69,8 +69,8 @@ public class CachingSenderTest {
 	@Test
 	public void testSameRequestDifferentSender() throws IOException {
 
-		HttlSender sender1 = new HttpClient4Config("127.0.0.1:" + server.getHttpPort()).sender().build();//different host name
-		HttlSender sender2 = new HttpClient4Config("localhost:" + server.getHttpPort()).sender().build();//different host name
+		HttlSender sender1 = new HttpClient4Config("127.0.0.1:" + server.getPortHttp()).sender().build();//different host name
+		HttlSender sender2 = new HttpClient4Config("localhost:" + server.getPortHttp()).sender().build();//different host name
 		//shared cache for 2 senders
 		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
 		CachingSender csender1 = new CachingSender(sender1, cache);
@@ -97,7 +97,7 @@ public class CachingSenderTest {
 
 	//FIXME @Test works differently now
 	public void testAutomaticRefresh() throws Exception {
-		CachingSender csender = newCachingSender(server.getHttpPort());
+		CachingSender csender = newCachingSender(server.getPortHttp());
 		HttlRequest request = csender.getSender().GET("/cs").param("sleep", 0).build();
 		//ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingSenderRequest crequest = csender.from(request).cache(4, 2, TimeUnit.SECONDS).build();
@@ -150,7 +150,7 @@ public class CachingSenderTest {
 
 	@Test
 	public void testHttpCacheControlCaching() throws Exception {
-		CachingSender csender = newCachingSender(server.getHttpPort());
+		CachingSender csender = newCachingSender(server.getPortHttp());
 		//http headers will allow to cache reponse for 1 second
 		HttlRequest request = csender.getSender().GET("/").param("docache", 1).build();
 		//keep original count of request executed on server
@@ -194,7 +194,7 @@ public class CachingSenderTest {
 
 	//@Test TODO revisit and fix
 	public void testHttpETagCaching() throws Exception {
-		CachingSender csender = newCachingSender(server.getHttpPort());
+		CachingSender csender = newCachingSender(server.getPortHttp());
 
 		//keep original count of request executed on server
 		final int requestCount = server.getRequestCount();
