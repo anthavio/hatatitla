@@ -1,5 +1,7 @@
 package net.anthavio.httl.auth;
 
+import java.io.Serializable;
+
 /**
  * Quite standard OpenID token response from token endpoint
  * 
@@ -8,7 +10,9 @@ package net.anthavio.httl.auth;
  * @author martin.vanek
  *
  */
-public class OAuthTokenResponse {
+public class OAuthTokenResponse implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private String token_type; //Bearer
 

@@ -12,6 +12,7 @@ import net.anthavio.httl.util.HttlUtil;
 /**
  * Google:
  * https://developers.google.com/accounts/docs/OAuth2Login
+ * https://developers.google.com/accounts/docs/OAuth2WebServer
  * 
  * Facebook:
  * https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/v2.0
