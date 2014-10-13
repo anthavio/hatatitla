@@ -5,7 +5,7 @@ package net.anthavio.cache;
  * @author martin.vanek
  *
  */
-public abstract class CacheEntryLoader<V> {
+public abstract class CacheEntryLoader<K, V> {
 
 	/**
 	 * To be implemented by subclass
@@ -16,8 +16,8 @@ public abstract class CacheEntryLoader<V> {
 	 * @return
 	 * @throws Exception
 	 */
-	protected abstract CacheEntryLoadResult<V> load(CacheLoadRequest<V> request, boolean async, CacheEntry<V> expiredEntry)
-			throws Exception;
+	protected abstract CacheEntryLoadResult<V> load(CacheLoadRequest<K, V> request, boolean async,
+			CacheEntry<V> expiredEntry) throws Exception;
 
 	/**
 	 * Product of CacheEntryLoader load method execution
@@ -66,14 +66,14 @@ public abstract class CacheEntryLoader<V> {
 
 		private static final long serialVersionUID = 1L;
 
-		private final CacheLoadRequest<?> request;
+		private final CacheLoadRequest<?, ?> request;
 
-		public CacheLoaderException(Exception x, CacheLoadRequest<?> request) {
+		public CacheLoaderException(Exception x, CacheLoadRequest<?, ?> request) {
 			super(x);
 			this.request = request;
 		}
 
-		public CacheLoadRequest<?> getRequest() {
+		public CacheLoadRequest<?, ?> getRequest() {
 			return request;
 		}
 

@@ -2,18 +2,15 @@ package net.anthavio.cache;
 
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.httl.util.Cutils;
-
-
 /**
  * TODO shorter name
  * 
  * @author martin.vanek
  *
  */
-public class CachingSettings {
+public class CachingSettings<K> {
 
-	private final String userKey;
+	private final K userKey;
 
 	private final long hardTtl; //seconds
 
@@ -26,9 +23,9 @@ public class CachingSettings {
 	 * @param unit - time unit of ttl
 	 * 
 	 */
-	public CachingSettings(String userKey, long hardTtl, long softTtl, TimeUnit unit) {
-		if (Cutils.isBlank(userKey)) {
-			throw new IllegalArgumentException("Cache key is blank");
+	public CachingSettings(K userKey, long hardTtl, long softTtl, TimeUnit unit) {
+		if (userKey == null) {
+			throw new IllegalArgumentException("Cache key is null");
 		}
 		this.userKey = userKey;
 
@@ -45,7 +42,7 @@ public class CachingSettings {
 		this.softTtl = softTtl;
 	}
 
-	public String getUserKey() {
+	public K getUserKey() {
 		return userKey;
 	}
 

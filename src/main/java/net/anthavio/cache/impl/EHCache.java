@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
+import net.anthavio.cache.CacheKeyProvider;
 import net.sf.ehcache.Element;
 
 /**
@@ -11,12 +12,12 @@ import net.sf.ehcache.Element;
  * @author martin.vanek
  *
  */
-public class EHCache<V extends Serializable> extends CacheBase<V> {
+public class EHCache<K, V extends Serializable> extends CacheBase<K, V> {
 
 	private final net.sf.ehcache.Cache ehCache;
 
-	public EHCache(String name, net.sf.ehcache.Cache ehCache) {
-		super(name);
+	public EHCache(String name, CacheKeyProvider<K> keyProvider, net.sf.ehcache.Cache ehCache) {
+		super(name, keyProvider);
 		if (ehCache == null) {
 			throw new IllegalArgumentException("null ehCache");
 		}
@@ -54,11 +55,6 @@ public class EHCache<V extends Serializable> extends CacheBase<V> {
 	public void close() {
 		super.close();
 		//ehCache.dispose(); //we do not controll lifecycle of EhCache
-	}
-
-	@Override
-	public String getCacheKey(String userKey) {
-		return userKey;
 	}
 
 }

@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
+public class ConfiguredCacheLoader<K, V> extends CacheEntryLoader<K, V> {
 
 	/**
 	 * What to log on entry load exception
@@ -66,8 +66,8 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		/**
 		 * Preconfigured: log mesage & return null & dont cache
 		 */
-		public static final MissingFailedRecipe SYNC_NULL = new MissingFailedRecipe(LogErrorAs.MESSAGE,
-				MissingReturn.NULL, CacheReturned.DONT);
+		public static final MissingFailedRecipe SYNC_NULL = new MissingFailedRecipe(LogErrorAs.MESSAGE, MissingReturn.NULL,
+				CacheReturned.DONT);
 
 		private final LogErrorAs logAs;
 
@@ -178,8 +178,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * Create with custom exception settings
 	 * 
 	 */
-	public ConfiguredCacheLoader(SimpleLoader<V> loader, MissingFailedRecipe missSettings,
-			ExpiredFailedRecipe expSettings) {
+	public ConfiguredCacheLoader(SimpleLoader<V> loader, MissingFailedRecipe missSettings, ExpiredFailedRecipe expSettings) {
 		this.loader = loader;
 		this.logger = LoggerFactory.getLogger(loader.getClass());
 		this.msettings = missSettings;
@@ -194,7 +193,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @return result to be returned and possibly cached
 	 * @throws Exception
 	 */
-	protected V loadMissing(CacheLoadRequest<V> request, boolean asyn) throws Exception {
+	protected V loadMissing(CacheLoadRequest<K, V> request, boolean asyn) throws Exception {
 		return loader.load();
 	}
 
@@ -207,12 +206,12 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @return result to be returned and possibly cached
 	 * @throws Exception
 	 */
-	protected V loadExpired(CacheLoadRequest<V> request, boolean asyn, CacheEntry<V> expiredEntry) throws Exception {
+	protected V loadExpired(CacheLoadRequest<K, V> request, boolean asyn, CacheEntry<V> expiredEntry) throws Exception {
 		return loader.load();
 	}
 
 	@Override
-	protected CacheEntryLoadResult<V> load(CacheLoadRequest<V> request, boolean async, CacheEntry<V> expiredEntry) {
+	protected CacheEntryLoadResult<V> load(CacheLoadRequest<K, V> request, boolean async, CacheEntry<V> expiredEntry) {
 		try {
 			//return load();
 			V value;
@@ -235,7 +234,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		}
 	}
 
-	protected void logException(Exception exception, CacheLoadRequest<V> request, boolean async) {
+	protected void logException(Exception exception, CacheLoadRequest<K, V> request, boolean async) {
 		switch (msettings.logAs) {
 		case NOTHING:
 			break;
@@ -258,7 +257,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @return
 	 */
 	protected CacheEntryLoadResult<V> getMissingResult(Exception exception, MissingFailedRecipe settings,
-			CacheLoadRequest<V> request) {
+			CacheLoadRequest<K, V> request) {
 		V value;
 		switch (settings.returnAs) {
 		case EXCEPTION:
@@ -295,7 +294,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 	 * @return
 	 */
 	protected CacheEntryLoadResult<V> getExpiredResult(Exception exception, ExpiredFailedRecipe settings,
-			CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
+			CacheLoadRequest<K, V> request, CacheEntry<V> expiredEntry) {
 		V value;
 		switch (settings.returnAs) {
 		case EXCEPTION:
@@ -314,7 +313,7 @@ public class ConfiguredCacheLoader<V> extends CacheEntryLoader<V> {
 		switch (settings.cacheAs) {
 		case DONT:
 			entry = new CacheEntryLoadResult<V>(false, value, expiredEntry.getEvictTtl(), expiredEntry.getStaleTtl());
-			entry.setCached(expiredEntry.getCached());
+			entry.setStoredAt(expiredEntry.getStoredAt());
 			break;
 		case EXPIRED:
 			entry = new CacheEntryLoadResult<V>(true, value, expiredEntry.getEvictTtl(), -1);

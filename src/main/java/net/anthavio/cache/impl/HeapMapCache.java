@@ -7,28 +7,34 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
+import net.anthavio.cache.CacheKeyProvider;
 
 /**
  * 
  * @author martin.vanek
  *
  */
-public class HeapMapCache<V> extends CacheBase<V> {
+public class HeapMapCache<K, V> extends CacheBase<K, V> {
 
-	private TtlEvictingThread ttlEvictingThread;
+	private static int counter;
 
-	private Map<String, CacheEntry<V>> storage = new ConcurrentHashMap<String, CacheEntry<V>>();
+	private final TtlEvictingThread ttlEvictingThread;
 
-	public HeapMapCache() {
-		this(0, null);
+	private final Map<String, CacheEntry<V>> storage = new ConcurrentHashMap<String, CacheEntry<V>>();
+
+	public HeapMapCache(CacheKeyProvider<K> keyProvider) {
+		this(keyProvider, 0, null);
 	}
 
-	public HeapMapCache(int evictionInterval, TimeUnit evictionUnit) {
-		super("HeapMapCache"); //We don't care about name
+	public HeapMapCache(CacheKeyProvider<K> keyProvider, int evictionInterval, TimeUnit evictionUnit) {
+		super("HeapMapCache " + ++counter, keyProvider); //We don't care much about name
 		if (evictionInterval > 0) {
 			ttlEvictingThread = new TtlEvictingThread(evictionInterval, evictionUnit);
 			ttlEvictingThread.start();
+		} else {
+			ttlEvictingThread = null;
 		}
+
 	}
 
 	@Override
@@ -36,7 +42,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 		CacheEntry<V> entry = this.storage.get(key);
 		if (entry == null) {
 			return null;
-		} else if (entry.getEvictTimestamp() < System.currentTimeMillis()) {
+		} else if (entry.getEvictAt() < System.currentTimeMillis()) {
 			//silly but true - don't return if it's expired
 			storage.remove(key);
 			return null;
@@ -70,11 +76,6 @@ public class HeapMapCache<V> extends CacheBase<V> {
 			ttlEvictingThread.keepGoing = false;
 			ttlEvictingThread.interrupt();
 		}
-	}
-
-	@Override
-	public String getCacheKey(String userKey) {
-		return userKey;
 	}
 
 	private class TtlEvictingThread extends Thread {
@@ -115,7 +116,7 @@ public class HeapMapCache<V> extends CacheBase<V> {
 			try {
 				//XXX beware of concurrent changes of storage
 				for (Entry<String, CacheEntry<V>> entry : storage.entrySet()) {
-					if (entry.getValue().getEvictTimestamp() < now) {
+					if (entry.getValue().getEvictAt() < now) {
 						storage.remove(entry.getKey());
 					}
 				}

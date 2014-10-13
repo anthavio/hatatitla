@@ -12,11 +12,11 @@ import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.CacheLoadRequest;
 import net.anthavio.cache.Scheduler;
 import net.anthavio.cache.impl.HeapMapCache;
+import net.anthavio.httl.HttlCacheKeyProvider;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
-import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlStatusException;
 import net.anthavio.httl.JokerServer;
@@ -153,10 +153,9 @@ public abstract class CachingExtractorTest {
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor);
 
-		CacheLoadRequest<String> cacheRequest = cextractor.convert(cerequest);
-		CacheBase<Serializable> cache = cextractor.getCache();
-		cache.schedule(cacheRequest);
-		//.schedule(cacheRequest);
+		CacheLoadRequest<HttlRequest, ?> cacheRequest = cextractor.convert(cerequest);
+		CacheBase<HttlRequest, Serializable> cache = cextractor.getCache();
+		cache.schedule((CacheLoadRequest<HttlRequest, Serializable>) cacheRequest);
 
 		final int initialCount = server.getRequestCount();
 		assertThat(cextractor.extract(cerequest)).isNull(); //scheduled is null returer
@@ -183,11 +182,6 @@ public abstract class CachingExtractorTest {
 		assertThat(cextractor.extract(cerequest)).isNull(); //scheduled is null returer
 		//cextractor.close();
 		Thread.sleep(1010); //let the potential server sleep request complete
-	}
-
-	private void schedule(CacheLoadRequest<ExtractedResponse<String>> cacheRequest) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Test
@@ -326,8 +320,9 @@ public abstract class CachingExtractorTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new JavaHttpSender(url);
 		HttlSender sender = new HttpClient4Config(url).sender().build();
-		HeapMapCache<Serializable> cache = new HeapMapCache<Serializable>();
-		Scheduler<Serializable> scheduler = new Scheduler<Serializable>(cache, executor);
+		HeapMapCache<HttlRequest, Serializable> cache = new HeapMapCache<HttlRequest, Serializable>(
+				new HttlCacheKeyProvider("x"));
+		Scheduler<HttlRequest, Serializable> scheduler = new Scheduler<HttlRequest, Serializable>(cache, executor);
 		cache.setScheduler(scheduler);
 		CachingExtractor csender = new CachingExtractor(sender, cache);
 

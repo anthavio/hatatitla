@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
+import net.anthavio.cache.CacheKeyProvider;
 import net.anthavio.httl.util.Cutils;
 import net.spy.memcached.ConnectionFactory;
 import net.spy.memcached.MemcachedClient;
@@ -22,7 +23,7 @@ import net.spy.memcached.internal.CheckedOperationTimeoutException;
  * @author martin.vanek
  *
  */
-public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
+public class SpyMemcache<K, V extends Serializable> extends CacheBase<K, V> {
 
 	public static final int MINUTE = 60; //seconds
 	public static final int HOUR = 60 * MINUTE;//seconds
@@ -41,9 +42,9 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 
 	private long operationTimeout = 5000; //Memcached call timeout in milliseconds
 
-	public SpyMemcache(String name, ConnectionFactory connectionFactory, List<InetSocketAddress> addrs,
-			boolean namespaceVersioning) throws IOException {
-		super(name);
+	public SpyMemcache(String name, CacheKeyProvider<K> keyProvider, ConnectionFactory connectionFactory,
+			List<InetSocketAddress> addrs, boolean namespaceVersioning) throws IOException {
+		super(name, keyProvider);
 		if (Cutils.isBlank(name)) {
 			throw new IllegalArgumentException("SpyRequestCache name must not be blank");
 		}
@@ -53,21 +54,22 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 		this.namespaceVersioning = namespaceVersioning;
 	}
 
-	public SpyMemcache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout) {
-		this(name, client, operationTimeout, unitOfTimeout, false);
+	public SpyMemcache(String name, CacheKeyProvider<K> keyProvider, MemcachedClient client, long operationTimeout,
+			TimeUnit unitOfTimeout) {
+		this(name, keyProvider, client, operationTimeout, unitOfTimeout, false);
 	}
 
-	public SpyMemcache(String name, MemcachedClient client) {
-		this(name, client, 5, TimeUnit.SECONDS, false);
+	public SpyMemcache(String name, CacheKeyProvider<K> keyProvider, MemcachedClient client) {
+		this(name, keyProvider, client, 5, TimeUnit.SECONDS, false);
 	}
 
-	public SpyMemcache(String name, MemcachedClient client, boolean namespaceVersioning) {
-		this(name, client, 5, TimeUnit.SECONDS, namespaceVersioning);
+	public SpyMemcache(String name, CacheKeyProvider<K> keyProvider, MemcachedClient client, boolean namespaceVersioning) {
+		this(name, keyProvider, client, 5, TimeUnit.SECONDS, namespaceVersioning);
 	}
 
-	public SpyMemcache(String name, MemcachedClient client, long operationTimeout, TimeUnit unitOfTimeout,
-			boolean namespaceVersioning) {
-		super(name);
+	public SpyMemcache(String name, CacheKeyProvider<K> keyProvider, MemcachedClient client, long operationTimeout,
+			TimeUnit unitOfTimeout, boolean namespaceVersioning) {
+		super(name, keyProvider);
 		if (Cutils.isBlank(name)) {
 			throw new IllegalArgumentException("SpyRequestCache name must not be blank");
 		}
@@ -143,13 +145,14 @@ public class SpyMemcache<V extends Serializable> extends CacheBase<V> {
 	}
 
 	@Override
-	public String getCacheKey(String userKey) {
+	public String getCacheKey(K userKey) {
 		String namespace = getNamespace();
+		String cacheKey = super.getCacheKey(userKey);
 		//use MD5 hash if the key is too long, but keep the namespace
-		if (namespace.length() + userKey.length() > MaxKeyLength) {
-			return namespace + ":" + Cutils.md5hex(userKey);
+		if (namespace.length() + cacheKey.length() > MaxKeyLength) {
+			return namespace + ":" + Cutils.md5hex(cacheKey);
 		} else {
-			return namespace + ":" + userKey;
+			return namespace + ":" + cacheKey;
 		}
 	}
 

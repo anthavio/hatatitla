@@ -3,8 +3,8 @@ package net.anthavio.httl.auth;
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
-import net.anthavio.httl.auth.OAuth2.SelectTypeBuildStep;
 import net.anthavio.httl.auth.OAuth2.FinalBuildStep;
+import net.anthavio.httl.auth.OAuth2.SelectTypeBuildStep;
 
 /**
  * 
@@ -19,7 +19,7 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 
 	private String code;
 
-	private String offline_token;
+	private String refresh_token;
 
 	private String username;
 
@@ -38,11 +38,11 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		return this;
 	}
 
-	public FinalBuildStep refresh(String offline_token) {
-		if (offline_token == null || offline_token.isEmpty()) {
-			throw new IllegalArgumentException("Empty offline_token");
+	public FinalBuildStep refresh(String refresh_token) {
+		if (refresh_token == null || refresh_token.isEmpty()) {
+			throw new IllegalArgumentException("Empty refresh_token");
 		}
-		this.offline_token = offline_token;
+		this.refresh_token = refresh_token;
 
 		return this;
 	}
@@ -90,8 +90,8 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		SenderRequestBuilder<?> builder;
 		if (code != null) {
 			builder = oauth.buildCodeTokenRequest(code);
-		} else if (offline_token != null) {
-			builder = oauth.buildRefreshTokenRequest(offline_token);
+		} else if (refresh_token != null) {
+			builder = oauth.buildRefreshTokenRequest(refresh_token);
 		} else if (username != null) {
 			builder = oauth.buildPasswordTokenRequest(username, password);
 		} else {

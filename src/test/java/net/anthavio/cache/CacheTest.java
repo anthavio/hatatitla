@@ -82,29 +82,27 @@ public class CacheTest {
 
 	@Test
 	public void testSimpleCache() throws Exception {
-		CacheBase<String> cache = new HeapMapCache<String>();
+		CacheBase<String, String> cache = new HeapMapCache<String, String>(CacheKeyProvider.STRING);
 		doCacheTest(cache);
 	}
 
 	@Test
 	public void testEhCache() throws Exception {
-		CacheBase<String> cache;
-		cache = buildEhCache();
+		CacheBase<String, String> cache = buildEhCache();
 		//cache = buildMemcache();
 		doCacheTest(cache);
 	}
 
 	@Test
 	public void testMemcached() throws Exception {
-		CacheBase<String> cache;
-		cache = buildMemcache();
+		CacheBase<String, String> cache = buildMemcache();
 		doCacheTest(cache);
 	}
 
 	/**
 	 * Basic caching operations we expect to work with any cache implementation
 	 */
-	private void doCacheTest(CacheBase<String> cache) throws InterruptedException, IOException {
+	private void doCacheTest(CacheBase<String, String> cache) throws InterruptedException, IOException {
 
 		String cacheKey = String.valueOf(System.currentTimeMillis());
 		//hard ttl is 2 seconds
@@ -149,12 +147,12 @@ public class CacheTest {
 	 */
 	@Test
 	public void testDefaultSyncMode() throws Exception {
-		SpyMemcache<String> cache = buildMemcache();
+		SpyMemcache<String, String> cache = buildMemcache();
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
-		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch);
-		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Block").cache(2, 1, TimeUnit.SECONDS)
-				.build();
+		ConfiguredCacheLoader<String, String> loader = new ConfiguredCacheLoader<String, String>(fetch);
+		CacheLoadRequest<String, String> req = CacheLoadRequest.With(loader).cacheKey("Block")
+				.cache(2, 1, TimeUnit.SECONDS).build();
 
 		int rCounter = 0;
 		fetch.setException(exception); //break updates
@@ -243,15 +241,15 @@ public class CacheTest {
 	 */
 	@Test
 	public void testSafeSyncMode() throws Exception {
-		SpyMemcache<String> cache = buildMemcache();
+		SpyMemcache<String, String> cache = buildMemcache();
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
 
-		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, MissingFailedRecipe.SYNC_NULL,
-				ExpiredFailedRecipe.SYNC_RETURN);
+		ConfiguredCacheLoader<String, String> loader = new ConfiguredCacheLoader<String, String>(fetch,
+				MissingFailedRecipe.SYNC_NULL, ExpiredFailedRecipe.SYNC_RETURN);
 
-		CacheLoadRequest<String> request = CacheLoadRequest.With(loader).cacheKey("Return").cache(2, 1, TimeUnit.SECONDS)
-				.build();
+		CacheLoadRequest<String, String> request = CacheLoadRequest.With(loader).cacheKey("Return")
+				.cache(2, 1, TimeUnit.SECONDS).build();
 
 		int rCounter = 0;
 		fetch.setException(exception); // break cache entry updates
@@ -338,14 +336,14 @@ public class CacheTest {
 	 */
 	@Test
 	public void testDefaultAsyncRefresh() throws Exception {
-		SpyMemcache<String> cache = buildMemcache();
-		Scheduler<String> scheduler = new Scheduler<String>(cache, executor);
+		SpyMemcache<String, String> cache = buildMemcache();
+		Scheduler<String, String> scheduler = new Scheduler<String, String>(cache, executor);
 		cache.setScheduler(scheduler);
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
-		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch);
-		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Async").cache(2, 1, TimeUnit.SECONDS)
-				.async(true, true).build();
+		ConfiguredCacheLoader<String, String> loader = new ConfiguredCacheLoader<String, String>(fetch);
+		CacheLoadRequest<String, String> req = CacheLoadRequest.With(loader).cacheKey("Async")
+				.cache(2, 1, TimeUnit.SECONDS).async(true, true).build();
 
 		int rCounter = 0;
 		fetch.setException(exception); // break updates
@@ -353,7 +351,7 @@ public class CacheTest {
 		CacheEntry<String> entry0 = cache.get(req);
 		assertThat(entry0).isEqualTo(CacheEntry.EMPTY);
 		assertThat(entry0.getValue()).isNull(); //null is returned and async update is started
-		assertThat(entry0.getCached()).isNull();
+		assertThat(entry0.getStoredAt()).isNull();
 		assertThat(entry0.isStale()).isTrue();
 		assertThat(entry0.isEvicted()).isTrue();
 
@@ -365,7 +363,7 @@ public class CacheTest {
 		entry0 = cache.get(req);
 		assertThat(entry0).isEqualTo(CacheEntry.EMPTY); //still null
 		assertThat(entry0.getValue()).isNull();
-		assertThat(entry0.getCached()).isNull();
+		assertThat(entry0.getStoredAt()).isNull();
 		assertThat(entry0.isStale()).isTrue();
 		assertThat(entry0.isEvicted()).isTrue();
 		Thread.sleep(50); //complete async refresh
@@ -442,23 +440,22 @@ public class CacheTest {
 	 */
 	@Test
 	public void cacheExpiredFailedUpdate() throws Exception {
-
-		SpyMemcache<String> cache = buildMemcache();
-		Scheduler<String> scheduler = new Scheduler<String>(cache, executor);
+		SpyMemcache<String, String> cache = buildMemcache();
+		Scheduler<String, String> scheduler = new Scheduler<String, String>(cache, executor);
 		cache.setScheduler(scheduler);
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
 		MissingFailedRecipe amis = new MissingFailedRecipe(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.EXPIRED);
 		ExpiredFailedRecipe aexp = new ExpiredFailedRecipe(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED, CacheReturned.EXPIRED);
-		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, amis, aexp);
-		CacheLoadRequest<String> req = CacheLoadRequest.With(loader).cacheKey("Eternal").async(true, true)
+		ConfiguredCacheLoader<String, String> loader = new ConfiguredCacheLoader<String, String>(fetch, amis, aexp);
+		CacheLoadRequest<String, String> req = CacheLoadRequest.With(loader).cacheKey("Eternal").async(true, true)
 				.cache(2, 1, TimeUnit.SECONDS).build();
 
 		int rCounter = 0;
 
 		CacheEntry<String> entry0 = cache.get(req);//cache miss & async update
 		assertThat(entry0.getValue()).isNull();
-		assertThat(entry0.getCached()).isNull();
+		assertThat(entry0.getStoredAt()).isNull();
 		assertThat(entry0.isStale()).isTrue();
 		assertThat(entry0.isEvicted()).isTrue();
 		Thread.sleep(50); //complete async update
@@ -528,17 +525,17 @@ public class CacheTest {
 	 */
 	@Test
 	public void testScheduled() throws Exception {
-		SpyMemcache<String> cache = buildMemcache();
-		Scheduler<String> scheduler = new Scheduler<String>(cache, executor);
+		SpyMemcache<String, String> cache = buildMemcache();
+		Scheduler<String, String> scheduler = new Scheduler<String, String>(cache, executor);
 		cache.setScheduler(scheduler);
 
 		TestSimpleLoader fetch = new TestSimpleLoader();
 		MissingFailedRecipe mis = new MissingFailedRecipe(LogErrorAs.MESSAGE, MissingReturn.NULL, CacheReturned.DONT);
 		ExpiredFailedRecipe exp = new ExpiredFailedRecipe(LogErrorAs.MESSAGE, ExpiredReturn.EXPIRED, CacheReturned.DONT);
-		ConfiguredCacheLoader<String> loader = new ConfiguredCacheLoader<String>(fetch, mis, exp);
+		ConfiguredCacheLoader<String, String> loader = new ConfiguredCacheLoader<String, String>(fetch, mis, exp);
 
 		String key = "Scheduled";
-		CacheLoadRequest<String> request = CacheLoadRequest.With(loader).async(false, false).cacheKey(key)
+		CacheLoadRequest<String, String> request = CacheLoadRequest.With(loader).async(false, false).cacheKey(key)
 				.cache(2, 1, TimeUnit.SECONDS).build();
 
 		int rCounter = 0;
@@ -594,7 +591,7 @@ public class CacheTest {
 		cache.close();
 	}
 
-	private SpyMemcache<String> buildMemcache() throws IOException {
+	private SpyMemcache<String, String> buildMemcache() throws IOException {
 		InetSocketAddress address = new InetSocketAddress(11311);
 		if (memcached == null) {
 			memcached = new MemCacheDaemon<LocalCacheElement>();
@@ -612,17 +609,19 @@ public class CacheTest {
 		}
 
 		MemcachedClient client = new MemcachedClient(address);
-		SpyMemcache<String> cache = new SpyMemcache<String>("CacheTest", client, 1, TimeUnit.SECONDS);
+		SpyMemcache<String, String> cache = new SpyMemcache<String, String>("CacheTest", CacheKeyProvider.STRING, client,
+				1, TimeUnit.SECONDS);
 		return cache;
 	}
 
-	private EHCache<String> buildEhCache() {
+	private EHCache<String, String> buildEhCache() {
 		if (ehCacheManager == null) {
 			ehCacheManager = CacheManager.create();
 			Cache ehCache = new Cache("EHCache", 5000, false, false, 0, 0);
 			ehCacheManager.addCache(ehCache);
 		}
-		EHCache<String> cache = new EHCache<String>("EHCache", ehCacheManager.getCache("EHCache"));
+		EHCache<String, String> cache = new EHCache<String, String>("EHCache", CacheKeyProvider.STRING,
+				ehCacheManager.getCache("EHCache"));
 		return cache;
 	}
 

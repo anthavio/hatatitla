@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.anthavio.cache.CacheBase;
-import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.TestResponse.NameValue;
 import net.anthavio.httl.marshall.HttlBytesExtractor;
@@ -313,7 +311,7 @@ public class MarshallingExtractingTest {
 			//System.out.println(nameValue.getName() + " " + nameValue.getValue());
 		}
 
-		CacheBase<Object> cache = new HeapMapCache<Object>();
+		//CacheBase<Object> cache = new HeapMapCache<Object>();
 		//CachingExtractor cextractor = new CachingExtractor(sender, cache);
 		//CachingExtractorRequest<String> crequest = cextractor.from(request).hardTtl(2, TimeUnit.MINUTES).softTtl(1, TimeUnit.MINUTES)
 		//		.build(String.class);

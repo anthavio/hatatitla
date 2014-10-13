@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.bind.Marshaller;
 
 import net.anthavio.cache.CacheBase;
+import net.anthavio.cache.CacheKeyProvider;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.HttlBuilder;
@@ -166,7 +167,7 @@ public class ExamplesTest {
 		//Github uses ETag and Cache control headers nicely
 		HttlSender sender = HttlSender.url("https://api.github.com").build();
 		//Provide cache instance - Simple Heap Hashmap in this case
-		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+		CacheBase<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
 		//Create caching sender
 		CachingSender csender = new CachingSender(sender, cache);
 

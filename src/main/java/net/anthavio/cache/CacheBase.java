@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.Builders.CacheReadyRequestLoaderBuilder;
 import net.anthavio.cache.CacheEntryLoader.CacheEntryLoadResult;
 import net.anthavio.cache.CacheEntryLoader.CacheLoaderException;
-import net.anthavio.httl.util.Cutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,23 +17,37 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public abstract class CacheBase<V> implements Cache<String, V> {
+public abstract class CacheBase<K, V> implements Cache<K, V> {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected final String name;
 
-	private Scheduler<V> scheduler;
+	private Scheduler<K, V> scheduler;
 
-	public CacheBase(String name) {
-		this(name, null);
+	private final CacheKeyProvider<K> keyProvider;
+
+	public CacheBase(String name, CacheKeyProvider<K> keyProvider) {
+		this(name, keyProvider, null);
 	}
 
-	public CacheBase(String name, ExecutorService executor) {
-		this.name = name;
-		if (executor != null) {
-			this.scheduler = new Scheduler<V>(this, executor);
+	public CacheBase(String name, CacheKeyProvider<K> keyProvider, ExecutorService executor) {
+		if (name == null || name.isEmpty()) {
+			throw new IllegalArgumentException("Wrong name: " + name);
 		}
+		this.name = name;
+
+		if (keyProvider == null) {
+			throw new IllegalArgumentException("Null keyProvider");
+		}
+		this.keyProvider = keyProvider;
+
+		if (executor != null) {
+			this.scheduler = new Scheduler<K, V>(this, executor);
+		} else {
+			this.scheduler = null;
+		}
+
 	}
 
 	public String getName() {
@@ -53,16 +66,26 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	}
 
 	/**
+	 * Cache implementation can use user provided key 
+	 * - add prefix or namespace 
+	 * - translate it to something else 
+	 * - hash it when it is too long
+	 */
+	public String getCacheKey(K userKey) {
+		return keyProvider.provideKey(userKey);
+	}
+
+	/**
 	 * @return builder to create complex CacheRequest
 	 */
-	public CacheReadyRequestLoaderBuilder<V> with(CacheEntryLoader<V> key) {
-		return new CacheReadyRequestLoaderBuilder<V>(this, key);
+	public CacheReadyRequestLoaderBuilder<K, V> with(CacheEntryLoader<K, V> key) {
+		return new CacheReadyRequestLoaderBuilder<K, V>(this, key);
 	}
 
 	@Override
-	public final CacheEntry<V> get(String userKey) {
-		if (Cutils.isBlank(userKey)) {
-			throw new IllegalArgumentException("Key must not be blank");
+	public final CacheEntry<V> get(K userKey) {
+		if (userKey == null) {
+			throw new IllegalArgumentException("Key must not be null");
 		}
 		String cacheKey = getCacheKey(userKey);
 		if (logger.isDebugEnabled()) {
@@ -94,14 +117,14 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	protected abstract CacheEntry<V> doGet(String cacheKey) throws Exception;
 
 	@Override
-	public Boolean set(String userKey, V data, long evictTtl, TimeUnit unit) {
+	public Boolean set(K userKey, V data, long evictTtl, TimeUnit unit) {
 		CacheEntry<V> entry = new CacheEntry<V>(data, evictTtl, evictTtl, unit);
 		return set(userKey, entry);
 	}
 
 	@Override
-	public final Boolean set(String userKey, CacheEntry<V> entry) {
-		if (Cutils.isBlank(userKey)) {
+	public final Boolean set(K userKey, CacheEntry<V> entry) {
+		if (userKey == null) {
 			throw new IllegalArgumentException("Key must not be blank");
 		}
 		String cacheKey = getCacheKey(userKey);
@@ -112,10 +135,10 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 			throw new IllegalArgumentException("Evict TTL " + entry.getEvictTtl() + "is < 1");
 		}
 		try {
-			entry.setCached(new Date());
+			entry.setStoredAt(new Date());
 			return doSet(cacheKey, entry);
 		} catch (Exception x) {
-			entry.setCached(null);
+			entry.setStoredAt(null);
 			logger.warn("Failed to set: " + userKey + " (" + cacheKey + ")", x);
 			return Boolean.FALSE;
 		}
@@ -124,8 +147,8 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	protected abstract Boolean doSet(String cacheKey, CacheEntry<V> entry) throws Exception;
 
 	@Override
-	public final Boolean remove(String userKey) {
-		if (Cutils.isBlank(userKey)) {
+	public final Boolean remove(K userKey) {
+		if (userKey == null) {
 			throw new IllegalArgumentException("Key must not be blank");
 		}
 		String cacheKey = getCacheKey(userKey);
@@ -145,11 +168,11 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	/**
 	 * Client Cache get 
 	 */
-	public CacheEntry<V> get(CacheLoadRequest<V> request) {
+	public CacheEntry<V> get(CacheLoadRequest<K, V> request) {
 		if ((request.isMissingLoadAsync() || request.isExpiredLoadAsync()) && scheduler == null) {
 			throw new IllegalStateException("Scheduler must be configured to execute asynchronous requests");
 		}
-		String userKey = request.getUserKey();
+		K userKey = request.getUserKey();
 		CacheEntry<V> entry = get(userKey);
 		if (entry != null) {
 			if (!entry.isStale()) {
@@ -165,7 +188,7 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	/**
 	 * Client enforced Cache load
 	 */
-	public CacheEntry<V> load(CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
+	public CacheEntry<V> load(CacheLoadRequest<K, V> request, CacheEntry<V> expiredEntry) {
 		if (expiredEntry != null) {
 			//soft expired - refresh needed
 			if (request.isExpiredLoadAsync()) {
@@ -189,16 +212,16 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	/**
 	 * Load and store value into cache.
 	 */
-	protected CacheEntry<V> load(boolean async, CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
+	protected CacheEntry<V> load(boolean async, CacheLoadRequest<K, V> request, CacheEntry<V> expiredEntry) {
 		CacheEntryLoadResult<V> entry;
-		String userKey = request.getUserKey();
+		K userKey = request.getUserKey();
 		try {
 			entry = request.getLoader().load(request, async, expiredEntry);
 			if (entry.getCacheSet()) {
 				set(request.getUserKey(), entry);
 			}
 			if (request instanceof ScheduledRequest) {
-				((ScheduledRequest<V>) request).setLastRefresh(System.currentTimeMillis());
+				((ScheduledRequest<K, V>) request).setLastRefresh(System.currentTimeMillis());
 			}
 		} catch (Exception exception) {
 			//No exceptions should be here
@@ -222,18 +245,18 @@ public abstract class CacheBase<V> implements Cache<String, V> {
 	 * 
 	 * Also starts scheduler thread if it is not running yet.
 	 */
-	public void schedule(CacheLoadRequest request) {
+	public void schedule(CacheLoadRequest<K, V> request) {
 		if (this.scheduler == null) {
 			throw new IllegalStateException("Scheduler for asynchronous refresh is not configured");
 		}
 		scheduler.schedule(request);
 	}
 
-	public Scheduler<V> getScheduler() {
+	public Scheduler<K, V> getScheduler() {
 		return scheduler;
 	}
 
-	public void setScheduler(Scheduler<V> scheduler) {
+	public void setScheduler(Scheduler<K, V> scheduler) {
 		this.scheduler = scheduler;
 	}
 

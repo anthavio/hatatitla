@@ -86,7 +86,7 @@ public class OAuth2 {
 
 		public FinalBuildStep access(String code);
 
-		public FinalBuildStep refresh(String offline_token);
+		public FinalBuildStep refresh(String refresh_token);
 
 		public FinalBuildStep password(String username, String password);
 
@@ -124,8 +124,8 @@ public class OAuth2 {
 	 * So called Offline access
 	 * 
 	 */
-	public FinalBuildStep refresh(String offline_token) {
-		return new TokenRequestBuilder(this).refresh(offline_token);
+	public FinalBuildStep refresh(String refresh_token) {
+		return new TokenRequestBuilder(this).refresh(refresh_token);
 	}
 
 	/**

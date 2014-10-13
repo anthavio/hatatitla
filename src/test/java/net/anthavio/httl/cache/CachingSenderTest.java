@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
+import net.anthavio.cache.CacheKeyProvider;
 import net.anthavio.cache.CacheLoadRequest;
 import net.anthavio.cache.Scheduler;
 import net.anthavio.cache.impl.HeapMapCache;
@@ -59,9 +60,9 @@ public class CachingSenderTest {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new SimpleHttpSender(url);
 		HttlSender sender = new HttpClient4Config(url).sender().build();
-		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+		HeapMapCache<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
+		Scheduler<String, CachedResponse> scheduler = new Scheduler<String, CachedResponse>(cache, executor);
 		CachingSender csender = new CachingSender(sender, cache);
-		Scheduler<CachedResponse> scheduler = new Scheduler<CachedResponse>(cache, executor);
 		cache.setScheduler(scheduler);
 		return csender;
 	}
@@ -72,7 +73,7 @@ public class CachingSenderTest {
 		HttlSender sender1 = new HttpClient4Config("127.0.0.1:" + server.getPortHttp()).sender().build();//different host name
 		HttlSender sender2 = new HttpClient4Config("localhost:" + server.getPortHttp()).sender().build();//different host name
 		//shared cache for 2 senders
-		CacheBase<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+		CacheBase<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
 		CachingSender csender1 = new CachingSender(sender1, cache);
 		CachingSender csender2 = new CachingSender(sender2, cache);
 		HttlRequest request1 = sender1.GET("/").param("docache", 1).build();
@@ -102,7 +103,7 @@ public class CachingSenderTest {
 		//ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
 		CachingSenderRequest crequest = csender.from(request).cache(4, 2, TimeUnit.SECONDS).build();
 
-		CacheLoadRequest<CachedResponse> loadRequest = csender.convert(crequest);
+		CacheLoadRequest<String, CachedResponse> loadRequest = csender.convert(crequest);
 		csender.getCache().schedule(loadRequest);
 		final int initialCount = server.getRequestCount();
 		assertThat(csender.execute(crequest)).isNull();
@@ -231,7 +232,7 @@ public class CachingSenderTest {
 		//ETag: "9ea8f5a5b1d659bc8358daad6f2e347f15f6e683"
 		//Expires: Sat, 01 Jan 2000 00:00:00 GMT
 		HttlSender sender = new HttpClient4Config("https://graph.facebook.com").sender().build();
-		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+		HeapMapCache<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
 		CachingSender csender = new CachingSender(sender, cache);
 
 		HttlRequest request = sender
@@ -260,7 +261,7 @@ public class CachingSenderTest {
 		//Date: Tue, 26 Feb 2013 16:11:16 GMT
 		//Expires: Wed, 27 Feb 2013 16:11:16 GMT
 		HttlSender sender = new HttpClient4Config("http://maps.googleapis.com/maps/api/staticmap").sender().build();
-		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+		HeapMapCache<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
 		CachingSender csender = new CachingSender(sender, cache);
 		SenderNobodyRequestBuilder request = sender.GET("/");
 		request.param("key", "AIzaSyCgNUVqbYTyIP_f4Ew2wJXSZ9XjIQ8F5w8");
@@ -312,7 +313,7 @@ public class CachingSenderTest {
 		//Expires: -1
 		//Cache-Control: private, max-age=0
 		HttlSender sender = new HttpClient4Config("http://www.google.co.uk").sender().build();
-		HeapMapCache<CachedResponse> cache = new HeapMapCache<CachedResponse>();
+		HeapMapCache<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
 		CachingSender csender = new CachingSender(sender, cache);
 
 		HttlResponse response = csender.execute(sender.GET("/").build());

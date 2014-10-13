@@ -124,39 +124,39 @@ public class Builders {
 	 *
 	 * @param <V>
 	 */
-	public static class CacheRequestLoaderBuilder<V> extends BaseCacheRequestBuilder<CacheRequestLoaderBuilder<V>> {
+	public static class CacheRequestLoaderBuilder<K, V> extends BaseCacheRequestBuilder<CacheRequestLoaderBuilder<K, V>> {
 
-		private CacheEntryLoader<V> loader;
+		private CacheEntryLoader<K, V> loader;
 
 		private boolean missingLoadAsync = false;
 
 		private boolean expiredLoadAsync = false;
 
-		public CacheRequestLoaderBuilder(CacheEntryLoader<V> loader) {
+		public CacheRequestLoaderBuilder(CacheEntryLoader<K, V> loader) {
 			if (loader == null) {
 				throw new IllegalArgumentException("Null loader");
 			}
 			this.loader = loader;
 		}
 
-		public CacheRequestLoaderBuilder<V> async(boolean onMissing, boolean onExpired) {
+		public CacheRequestLoaderBuilder<K, V> async(boolean onMissing, boolean onExpired) {
 			this.missingLoadAsync = onMissing;
 			this.expiredLoadAsync = onExpired;
 			return getSelf();
 		}
 
-		protected LoadingSettings<V> buildLoadingSettings() {
-			return new LoadingSettings<V>(loader, missingLoadAsync, expiredLoadAsync);
+		protected LoadingSettings<K, V> buildLoadingSettings() {
+			return new LoadingSettings<K, V>(loader, missingLoadAsync, expiredLoadAsync);
 		}
 
-		public CacheLoadRequest<V> build() {
+		public CacheLoadRequest<K, V> build() {
 			CachingSettings ci = buildCachingSettings();
-			LoadingSettings<V> li = buildLoadingSettings();
-			return new CacheLoadRequest<V>(ci, li);
+			LoadingSettings<K, V> li = buildLoadingSettings();
+			return new CacheLoadRequest<K, V>(ci, li);
 		}
 
 		@Override
-		protected CacheRequestLoaderBuilder<V> getSelf() {
+		protected CacheRequestLoaderBuilder<K, V> getSelf() {
 			return this;
 		}
 	}
@@ -166,11 +166,11 @@ public class Builders {
 	 *
 	 * @param <V>
 	 */
-	public static class CacheReadyRequestLoaderBuilder<V> extends CacheRequestLoaderBuilder<V> {
+	public static class CacheReadyRequestLoaderBuilder<K, V> extends CacheRequestLoaderBuilder<K, V> {
 
-		private final CacheBase<V> cache;
+		private final CacheBase<K, V> cache;
 
-		public CacheReadyRequestLoaderBuilder(CacheBase<V> cacheBase, CacheEntryLoader<V> loader) {
+		public CacheReadyRequestLoaderBuilder(CacheBase<K, V> cacheBase, CacheEntryLoader<K, V> loader) {
 			super(loader);
 			if (cacheBase == null) {
 				throw new IllegalArgumentException("Null cache");
@@ -184,7 +184,7 @@ public class Builders {
 		}
 
 		@Override
-		protected CacheReadyRequestLoaderBuilder<V> getSelf() {
+		protected CacheReadyRequestLoaderBuilder<K, V> getSelf() {
 			return this;
 		}
 	}

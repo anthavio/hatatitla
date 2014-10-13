@@ -11,9 +11,9 @@ import net.anthavio.cache.CachingSettings;
 import net.anthavio.cache.ConfiguredCacheLoader;
 import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.cache.LoadingSettings;
-import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.cache.Builders.ExtractingRequestBuilder;
 
 import org.slf4j.Logger;
@@ -36,9 +36,9 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 
 	private final HttlSender sender;
 
-	private final CacheBase<Serializable> cache;
+	private final CacheBase<HttlRequest, Serializable> cache;
 
-	public CachingExtractor(HttlSender sender, CacheBase<Serializable> cache) {
+	public CachingExtractor(HttlSender sender, CacheBase<HttlRequest, Serializable> cache) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -61,7 +61,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	/**
 	 * @return underlying cache
 	 */
-	public CacheBase<Serializable> getCache() {
+	public CacheBase<HttlRequest, Serializable> getCache() {
 		return cache;
 	}
 
@@ -76,15 +76,15 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	/**
 	 * Custom cache key from request (if exist) takes precedence
 	 * Otherwise key derived from request URL is used
-	 */
+	 
 	protected String getCacheKey(CachingSenderRequest request) {
 		String cacheKey = request.getUserKey();
 		if (cacheKey == null) {
-			cacheKey = sender.getCacheKey(request.getSenderRequest());
+			cacheKey = keyProvider.provideKey(request.getSenderRequest());
 		}
 		return cacheKey;
 	}
-
+	*/
 	public static class SimpleHttpSenderExtractor<T extends Serializable> implements SimpleLoader<T> {
 
 		private final HttlSender sender;
@@ -120,17 +120,17 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	/**
 	 * Turns Sender Request into Cache Request
 	 */
-	public <T extends Serializable> CacheLoadRequest<T> convert(CachingExtractorRequest<T> request) {
-		String cacheKey = getCacheKey(request);
-		CachingSettings caching = new CachingSettings(cacheKey, request.getEvictTtl(), request.getExpiryTtl(),
-				TimeUnit.SECONDS);
+	public <V extends Serializable> CacheLoadRequest<HttlRequest, V> convert(CachingExtractorRequest<V> request) {
+		//String cacheKey = getCacheKey(request);
+		CachingSettings caching = new CachingSettings(request.getSenderRequest(), request.getEvictTtl(),
+				request.getExpiryTtl(), TimeUnit.SECONDS);
 
-		SimpleHttpSenderExtractor<T> simple = new SimpleHttpSenderExtractor<T>(sender, request);
-		CacheEntryLoader<T> loader = new ConfiguredCacheLoader<T>(simple, request.getMissingRecipe(),
-				request.getExpiredRecipe());
-		LoadingSettings<T> loading = new LoadingSettings<T>(loader, request.isMissingLoadAsync(),
+		SimpleHttpSenderExtractor<V> simple = new SimpleHttpSenderExtractor<V>(sender, request);
+		CacheEntryLoader<HttlRequest, V> loader = new ConfiguredCacheLoader<HttlRequest, V>(simple,
+				request.getMissingRecipe(), request.getExpiredRecipe());
+		LoadingSettings<HttlRequest, V> loading = new LoadingSettings<HttlRequest, V>(loader, request.isMissingLoadAsync(),
 				request.isExpiredLoadAsync());
-		return new CacheLoadRequest<T>(caching, loading);
+		return new CacheLoadRequest<HttlRequest, V>(caching, loading);
 	}
 
 	/**
@@ -141,21 +141,21 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	 * causes two cache queries for expired and missing entries 
 	 */
 	public <T extends Serializable> CacheEntry<T> extract(CachingExtractorRequest<T> request) {
-		String cacheKey = getCacheKey(request);
-		CacheEntry<T> entry = (CacheEntry<T>) cache.get(cacheKey);
+		//String cacheKey = getCacheKey(request);
+		CacheEntry<T> entry = (CacheEntry<T>) cache.get(request.getSenderRequest());
 		if (entry != null) {
 			//entry.getValue().setRequest(request.getSenderRequest());
 			if (!entry.isStale()) {
 				return (CacheEntry<T>) entry; //fresh hit
 			} else {
-				CacheLoadRequest<T> cacheRequest = convert(request);
-				return (CacheEntry<T>) cache.load((CacheLoadRequest<Serializable>) cacheRequest,
+				CacheLoadRequest<HttlRequest, T> cacheRequest = convert(request);
+				return (CacheEntry<T>) cache.load((CacheLoadRequest<HttlRequest, Serializable>) cacheRequest,
 						(CacheEntry<Serializable>) entry);
 				//return (CacheEntry<T>) cache.get(lrequest);
 			}
 		} else { //cache miss - we have nothing
-			CacheLoadRequest<T> cacheRequest = convert(request);
-			return (CacheEntry<T>) cache.load((CacheLoadRequest<Serializable>) cacheRequest, null);
+			CacheLoadRequest<HttlRequest, T> cacheRequest = convert(request);
+			return (CacheEntry<T>) cache.load((CacheLoadRequest<HttlRequest, Serializable>) cacheRequest, null);
 		}
 	}
 

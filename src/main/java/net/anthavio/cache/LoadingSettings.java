@@ -9,17 +9,17 @@ import java.io.Serializable;
  *
  * @param <V>
  */
-public class LoadingSettings<V> implements Serializable {
+public class LoadingSettings<K, V> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private CacheEntryLoader<V> loader;
+	private CacheEntryLoader<K, V> loader;
 
 	private boolean missingLoadAsync = false;
 
 	private boolean expiredLoadAsync = false;
 
-	public LoadingSettings(CacheEntryLoader<V> loader, boolean missingAsyncLoad, boolean expiredAsyncLoad) {
+	public LoadingSettings(CacheEntryLoader<K, V> loader, boolean missingAsyncLoad, boolean expiredAsyncLoad) {
 		if (loader == null) {
 			throw new IllegalArgumentException("Null loader");
 		}
@@ -28,7 +28,7 @@ public class LoadingSettings<V> implements Serializable {
 		this.expiredLoadAsync = expiredAsyncLoad;
 	}
 
-	public CacheEntryLoader<V> getLoader() {
+	public CacheEntryLoader<K, V> getLoader() {
 		return loader;
 	}
 

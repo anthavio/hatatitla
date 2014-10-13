@@ -7,10 +7,12 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -89,13 +91,6 @@ public class HttlSender implements SenderOperations, Closeable {
 
 	public SenderConfigurer getConfig() {
 		return config;
-	}
-
-	/**
-	 * Extremely important for caching -  generates proper key based on information from request and sender
-	 */
-	public String getCacheKey(HttlRequest request) {
-		return String.valueOf(config.getUrl().toString() + 31 * request.hashCode());
 	}
 
 	public void close() {
@@ -573,6 +568,16 @@ public class HttlSender implements SenderOperations, Closeable {
 				return false;
 			}
 			return true;
+		}
+
+		@Override
+		public Multival<T> clone() {
+			Multival<T> multival = new Multival<T>();
+			multival.entries = new HashMap<String, List<T>>();
+			for (Entry<String, List<T>> entry : entries.entrySet()) {
+				multival.entries.put(entry.getKey(), entry.getValue());
+			}
+			return multival;
 		}
 	}
 

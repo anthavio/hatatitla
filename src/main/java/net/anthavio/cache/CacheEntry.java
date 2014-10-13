@@ -18,7 +18,7 @@ public class CacheEntry<V> implements Serializable {
 
 	private final V value;
 
-	private Date cached; //when entry was added
+	private Date storedAt; //when entry was added
 
 	private final long evictTtl; //seconds - entry will disapear after
 
@@ -30,6 +30,7 @@ public class CacheEntry<V> implements Serializable {
 	 * @param value - to be cached, can be null
 	 * @param evictTtl - cache entry eviction in seconds
 	 * @param staleTtl - cache entry become stale in seconds
+	 * @param unit - unit of TTL values
 	 */
 	public CacheEntry(V value, long evictTtl, long staleTtl, TimeUnit unit) {
 		//can be null
@@ -54,17 +55,28 @@ public class CacheEntry<V> implements Serializable {
 		return this.value;
 	}
 
-	public Date getCached() {
-		return this.cached;
+	/**
+	 * @return millis when entry was stored in cache
+	 */
+	public Date getStoredAt() {
+		return this.storedAt;
 	}
 
-	protected final void setCached(Date cached) {
-		this.cached = cached;
+	/**
+	 * Protected as only Cache itself updates it on successful store
+	 * 
+	 * @param cached millis when entry was stored in cache
+	 */
+	protected final void setStoredAt(Date cached) {
+		this.storedAt = cached;
 	}
 
+	/**
+	 * @return cache entry should be revalidated
+	 */
 	public boolean isStale() {
-		if (cached != null) {
-			return cached.getTime() + (staleTtl * 1000) < System.currentTimeMillis();
+		if (storedAt != null) {
+			return storedAt.getTime() + (staleTtl * 1000) < System.currentTimeMillis();
 		} else {
 			return true;
 		}
@@ -77,34 +89,43 @@ public class CacheEntry<V> implements Serializable {
 		return staleTtl;
 	}
 
-	public long getStaleTimestamp() {
-		return cached.getTime() + (staleTtl * 1000);
+	/**
+	 * @return milliseconds when entry become stale
+	 */
+	public long getStaleAt() {
+		return storedAt.getTime() + (staleTtl * 1000);
 	}
 
+	/**
+	 * @return cache entry should be thrown away and loaded again
+	 */
 	public boolean isEvicted() {
-		if (cached != null) {
-			return cached.getTime() + (evictTtl * 1000) < System.currentTimeMillis();
+		if (storedAt != null) {
+			return storedAt.getTime() + (evictTtl * 1000) < System.currentTimeMillis();
 		} else {
 			return true;
 		}
 	}
 
 	/**
-	 * @return seconds - after entry will disapear
+	 * @return seconds - after entry will be evicted
 	 */
 	public long getEvictTtl() {
 		return evictTtl;
 	}
 
-	public long getEvictTimestamp() {
-		return cached.getTime() + (evictTtl * 1000);
+	/**
+	 * @return milliseconds when entry become evicted
+	 */
+	public long getEvictAt() {
+		return storedAt.getTime() + (evictTtl * 1000);
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((cached == null) ? 0 : cached.hashCode());
+		result = prime * result + ((storedAt == null) ? 0 : storedAt.hashCode());
 		result = prime * result + (int) (evictTtl ^ (evictTtl >>> 32));
 		result = prime * result + (int) (staleTtl ^ (staleTtl >>> 32));
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
@@ -120,10 +141,10 @@ public class CacheEntry<V> implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		CacheEntry<?> other = (CacheEntry<?>) obj;
-		if (cached == null) {
-			if (other.cached != null)
+		if (storedAt == null) {
+			if (other.storedAt != null)
 				return false;
-		} else if (!cached.equals(other.cached))
+		} else if (!storedAt.equals(other.storedAt))
 			return false;
 		if (evictTtl != other.evictTtl)
 			return false;
@@ -146,8 +167,8 @@ public class CacheEntry<V> implements Serializable {
 		if (value.length() > 100) {
 			value = value.substring(0, 100) + "...";
 		}
-		if (cached != null) {
-			return "CacheEntry [cached=" + sdf.format(cached) + ", evictTtl=" + evictTtl + ", expiryTtl=" + staleTtl
+		if (storedAt != null) {
+			return "CacheEntry [cached=" + sdf.format(storedAt) + ", evictTtl=" + evictTtl + ", expiryTtl=" + staleTtl
 					+ ", value=" + value + "]";
 		} else {
 			return "CacheEntry [cached=, evictTtl=" + evictTtl + ", expiryTtl=" + staleTtl + ", value=" + value + "]";
