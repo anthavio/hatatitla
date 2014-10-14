@@ -230,7 +230,7 @@ public class HttpClient3Transport implements HttlTransport {
 
 		@Override
 		public void writeRequest(OutputStream stream) throws IOException {
-			marshaller.marshall(request, stream);
+			marshaller.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(), stream);
 		}
 
 		@Override

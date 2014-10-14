@@ -15,7 +15,7 @@ import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlCacheKeyProvider;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlStatusException;
@@ -265,7 +265,7 @@ public abstract class CachingExtractorTest {
 	public void asyncNonDuplicateRefreshOnSameResourceExtraction() throws Exception {
 
 		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
-		SenderRequestBuilder<?> builder = cextractor.getSender().GET("/");
+		HttlRequestBuilder<?> builder = cextractor.getSender().GET("/");
 		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		CachingExtractorRequest<String> cerequest = cextractor.from(builder.build()).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!

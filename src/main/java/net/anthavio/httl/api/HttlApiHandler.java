@@ -15,7 +15,8 @@ import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders;
+import net.anthavio.httl.HttlRequestBuilders.BodyfulRequestBuilder;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
@@ -75,7 +76,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			throw new IllegalStateException("Metadata not found for " + method);
 		}
 
-		SenderBodyRequestBuilder builder = new SenderBodyRequestBuilder(sender, metaMethod.httpMethod.getMethod(),
+		BodyfulRequestBuilder builder = new BodyfulRequestBuilder(sender, metaMethod.httpMethod.getMethod(),
 				metaMethod.urlPath);
 
 		//Class declared headers
@@ -170,7 +171,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 		}
 
 		if (body != null) {
-			String[] contentType = HttlRequest.digContentType(builder.getHeaders(), sender.getConfig());
+			String[] contentType = HttlRequestBuilders.digContentType(builder.getHeaders(), sender.getConfig());
 			if (contentType[0] == null) {
 				throw new HttlRequestException("Content-Type header not specified");
 			}
@@ -195,9 +196,8 @@ public class HttlApiHandler<T> implements InvocationHandler {
 
 	}
 
-	protected Object complete(SenderBodyRequestBuilder builder, ApiMethodMeta metaMethod,
-			HttlBuilderVisitor builderVisitor, HttlExecutionFilter executionFilter, HttlResponseExtractor<?> extractor)
-			throws IOException {
+	protected Object complete(BodyfulRequestBuilder builder, ApiMethodMeta metaMethod, HttlBuilderVisitor builderVisitor,
+			HttlExecutionFilter executionFilter, HttlResponseExtractor<?> extractor) throws IOException {
 
 		if (builderVisitor != null) {
 			builderVisitor.visit(builder);

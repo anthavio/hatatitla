@@ -107,8 +107,8 @@ public class HttlUtil {
 	}
 
 	public static String[] splitContentType(String contentType, String defaultCharset) {
-		if (Cutils.isBlank(contentType)) {
-			return new String[] { "text/plain", defaultCharset };
+		if (contentType == null) {
+			return new String[] { null, defaultCharset };
 		}
 		int idxMediaEnd = contentType.indexOf(";");
 		String mediaType;
@@ -343,11 +343,11 @@ public class HttlUtil {
 		}
 	}
 
-	public static String urlencode(String string) {
+	public static final String urlencode(String string) {
 		try {
-			return URLEncoder.encode(string, "utf-8");
+			return URLEncoder.encode(string, "utf-8"); //W3C recommends utf-8 
 		} catch (UnsupportedEncodingException uex) {
-			throw new IllegalStateException("utf-8 is gone", uex);
+			throw new IllegalStateException("Misconfigured encoding utf-8", uex);
 		}
 	}
 

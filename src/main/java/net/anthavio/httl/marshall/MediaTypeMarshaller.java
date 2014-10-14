@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.anthavio.httl.HttlBodyMarshaller;
-import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.OptionalLibs;
@@ -33,8 +32,7 @@ public class MediaTypeMarshaller implements HttlBodyMarshaller {
 	private Map<String, HttlBodyMarshaller> marshallers = new HashMap<String, HttlBodyMarshaller>();
 
 	@Override
-	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
-		String mediaType = request.getMediaType();
+	public void marshall(Object payload, String mediaType, String charset, OutputStream stream) throws IOException {
 		HttlBodyMarshaller marshaller = marshallers.get(mediaType);
 		if (marshaller == null) {
 			marshaller = OptionalLibs.findMarshaller(mediaType);
@@ -44,10 +42,10 @@ public class MediaTypeMarshaller implements HttlBodyMarshaller {
 		}
 
 		if (marshaller == null) {
-			throw new HttlRequestException("Marshaller not found for " + request);
+			throw new HttlRequestException("Marshaller not found for " + mediaType);
 		}
 
-		marshaller.marshall(request, stream);
+		marshaller.marshall(payload, mediaType, charset, stream);
 	}
 
 	public HttlBodyMarshaller getMarshaller(String mediaType) {

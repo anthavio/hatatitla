@@ -129,8 +129,8 @@ public class MarshallingExtractingTest {
 		try {
 			sender.GET("/").extract(new GenericType<List<String>>() {
 			});
-			Assertions.fail("Preceding statement must throw " + HttlProcessingException.class.getName());
-		} catch (HttlProcessingException isx) {
+			Assertions.fail("Preceding statement must throw " + HttlResponseException.class.getName());
+		} catch (HttlResponseException isx) {
 			Assertions.assertThat(isx.getMessage()).startsWith("No Unmarshaller for Response");
 		}
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
@@ -216,16 +216,16 @@ public class MarshallingExtractingTest {
 
 		try {
 			sender.GET("/").extract(failingExtractor);
-			Assert.fail("Expected " + HttlProcessingException.class.getName());
-		} catch (HttlProcessingException hpx) {
+			Assert.fail("Expected " + HttlResponseException.class.getName());
+		} catch (HttlResponseException hpx) {
 			assertThat(hpx.getCause()).isEqualTo(extractException);
 		}
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly
 
 		try {
 			sender.GET("/").param("dostatus", 501).extract(failingExtractor);
-			Assert.fail("Expected " + HttlProcessingException.class.getName());
-		} catch (HttlProcessingException hpx) {
+			Assert.fail("Expected " + HttlResponseException.class.getName());
+		} catch (HttlResponseException hpx) {
 			assertThat(hpx.getCause()).isEqualTo(extractException);
 		}
 		assertThat(cmanager.getTotalStats().getLeased()).isEqualTo(0); //closed automaticaly

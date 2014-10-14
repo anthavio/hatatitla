@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.anthavio.httl.HttlBodyUnmarshaller;
-import net.anthavio.httl.HttlProcessingException;
+import net.anthavio.httl.HttlResponseException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.OptionalLibs;
@@ -37,11 +37,11 @@ public class MediaTypeUnmarshaller implements HttlBodyUnmarshaller {
 			if (unmarshaller != null) {
 				return unmarshaller.unmarshall(response, returnType);
 			} else {
-				throw new HttlProcessingException(response, "No Unmarshaller for Response: " + response + " return type: "
+				throw new HttlResponseException(response, "No Unmarshaller for Response: " + response + " return type: "
 						+ returnType);
 			}
 		} else {
-			throw new HttlProcessingException(response, "Response does not have Content-Type: " + response + " return type: "
+			throw new HttlResponseException(response, "Response does not have Content-Type: " + response + " return type: "
 					+ returnType);
 		}
 

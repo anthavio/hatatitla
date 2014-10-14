@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 import net.anthavio.httl.HttlBodyMarshaller;
-import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestException;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -36,11 +35,11 @@ public class Jackson1Marshaller implements HttlBodyMarshaller {
 	}
 
 	@Override
-	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
-		if (!request.getMediaType().contains("json")) {
-			throw new HttlRequestException("Cannot mashall into " + request.getMediaType());
+	public void marshall(Object payload, String mediaType, String charset, OutputStream stream) throws IOException {
+		if (!mediaType.contains("json")) {
+			throw new HttlRequestException("Cannot mashall into " + mediaType);
 		}
-		write(request.getBody().getPayload(), stream, request.getCharset());
+		write(payload, stream, charset);
 	}
 
 	public void write(Object requestBody, OutputStream stream, String charset) throws IOException {

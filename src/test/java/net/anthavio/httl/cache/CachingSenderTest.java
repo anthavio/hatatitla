@@ -18,8 +18,8 @@ import net.anthavio.cache.CacheLoadRequest;
 import net.anthavio.cache.Scheduler;
 import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
-import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.BodylessRequestBuilder;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender;
@@ -263,7 +263,7 @@ public class CachingSenderTest {
 		HttlSender sender = new HttpClient4Config("http://maps.googleapis.com/maps/api/staticmap").sender().build();
 		HeapMapCache<String, CachedResponse> cache = new HeapMapCache<String, CachedResponse>(CacheKeyProvider.STRING);
 		CachingSender csender = new CachingSender(sender, cache);
-		SenderNobodyRequestBuilder request = sender.GET("/");
+		BodylessRequestBuilder request = sender.GET("/");
 		request.param("key", "AIzaSyCgNUVqbYTyIP_f4Ew2wJXSZ9XjIQ8F5w8");
 		request.param("center", "51.477222,0");
 		request.param("size", "10x10");
@@ -300,7 +300,7 @@ public class CachingSenderTest {
 		String assertion = content + "." + digsig;
 		System.out.println(assertion);
 		sender = new HttpClient4Config("https://accounts.google.com/o/oauth2/token").sender().build();
-		SenderBodyRequestBuilder request2 = sender.POST("");
+		BodyfulRequestBuilder request2 = sender.POST("");
 		request2.param("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
 		request2.param("assertion", assertion);
 		ExtractedResponse<String> x = sender.extract(request2.build(), String.class);

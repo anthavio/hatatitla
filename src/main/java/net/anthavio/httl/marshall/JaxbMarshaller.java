@@ -18,7 +18,6 @@ import javax.xml.bind.annotation.XmlType;
 import javax.xml.namespace.QName;
 
 import net.anthavio.httl.HttlBodyMarshaller;
-import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestException;
 
 /**
@@ -78,11 +77,11 @@ public class JaxbMarshaller implements HttlBodyMarshaller {
 	}
 
 	@Override
-	public void marshall(HttlRequest request, OutputStream stream) throws IOException {
-		if (!request.getMediaType().contains("xml")) {
-			throw new HttlRequestException("Cannot mashall into " + request.getMediaType());
+	public void marshall(Object payload, String mediaType, String charset, OutputStream stream) throws IOException {
+		if (!mediaType.contains("xml")) {
+			throw new HttlRequestException("Cannot mashall into " + mediaType);
 		}
-		write(request.getBody().getPayload(), stream, request.getCharset());
+		write(payload, stream, charset);
 	}
 
 	public void write(Object payload, OutputStream stream, String charset) throws IOException {

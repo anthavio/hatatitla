@@ -18,8 +18,8 @@ import net.anthavio.httl.Authentication.Scheme;
 import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlRequest.Method;
-import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
-import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.BodylessRequestBuilder;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.util.MockTransport;
 
@@ -90,7 +90,7 @@ public class RequestTest {
 		assertThat(sender.getConfig().getUrl().toString()).isEqualTo("http://www.example.com"); //add http prefix and remove path suffix
 		//SimpleHttpSender sender = null;
 
-		SenderNobodyRequestBuilder builder = sender.GET("/get");
+		BodylessRequestBuilder builder = sender.GET("/get");
 		//
 		HttlRequest req = builder.build();
 		assertThat(req.getPathAndQuery()).isEqualTo("/get");
@@ -126,7 +126,7 @@ public class RequestTest {
 		HttlSender sender = HttlSender.url("www.example.com").build();
 
 		//When - only body
-		SenderBodyRequestBuilder builder = sender.POST("/x").body("<x></x>", "application/xml");
+		BodyfulRequestBuilder builder = sender.POST("/x").body("<x></x>", "application/xml");
 		HttlRequest request = builder.build();
 		//Then
 		assertThat(request.getBody().getPayload()).isEqualTo("<x></x>");
@@ -137,10 +137,10 @@ public class RequestTest {
 		//When - only parameters 
 		builder = sender.POST("/x").param("p", "v");
 		request = builder.build();
-		//Then - parameters = POST body
+		//Then - parameters became POST body
 		assertThat(request.getPathAndQuery()).isEqualTo("/x");
 		assertThat(request.getBody().getPayload()).isEqualTo("p=v");
-
+		//And correct conten type is added
 		assertThat(request.getMediaType()).isEqualTo("application/x-www-form-urlencoded");
 		assertThat(request.getCharset()).isEqualTo("utf-8");
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded; charset=utf-8");
@@ -184,14 +184,32 @@ public class RequestTest {
 		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=ISO-8859-2");
 		assertThat(request.getMediaType()).isEqualTo("text/plain");
 		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
+
+		//Given - charset skipping is setSkipCharset(true)
+		sender = HttlSender.url("www.example.com").httpUrl().setCharset("ISO-8859-2").sender().setSkipCharset(true)
+				.setRequestMediaType("text/plain").build();
+
+		//When - without explicit charset
+		request = sender.POST("/x").body("HELLO", "application/greeting").build();
+		//Then
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/greeting");
+		assertThat(request.getMediaType()).isEqualTo("application/greeting");
+		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
+
+		//When - without explicit charset
+		request = sender.POST("/x").body("HELLO", "application/greeting; charset=big5").build();
+		//Then
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/greeting");
+		assertThat(request.getMediaType()).isEqualTo("application/greeting");
+		assertThat(request.getCharset()).isEqualTo("big5");
 	}
 
 	@Test
-	public void postBodyCaching() {
-		HttlSender sender = new MockTransport().sender().build();
+	public void postBodyBuffering() {
+		HttlSender sender = HttlBuilder.mock().sender().build();
 
 		ByteArrayInputStream stream = new ByteArrayInputStream("brrrrrrrrrrrrr".getBytes());
-		//When - default is non caching
+		//When - default is non buffered
 		HttlRequest request = sender.POST("/whatever").body(stream, "text/plain").build();
 		//Then - original stream
 		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.STREAM);
@@ -315,7 +333,7 @@ public class RequestTest {
 		HttlSender sender = HttlSender.url("www.example.com").build();
 
 		//When - Date as parameter
-		SenderNobodyRequestBuilder builder = sender.OPTIONS("/options");
+		BodylessRequestBuilder builder = sender.OPTIONS("/options");
 		Date date = new Date();
 		builder.param("d", date, 32, "ZXZX");
 		HttlRequest request = builder.build();
@@ -344,7 +362,7 @@ public class RequestTest {
 	public void arraysAndCollections() {
 		HttlSender sender = HttlSender.url("www.example.com").build();
 
-		SenderNobodyRequestBuilder builder = sender.DELETE("/delete");
+		BodylessRequestBuilder builder = sender.DELETE("/delete");
 		builder.param(";m3", 31, 32, 33);
 		HttlRequest req = builder.build();
 		assertThat(req.getPathAndQuery()).isEqualTo("/delete;m3=31;m3=32;m3=33");
@@ -384,7 +402,7 @@ public class RequestTest {
 		//assertThat(request.getFirstHeader(Constants.Accept_Charset)).isEqualTo("utf-8");
 
 		String path = "/path/to/somewhere";
-		SenderNobodyRequestBuilder builder = sender.HEAD(path);//.params(parameters).setHeaders(headers);
+		BodylessRequestBuilder builder = sender.HEAD(path);//.params(parameters).setHeaders(headers);
 
 		builder.param("p1", Arrays.asList("y"));
 		builder.param("p2", Arrays.asList("a", "b", "c"));

@@ -4,7 +4,7 @@ import java.util.List;
 
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequest.Method;
-import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.util.HttlUtil;
@@ -140,7 +140,7 @@ public class OAuth2 {
 	/**
 	 * Trade code for access_token
 	 */
-	protected SenderRequestBuilder<?> buildCodeTokenRequest(String code) {
+	protected HttlRequestBuilder<?> buildCodeTokenRequest(String code) {
 		String query = getCodeTokenQuery(code);
 		return buildTokenRequest(query);
 	}
@@ -150,7 +150,7 @@ public class OAuth2 {
 	 * 
 	 * So called Offline access
 	 */
-	protected SenderRequestBuilder<?> buildRefreshTokenRequest(String refresh_token) {
+	protected HttlRequestBuilder<?> buildRefreshTokenRequest(String refresh_token) {
 		String query = getRefreshTokenQuery(refresh_token);
 		return buildTokenRequest(query);
 	}
@@ -160,12 +160,12 @@ public class OAuth2 {
 	 * 
 	 * Usualy only for privileged applications
 	 */
-	protected SenderRequestBuilder<?> buildPasswordTokenRequest(String username, String password) {
+	protected HttlRequestBuilder<?> buildPasswordTokenRequest(String username, String password) {
 		String query = getPasswordTokenQuery(username, password);
 		return buildTokenRequest(query);
 	}
 
-	protected SenderRequestBuilder<?> buildTokenRequest(String query) {
+	protected HttlRequestBuilder<?> buildTokenRequest(String query) {
 
 		String path = config.getTokenUrl().getPath();
 		String senderPath = sender.getConfig().getUrl().getPath();
@@ -173,7 +173,7 @@ public class OAuth2 {
 			path = path.substring(senderPath.length() + 1);
 		}
 
-		SenderRequestBuilder<?> builder;
+		HttlRequestBuilder<?> builder;
 		if (config.getTokenHttpMethod() == Method.POST) {
 			builder = sender.POST(path).body(query, "application/x-www-form-urlencoded");
 		} else {

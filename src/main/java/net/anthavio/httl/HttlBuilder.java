@@ -59,6 +59,13 @@ public class HttlBuilder {
 	/**
 	 * Commence new Mock Transport creation
 	 */
+	public static MockTransport mock() {
+		return new MockTransport();
+	}
+
+	/**
+	 * Commence new Mock Transport creation...
+	 */
 	public static MockTransport mock(String url) {
 		return new MockTransport(url);
 	}

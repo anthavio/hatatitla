@@ -1,5 +1,7 @@
 package net.anthavio.httl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.text.SimpleDateFormat;
@@ -16,8 +18,8 @@ import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.GenericType;
+import net.anthavio.httl.util.HttlUtil;
 import net.anthavio.httl.util.HttpDateUtil;
-import net.anthavio.httl.util.ReaderInputStream;
 
 /**
  * Equivalent of Jersey/JAX-RS-2.0 RequestBuilder
@@ -299,30 +301,6 @@ public class HttlRequestBuilders {
 			return getX();
 		}
 
-		/**
-		 * Sets parameters (replacing any existing)
-		 
-		public X parameters(Map<String, ?> parameters) {
-			this.parameters = new Multival(parameters);
-			return getX();
-		}
-		 */
-		protected abstract X getX(); //Generic trick
-
-	}
-
-	/**
-	 * Base for HttpSender's fluent builders
-	 * 
-	 * @author martin.vanek
-	 *
-	 */
-	public static abstract class SenderRequestBuilder<X extends SenderRequestBuilder<?>> extends HttlRequestBuilder<X> {
-
-		public SenderRequestBuilder(HttlSender httpSender, Method method, String urlPath) {
-			super(httpSender, method, urlPath);
-		}
-
 		public abstract HttlRequest build();
 
 		/**
@@ -334,7 +312,8 @@ public class HttlRequestBuilders {
 			return sender.execute(request);
 		}
 
-		/**Buid and execute Request and then let ResponseHandler parameter to process Response.
+		/**
+		 * Buid and execute Request and then let ResponseHandler parameter to process Response.
 		 */
 		public void execute(HttlResponseHandler handler) {
 			HttlRequest request = build();
@@ -387,9 +366,11 @@ public class HttlRequestBuilders {
 
 		@Override
 		public String toString() {
-			return "SenderRequestBuilder [sender=" + sender + ", method=" + method + ", urlPath=" + urlPath + ", headers="
+			return "HttlRequestBuilder [sender=" + sender + ", method=" + method + ", urlPath=" + urlPath + ", headers="
 					+ headers + ", parameters=" + parameters + "]";
 		}
+
+		protected abstract X getX(); //Generic trick
 
 	}
 
@@ -399,14 +380,14 @@ public class HttlRequestBuilders {
 	 * @author martin.vanek
 	 *
 	 */
-	public static class SenderNobodyRequestBuilder extends SenderRequestBuilder<SenderNobodyRequestBuilder> {
+	public static class BodylessRequestBuilder extends HttlRequestBuilder<BodylessRequestBuilder> {
 
-		public SenderNobodyRequestBuilder(HttlSender httpSender, Method method, String urlPath) {
+		public BodylessRequestBuilder(HttlSender httpSender, Method method, String urlPath) {
 			super(httpSender, method, urlPath);
 		}
 
 		@Override
-		protected SenderNobodyRequestBuilder getX() {
+		protected BodylessRequestBuilder getX() {
 			return this;
 		}
 
@@ -425,87 +406,209 @@ public class HttlRequestBuilders {
 	 * @author martin.vanek
 	 *
 	 */
-	public static class SenderBodyRequestBuilder extends SenderRequestBuilder<SenderBodyRequestBuilder> {
+	public static class BodyfulRequestBuilder extends HttlRequestBuilder<BodyfulRequestBuilder> {
 
-		public SenderBodyRequestBuilder(HttlSender httpSender, Method method, String path) {
+		public BodyfulRequestBuilder(HttlSender httpSender, Method method, String path) {
 			super(httpSender, method, path);
 		}
 
 		protected HttlBody body;
 
 		/**
-		 * payload can be byte[], String, InputStream, Reader or anything that can be marshalled
-		 * 
+		 * Set body as String
 		 */
-		public SenderBodyRequestBuilder body(Object payload, String mediaType, boolean cache) {
+		public BodyfulRequestBuilder body(String payload, String mediaType) {
 			if (payload == null) {
-				throw new HttlRequestException("Body object is null");
+				throw new HttlRequestException("Payload string is null");
 			}
-			if (payload instanceof InputStream) {
-				this.body = new HttlBody((InputStream) payload, cache);
-
-			} else if (payload instanceof Reader) {
-				this.body = new HttlBody(new ReaderInputStream((Reader) payload), cache);
-
-			} else if (payload instanceof String) {
-				this.body = new HttlBody((String) payload);
-
-			} else if (payload instanceof byte[]) {
-				this.body = new HttlBody((byte[]) payload);
-
-			} else { //marshalling...
-
-				if (mediaType == null) {
-					mediaType = headers.getFirst(HttlConstants.Content_Type);
-					if (mediaType == null) {
-						mediaType = sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type);
-					}
-				}
-
-				if (mediaType == null) {
-					throw new HttlRequestException("Content-Type header is missing");
-				}
-
-				int indexOf = mediaType.indexOf(';');
-				if (indexOf != -1) {
-					mediaType = mediaType.substring(0, indexOf);
-				}
-
-				this.body = new HttlBody(payload, cache);
-			}
-
-			if (mediaType != null) {
-				this.headers.set(HttlConstants.Content_Type, mediaType);
-			}
-
-			return getX();
+			setContentType(mediaType);
+			this.body = new HttlBody(payload);
+			return this;
 		}
 
-		public SenderBodyRequestBuilder body(Object body, String mediaType) {
+		/**
+		 * Set request body as byte array
+		 */
+		public BodyfulRequestBuilder body(byte[] payload, String mediaType) {
+			if (payload == null) {
+				throw new HttlRequestException("Payload byte[] is null");
+			}
+			setContentType(mediaType);
+			this.body = new HttlBody(payload);
+			return this;
+		}
+
+		/**
+		 * Set body as InputStream
+		 */
+		public BodyfulRequestBuilder body(InputStream stream, String mediaType, boolean buffer) {
+			if (stream == null) {
+				throw new HttlRequestException("Payload stream is null");
+			}
+			setContentType(mediaType);
+			if (buffer) {
+				try {
+					byte[] bytes = HttlUtil.readAsBytes(stream, HttlUtil.KILO16);
+					this.body = new HttlBody(bytes);
+				} catch (IOException iox) {
+					throw new HttlRequestException(iox);
+				}
+			} else {
+				this.body = new HttlBody(stream);
+			}
+			return this;
+		}
+
+		/**
+		 * Set body as Reader
+		 */
+		public BodyfulRequestBuilder body(Reader reader, String mediaType, boolean buffer) {
+			if (reader == null) {
+				throw new HttlRequestException("Payload reader is null");
+			}
+			setContentType(mediaType);
+			if (buffer) {
+				try {
+					String string = HttlUtil.readAsString(reader, HttlUtil.KILO16);
+					this.body = new HttlBody(string);
+				} catch (IOException iox) {
+					throw new HttlRequestException(iox);
+				}
+			} else {
+				this.body = new HttlBody(reader);
+			}
+
+			return this;
+		}
+
+		/**
+		 * Set body as non buffered
+		 */
+		public BodyfulRequestBuilder body(Object body, String mediaType) {
 			return body(body, mediaType, false);
 		}
 
 		/**
 		 * Will make best effort to figure out what is body type and how it should be sent with request
+		 * 
+		 * Content-Type header must be specified before
 		 */
-		public SenderBodyRequestBuilder body(Object body) {
+		public BodyfulRequestBuilder body(Object body) {
 			return body(body, null);
+		}
+
+		private String[] setContentType(String mediaType) {
+			if (mediaType == null) {
+				mediaType = headers.getFirst(HttlConstants.Content_Type);
+				if (mediaType == null) {
+					mediaType = sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type);
+					if (mediaType == null) {
+						throw new HttlRequestException("Content-Type not found. Cannot set request body");
+					}
+				}
+			}
+			String[] mimeTypeAndCharset = HttlUtil.splitContentType(mediaType, sender.getConfig().getCharset());
+			headers.set(HttlConstants.Content_Type, mimeTypeAndCharset[0] + "; charset=" + mimeTypeAndCharset[1]);
+			return mimeTypeAndCharset;
+		}
+
+		/**
+		 * payload can be byte[], String, InputStream, Reader or anything else that can be marshalled
+		 */
+		public BodyfulRequestBuilder body(Object payload, String mediaType, boolean buffer) {
+			if (payload == null) {
+				throw new HttlRequestException("Payload is null");
+			}
+			if (payload instanceof InputStream) {
+				return body((InputStream) payload, mediaType, buffer);
+			} else if (payload instanceof Reader) {
+				return body((Reader) payload, mediaType, buffer);
+			} else if (payload instanceof String) {
+				return body((String) payload, mediaType);
+			} else if (payload instanceof byte[]) {
+				return body((byte[]) payload, mediaType);
+			} else {
+				//marshalling...
+				String[] contentType = setContentType(mediaType);
+				if (buffer) {
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					try {
+						sender.getMarshaller().marshall(payload, contentType[0], contentType[1], baos);
+					} catch (IOException iox) {
+						throw new HttlRequestException(iox);
+					}
+					this.body = new HttlBody(baos.toByteArray());
+				} else {
+					this.body = new HttlBody(payload);
+				}
+			}
+			return getX();
 		}
 
 		@Override
 		public HttlRequest build() {
-			List<HttlBuilderVisitor> interceptors = sender.getConfig().getBuilderVisitors();
-			for (HttlBuilderVisitor interceptor : interceptors) {
-				interceptor.visit(this);
+			List<HttlBuilderVisitor> visitors = sender.getConfig().getBuilderVisitors();
+			for (HttlBuilderVisitor visitor : visitors) {
+				visitor.visit(this);
 			}
 			return new HttlRequest(sender, method, urlPath, parameters, headers, body, readTimeoutMillis);
 		}
 
 		@Override
-		protected SenderBodyRequestBuilder getX() {
+		protected BodyfulRequestBuilder getX() {
 			return this;
 		}
 
+	}
+
+	public static String[] digContentType(Multival<String> requestHeaders, SenderConfigurer config) {
+		return digContentType(requestHeaders.getFirst(HttlConstants.Content_Type),
+				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getCharset());
+	}
+
+	/**
+	 * @param requestContentType - can be null
+	 * @param defaultMediaType - can be null
+	 * @param defaultCharset = never null
+	 * @return 
+	 */
+	public static String[] digContentType(String requestContentType, String defaultContentType, String defaultCharset) {
+		String mediaType;
+		String charset;
+		if (requestContentType != null) {
+
+			int idxMediaEnd = requestContentType.indexOf(";");
+			if (idxMediaEnd != -1) {
+				mediaType = requestContentType.substring(0, idxMediaEnd);
+			} else {
+				mediaType = requestContentType;
+			}
+
+			int idxCharset = requestContentType.indexOf("charset=");
+			if (idxCharset != -1) {
+				charset = requestContentType.substring(idxCharset + 8);
+			} else {
+				charset = defaultCharset;
+			}
+		} else if (defaultContentType != null) {
+			int idxMediaEnd = defaultContentType.indexOf(";");
+			if (idxMediaEnd != -1) {
+				mediaType = defaultContentType.substring(0, idxMediaEnd);
+			} else {
+				mediaType = defaultContentType;
+			}
+			int idxCharset = defaultContentType.indexOf("charset=");
+			if (idxCharset != -1) {
+				charset = defaultContentType.substring(idxCharset + 8);
+			} else {
+				charset = defaultCharset;
+			}
+		} else {
+			mediaType = null;
+			charset = defaultCharset;
+		}
+
+		return new String[] { mediaType, charset };
 	}
 
 }

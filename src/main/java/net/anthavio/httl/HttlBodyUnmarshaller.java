@@ -58,11 +58,11 @@ public interface HttlBodyUnmarshaller {
 		public Object unmarshall(HttlResponse response, Type returnType) throws IOException {
 			int status = response.getHttpStatusCode();
 			if (status > maxHttpCode || status < minHttpCode) {
-				throw new HttlProcessingException(response, "Http status " + status + " is outside of range <" + minHttpCode
+				throw new HttlResponseException(response, "Http status " + status + " is outside of range <" + minHttpCode
 						+ "," + maxHttpCode + ">");
 			}
 			if (!mediaType.equals(response.getMediaType()) && !mediaType.equals(ANY_MEDIA_TYPE)) {
-				throw new HttlProcessingException(response, "Mime type: " + response.getMediaType() + " does not match: "
+				throw new HttlResponseException(response, "Mime type: " + response.getMediaType() + " does not match: "
 						+ mediaType);
 			}
 			return doUnmarshall(response, returnType);

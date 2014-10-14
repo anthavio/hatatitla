@@ -4,6 +4,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import net.anthavio.cache.CacheKeyProvider;
+import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.util.Base64;
 
 /**
@@ -25,7 +26,7 @@ public class HttlCacheKeyProvider implements CacheKeyProvider<HttlRequest> {
 	@Override
 	public String provideKey(HttlRequest request) {
 		HttlBody body = request.getBody();
-		if (body != null && !body.isBuffered()) {
+		if (body != null && !(body.getType() == Type.BYTES || body.getType() == Type.STRING)) {
 			throw new IllegalArgumentException("Only requests with buffered body can be cached " + request);
 		}
 		MessageDigest digest;

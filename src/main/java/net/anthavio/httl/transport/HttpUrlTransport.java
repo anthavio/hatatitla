@@ -163,17 +163,21 @@ public class HttpUrlTransport implements HttlTransport {
 			if (request.getBody() != null) {
 				HttlBody body = request.getBody();
 				switch (body.getType()) {
-				case MARSHALL:
-					request.getSender().getMarshaller().marshall(request, connection.getOutputStream());
+				case BYTES:
+					byte[] abytes = (byte[]) body.getPayload();
+					writeBytes(connection, abytes);
 					break;
 				case STRING:
 					String string = (String) body.getPayload();
 					byte[] sbytes = string.getBytes(Charset.forName(request.getCharset()));
 					writeBytes(connection, sbytes);
 					break;
-				case BYTES:
-					byte[] abytes = (byte[]) body.getPayload();
-					writeBytes(connection, abytes);
+				case MARSHALL:
+					request
+							.getSender()
+							.getMarshaller()
+							.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(),
+									connection.getOutputStream());
 					break;
 				case STREAM:
 					writeStream(connection, (InputStream) body.getPayload());

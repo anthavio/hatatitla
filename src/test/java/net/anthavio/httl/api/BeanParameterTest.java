@@ -19,7 +19,7 @@ public class BeanParameterTest {
 	@Test
 	public void prefixedNames() {
 		// When - api with nameless @RestVar
-		HttlSender sender = HttlBuilder.mock("http://mock").sender().build();
+		HttlSender sender = HttlBuilder.mock().sender().build();
 		BeanParamApi api = HttlApiBuilder.with(sender).build(BeanParamApi.class);
 		HttlResponse response1 = api.nothing(new BeanParam("Guido", 5));
 
@@ -41,7 +41,7 @@ public class BeanParameterTest {
 	public void complexParamNullValuesIllegal() {
 
 		//Given - api with notnull checks
-		HttlSender sender = HttlBuilder.mock("http://mock").sender().build();
+		HttlSender sender = HttlBuilder.mock().sender().build();
 		BeanParamApi api = HttlApiBuilder.with(sender).build(BeanParamApi.class);
 
 		// When - null parameter
@@ -93,7 +93,7 @@ public class BeanParameterTest {
 	public void beanParamNamed() {
 
 		// Given - api with named @RestVar
-		HttlSender sender = HttlBuilder.mock("http://mock").sender().build();
+		HttlSender sender = HttlBuilder.mock().sender().build();
 		BeanParamNamedApi api = HttlApiBuilder.with(sender).build(BeanParamNamedApi.class);
 
 		// When
@@ -118,7 +118,7 @@ public class BeanParameterTest {
 	public void beanParamLegalNulls() {
 
 		//Given - api without notnull checks
-		HttlSender sender = HttlBuilder.mock("http://mock").sender().build();
+		HttlSender sender = HttlBuilder.mock().sender().build();
 		BeanParamNamedApi api = HttlApiBuilder.with(sender).build(BeanParamNamedApi.class);
 
 		//When - legal null parameter

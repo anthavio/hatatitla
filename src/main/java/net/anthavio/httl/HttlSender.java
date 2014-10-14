@@ -22,8 +22,8 @@ import java.util.concurrent.Future;
 import net.anthavio.httl.HttlBuilder.TransportChooser;
 import net.anthavio.httl.HttlExecutionChain.SenderExecutionChain;
 import net.anthavio.httl.HttlRequest.Method;
-import net.anthavio.httl.HttlRequestBuilders.SenderBodyRequestBuilder;
-import net.anthavio.httl.HttlRequestBuilders.SenderNobodyRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.BodylessRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 import net.anthavio.httl.cache.CachedResponse;
 import net.anthavio.httl.util.Cutils;
@@ -156,7 +156,7 @@ public class HttlSender implements SenderOperations, Closeable {
 			if (x instanceof RuntimeException) {
 				throw (RuntimeException) x;
 			} else {
-				throw new HttlProcessingException(response, x);
+				throw new HttlResponseException(response, x);
 			}
 		} finally {
 			Cutils.close(response);
@@ -204,7 +204,7 @@ public class HttlSender implements SenderOperations, Closeable {
 			return new ExtractedResponse<T>(response, (T) payload);//XXX this cast is erased!
 
 		} catch (IOException iox) {
-			throw new HttlProcessingException(response, iox);
+			throw new HttlResponseException(response, iox);
 		} finally {
 			Cutils.close(response);
 		}
@@ -237,7 +237,7 @@ public class HttlSender implements SenderOperations, Closeable {
 				}
 			*/
 		} catch (Exception x) {
-			throw new HttlProcessingException(response, x);
+			throw new HttlResponseException(response, x);
 		} finally {
 			Cutils.close(response);
 		}
@@ -317,36 +317,36 @@ public class HttlSender implements SenderOperations, Closeable {
 	 * Fluent builders 
 	 */
 
-	public SenderNobodyRequestBuilder GET(String path) {
-		return new SenderNobodyRequestBuilder(this, Method.GET, path);
+	public BodylessRequestBuilder GET(String path) {
+		return new BodylessRequestBuilder(this, Method.GET, path);
 	}
 
-	public SenderNobodyRequestBuilder HEAD(String path) {
-		return new SenderNobodyRequestBuilder(this, Method.HEAD, path);
+	public BodylessRequestBuilder HEAD(String path) {
+		return new BodylessRequestBuilder(this, Method.HEAD, path);
 	}
 
-	public SenderNobodyRequestBuilder TRACE(String path) {
-		return new SenderNobodyRequestBuilder(this, Method.TRACE, path);
+	public BodylessRequestBuilder TRACE(String path) {
+		return new BodylessRequestBuilder(this, Method.TRACE, path);
 	}
 
-	public SenderNobodyRequestBuilder OPTIONS(String path) {
-		return new SenderNobodyRequestBuilder(this, Method.OPTIONS, path);
+	public BodylessRequestBuilder OPTIONS(String path) {
+		return new BodylessRequestBuilder(this, Method.OPTIONS, path);
 	}
 
-	public SenderNobodyRequestBuilder DELETE(String path) {
-		return new SenderNobodyRequestBuilder(this, Method.DELETE, path);
+	public BodylessRequestBuilder DELETE(String path) {
+		return new BodylessRequestBuilder(this, Method.DELETE, path);
 	}
 
-	public SenderBodyRequestBuilder POST(String path) {
-		return new SenderBodyRequestBuilder(this, Method.POST, path);
+	public BodyfulRequestBuilder POST(String path) {
+		return new BodyfulRequestBuilder(this, Method.POST, path);
 	}
 
-	public SenderBodyRequestBuilder PUT(String path) {
-		return new SenderBodyRequestBuilder(this, Method.PUT, path);
+	public BodyfulRequestBuilder PUT(String path) {
+		return new BodyfulRequestBuilder(this, Method.PUT, path);
 	}
 
-	public SenderBodyRequestBuilder PATCH(String path) {
-		return new SenderBodyRequestBuilder(this, Method.PATCH, path);
+	public BodyfulRequestBuilder PATCH(String path) {
+		return new BodyfulRequestBuilder(this, Method.PATCH, path);
 	}
 
 	@Override

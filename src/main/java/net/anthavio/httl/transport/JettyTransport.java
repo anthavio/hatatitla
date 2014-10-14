@@ -147,7 +147,8 @@ public class JettyTransport implements HttlTransport {
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					request.getSender().getMarshaller().marshall(request, baos);
+					request.getSender().getMarshaller()
+							.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(), baos);
 					exchange.setRequestContent(new ByteArrayBuffer(baos.toByteArray()));
 					break;
 				case STRING:

@@ -56,7 +56,9 @@ public class SpecialApiTest {
 				"application/json");
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		sender.getConfig().getMarshaller().marshall(exeinc.getLastRequest(), baos);
+		HttlRequest request = exeinc.getLastRequest();
+		sender.getConfig().getMarshaller()
+				.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(), baos);
 		Assertions.assertThat(returned).isEqualTo(new String(baos.toByteArray(), "utf-8"));
 	}
 

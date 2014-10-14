@@ -254,7 +254,7 @@ public class HttpClient4Transport implements HttlTransport {
 
 		@Override
 		public void writeTo(OutputStream stream) throws IOException {
-			marshaller.marshall(request, stream);
+			marshaller.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(), stream);
 		}
 
 		@Override

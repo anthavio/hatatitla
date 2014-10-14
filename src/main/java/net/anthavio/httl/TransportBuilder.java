@@ -178,15 +178,6 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 		public S setCharset(String encoding) {
 			this.charset = encoding;
 			this.javaCharset = Charset.forName(encoding);
-			//Update Content-Type header is already exists
-			//XXX do this on build()
-			/*
-			String contentType = this.defaultHeaders.getFirst(HttlConstants.Content_Type);
-			if (contentType != null) {
-				this.defaultHeaders.set(HttlConstants.Content_Type, contentType.substring(0, contentType.indexOf("; charset="))
-						+ "; charset=" + encoding);
-			}
-			*/
 			return getSelf();
 		}
 

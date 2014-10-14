@@ -1,14 +1,8 @@
 package net.anthavio.httl;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.Iterator;
 import java.util.List;
@@ -19,7 +13,7 @@ import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.HttlUtil;
 
 /**
- * Immutable
+ * Immutable HTTP request
  * 
  * @author martin.vanek
  *
@@ -102,8 +96,8 @@ public class HttlRequest implements Serializable {
 
 		Multival<String> defaultParams = config.getDefaultParameters();
 		for (String name : defaultParams) {
-			if (parameters.get(name) == null) {
-				parameters.set(name, defaultParams.get(name));
+			if (this.parameters.get(name) == null) {
+				this.parameters.set(name, defaultParams.get(name));
 			}
 		}
 
@@ -115,26 +109,25 @@ public class HttlRequest implements Serializable {
 
 		Multival<String> defaultHeaders = config.getDefaultHeaders();
 		for (String name : defaultHeaders) {
-			if (headers.get(name) == null) {
-				headers.set(name, defaultHeaders.get(name));
+			if (this.headers.get(name) == null) {
+				this.headers.set(name, defaultHeaders.get(name));
 			}
 		}
 
-		String[] upaq = buildUrlPathAndQuery(urlPath, parameters);
-		String path = HttlUtil.joinUrlParts(config.getUrl().getPath(), upaq[0]);
-		String query = upaq[1];
+		String[] pathAndQuery = buildUrlPathAndQuery(urlPath, this.parameters);
+		final String path = HttlUtil.joinUrlParts(config.getUrl().getPath(), pathAndQuery[0]);
+		final String query = pathAndQuery[1];
 
-		digContentType(defaultHeaders, sender.getConfig());
-		String contentType = headers.getFirst(HttlConstants.Content_Type);
-		this.contentType = digContentType(contentType,
-				sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type), sender.getConfig().getCharset());
+		String reqConTyp = this.headers.getFirst(HttlConstants.Content_Type);
+		this.contentType = HttlUtil.splitContentType(reqConTyp, sender.getConfig().getCharset());
 
 		//TODO multipart/form-data
 
 		if (method.bodyAllowed) { // POST, PUT
 			if (body != null) {
+
 				if (this.contentType[0] == null) {
-					throw new HttlRequestException("Request with body must have media type");
+					throw new HttlRequestException("Request with body must have Content-Type: " + this);
 				}
 
 				if (query != null) {
@@ -143,60 +136,26 @@ public class HttlRequest implements Serializable {
 					this.pathAndQuery = path;
 				}
 
-				String contentTypeValue;
-				if (sender.getConfig().isSkipCharset()) {
-					contentTypeValue = this.contentType[0];
-				} else {
-					contentTypeValue = this.contentType[0] + "; charset=" + this.contentType[1];
-				}
-				//Set header before asking for Marshaller
-				headers.set(HttlConstants.Content_Type, contentTypeValue);
-
-				if (body.isBuffered()) {
-					try {
-						if (body.getType() == Type.MARSHALL) {
-							//This is annoying because HttlBodyMarshaller needs body set on Request
-							this.body = body;
-							ByteArrayOutputStream baos = new ByteArrayOutputStream();
-							sender.getConfig().getMarshaller().marshall(this, baos);
-							this.body.mutate(baos.toByteArray());
-						} else if (body.getType() == Type.STREAM) {
-							byte[] bytes = HttlUtil.readAsBytes((InputStream) body.getPayload(), HttlUtil.KILO16);
-							this.body = new HttlBody(bytes);
-						} else if (body.getType() == Type.READER) {
-							String string = HttlUtil.readAsString((Reader) body.getPayload(), HttlUtil.KILO16);
-							this.body = new HttlBody(string);
-						} else {
-							this.body = body; //STRING, BYTES
-						}
-					} catch (IOException iox) {
-						throw new HttlRequestException(iox);
-					}
-
-				} else {
-					//non buffered - keep as is
-					this.body = body;
-				}
+				this.body = body;
 
 			} else if (query != null) {
 				//Simple POST form submission
 				if (this.contentType[0] == null) {
 					this.contentType[0] = "application/x-www-form-urlencoded";
+					headers.set(HttlConstants.Content_Type, this.contentType[0] + "; charset=" + this.contentType[1]);
 				}
 				this.body = new HttlBody(query);
 				this.pathAndQuery = path;
-				String contentTypeValue;
-				if (sender.getConfig().isSkipCharset()) {
-					contentTypeValue = this.contentType[0];
-				} else {
-					contentTypeValue = this.contentType[0] + "; charset=" + this.contentType[1];
-				}
-				headers.set(HttlConstants.Content_Type, contentTypeValue);
 
 			} else {
-				//no body & no query - Content-Type not needed
+				//no body & no query - Content-Type not really needed
 				this.body = null;
 				this.pathAndQuery = path;
+			}
+
+			if (sender.getConfig().isSkipCharset() && contentType[0] != null) {
+				//Some wierdos dislike charset in Content-Type header
+				headers.set(HttlConstants.Content_Type, this.contentType[0]);
 			}
 
 		} else { // GET, HEAD, ...
@@ -390,6 +349,9 @@ public class HttlRequest implements Serializable {
 		return sb.toString();
 	}
 
+	/**
+	 * @return array of 2 elements 
+	 */
 	protected static String[] buildUrlPathAndQuery(String urlPath, Multival<String> parameters) {
 		StringBuilder path = new StringBuilder(urlPath);
 		StringBuilder query = new StringBuilder();
@@ -398,7 +360,7 @@ public class HttlRequest implements Serializable {
 			List<String> values = parameters.get(name);
 
 			for (String value : values) {
-				if (name.charAt(0) == '{') { //path parameter
+				if (name.charAt(0) == '{') { //path parameter starts with {
 					int idx = path.indexOf(name);
 					if (idx == -1) {
 						throw new IllegalArgumentException("Path parameter " + name + " not found in " + path);
@@ -406,7 +368,7 @@ public class HttlRequest implements Serializable {
 					value = HttlUtil.urlencode(value);
 					path.replace(idx, idx + name.length(), value);
 
-				} else if (name.charAt(0) == ';') { //matrix parameter
+				} else if (name.charAt(0) == ';') { //matrix parameter starts with ;
 					path.append(';').append(HttlUtil.urlencode(name.substring(1))).append('=').append(HttlUtil.urlencode(value));
 
 				} else { // query parameter
@@ -419,64 +381,6 @@ public class HttlRequest implements Serializable {
 			throw new IllegalStateException("Unresolved path parameter found: " + path);
 		}
 		return new String[] { path.toString(), query.length() == 0 ? null : query.substring(1) };
-	}
-
-	public static final String urlencode(String string) {
-		try {
-			return URLEncoder.encode(string, "utf-8"); //W3C recommends utf-8 
-		} catch (UnsupportedEncodingException uex) {
-			throw new IllegalStateException("Misconfigured encoding utf-8", uex);
-		}
-	}
-
-	public static String[] digContentType(Multival<String> headers, SenderConfigurer config) {
-		return digContentType(headers.getFirst(HttlConstants.Content_Type),
-				config.getDefaultHeaders().getFirst(HttlConstants.Content_Type), config.getCharset());
-	}
-
-	/**
-	 * @param requestContentType - can be null
-	 * @param defaultMediaType - can be null
-	 * @param defaultCharset = never null
-	 * @return 
-	 */
-	public static String[] digContentType(String requestContentType, String defaultContentType, String defaultCharset) {
-		String mediaType;
-		String charset;
-		if (requestContentType != null) {
-
-			int idxMediaEnd = requestContentType.indexOf(";");
-			if (idxMediaEnd != -1) {
-				mediaType = requestContentType.substring(0, idxMediaEnd);
-			} else {
-				mediaType = requestContentType;
-			}
-
-			int idxCharset = requestContentType.indexOf("charset=");
-			if (idxCharset != -1) {
-				charset = requestContentType.substring(idxCharset + 8);
-			} else {
-				charset = defaultCharset;
-			}
-		} else if (defaultContentType != null) {
-			int idxMediaEnd = defaultContentType.indexOf(";");
-			if (idxMediaEnd != -1) {
-				mediaType = defaultContentType.substring(0, idxMediaEnd);
-			} else {
-				mediaType = defaultContentType;
-			}
-			int idxCharset = defaultContentType.indexOf("charset=");
-			if (idxCharset != -1) {
-				charset = defaultContentType.substring(idxCharset + 8);
-			} else {
-				charset = defaultCharset;
-			}
-		} else {
-			mediaType = null;
-			charset = defaultCharset;
-		}
-
-		return new String[] { mediaType, charset };
 	}
 
 }

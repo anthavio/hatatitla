@@ -105,7 +105,8 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					request.getSender().getMarshaller().marshall(request, baos);
+					request.getSender().getMarshaller()
+							.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(), baos);
 					response = new MockResponse(request, 200, "OK", request.getHeaders(), baos.toByteArray());
 					break;
 				case STRING:

@@ -1,7 +1,7 @@
 package net.anthavio.httl.auth;
 
 import net.anthavio.httl.HttlBuilderVisitor;
-import net.anthavio.httl.HttlRequestBuilders.SenderRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.auth.OAuth2.FinalBuildStep;
 import net.anthavio.httl.auth.OAuth2.SelectTypeBuildStep;
@@ -86,8 +86,8 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		return getRequestBuilder().extract(extractor).getBody();
 	}
 
-	private SenderRequestBuilder<?> getRequestBuilder() {
-		SenderRequestBuilder<?> builder;
+	private HttlRequestBuilder<?> getRequestBuilder() {
+		HttlRequestBuilder<?> builder;
 		if (code != null) {
 			builder = oauth.buildCodeTokenRequest(code);
 		} else if (refresh_token != null) {
