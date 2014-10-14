@@ -3,9 +3,9 @@ Hatatitla [![Build Status](https://vanek.ci.cloudbees.com/buildStatus/icon?job=h
  ![Cloudbees DEV@cloud](http://www.cloudbees.com/sites/default/files/Button-Powered-by-CB.png)
 
 
-Configurable and tweakable REST client library you have been dreaming of
+Configurable and tweakable REST client library
 
-* Both fluent & classic (constructor/setter) request interface
+* Cool fluent interface
 * XML request/response payload support (JAXB)
 * JSON request/response payload support (Jackson)
 * Response caching (memory/ehcache/memcached)
@@ -19,23 +19,10 @@ Maven Repository & coordinates
 -------------
 
 ```xml
-    <repository>
-        <id>sonatype-oss-public</id>
-        <url>https://oss.sonatype.org/content/groups/public/</url>
-        <releases>
-            <enabled>true</enabled>
-        </releases>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-```
-
-```xml
     <dependency>
-        <groupId>com.anthavio</groupId>
+        <groupId>net.anthavio</groupId>
         <artifactId>hatatitla</artifactId>
-        <version>1.0.0</version>
+        <version>1.5.0</version>
     </dependency>
 ```
 
@@ -45,30 +32,9 @@ Fluent buiders pattern is used for complex request creation and execution
 
 ```java
 		//Create sender with utf-8 encoding, default timeouts and connection pool
-		HttpClient4Sender sender = new HttpClient4Sender("https://api.github.com");
+		HttlSender sender = HttlSender.url("https://api.github.com").build();
 
-		ExtractedBodyResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
-		//Just print unprocessed JSON String
-		System.out.println(extracted1.getBody());
-
-		//Free connection pool
-		sender.close();
-```
-
-Classic API
--------------
-Constructor and setter based API is friendly to dependency injection frameworks
-
-```java
-		//Sender can be built from Configuration
-		HttpClient4Config config = new HttpClient4Config("https://api.github.com");
-		//Configuration example follows, but here comes sneak peek
-		config.setReadTimeoutMillis(5 * 1000);
-		HttpClient4Sender sender = new HttpClient4Sender(config);
-		
-		GetRequest request = new GetRequest("/users");
-		request.setParameter("since", 333);
-		ExtractedBodyResponse<String> extracted = sender.extract(request, String.class);
+		ExtractedResponse<String> extracted = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
 		System.out.println(extracted.getBody());
 
@@ -76,17 +42,16 @@ Constructor and setter based API is friendly to dependency injection frameworks
 		sender.close();
 ```
 
-Request/Response marshalling
+
+Request/Response Body marshalling
 -------------
 
-For XML bodies, standard JAXB used for marshalling requests and responses and no additional library is required.
+For XML payloads, standard JAXB used for marshalling requests and responses and no additional library is required.
 
-For JSON bodies, Jackson 1 or Jackson 2 must be present on classpath, otherwise following exception will occur.
+For JSON payloads, Jackson 1 or Jackson 2 must be present on classpath, otherwise following exception will occur.
 
 ```
-java.lang.IllegalArgumentException: Request body marshaller not found for application/json
-or
-java.lang.IllegalArgumentException: Extractor factory not found for application/json
+net.anthavio.httl.HttlRequestException: Marshaller not found for application/json
 ```
 Java beans representing bodies must be existing. In this example, HttpbinIn and HttpbinOut are model beans.
 
@@ -99,13 +64,59 @@ Java beans representing bodies must be existing. In this example, HttpbinIn and 
 		binIn.setSomeString("Hello!");
 
 		//Using extract method will parse returned Httpbin JSON document into HttpbinOut instance
-		ExtractedBodyResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json")
-				.extract(HttpbinOut.class);
+		ExtractedResponse<HttpbinOut> extract = sender.POST("/post").body(binIn, "application/json").extract(HttpbinOut.class);
 
 		HttpbinOut body = extract.getBody(); //voila!
 
 		sender.close();
 ```
+
+Configuration
+-------------
+
+Hatatitla Sender is extensively configurable with reasonable default values.
+
+```java
+		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
+
+		//That pesky IIS is using Cyrillic? No problem!
+		config.setEncoding("Cp1251"); //default utf-8
+
+		//Life if boring without timeouts
+		config.setConnectTimeoutMillis(3 * 1000); //default is 5 seconds
+		config.setReadTimeoutMillis(10 * 1000); //default is 20 seconds
+
+		//Connection pooling for maximal throughput
+		config.setPoolMaximumSize(60); //default is 10
+		//Timeout for getting connection from pool
+		config.setPoolAcquireTimeoutMillis(5 * 1000); //default is 3 seconds
+		//TTL for connections in pool
+		config.setPoolReleaseTimeoutMillis(5 * 60 * 1000); //default is 65 seconds
+
+		//BASIC and DIGEST Autentication at your service! BASIC is preemptive by default.
+		config.setAuthentication(Authentication.BASIC("myusername", "mypassword"));
+
+		config.setFollowRedirects(true); //default is false
+
+		//Tired of setting Accept Header to every request?
+		SenderConfigurer configurer = config.sender();
+		configurer.setResponseMediaType("application/json"); //default is none
+
+		//How to treat null or "" parameter values?
+		boolean keepNullParams = false;
+		boolean keepEmptyParams = true;
+		boolean urlEncodeNames = false;
+		boolean urlEncodeValues = true;
+		String dateParamPattern = "dd-MM-yyyy";
+		ConfigurableParamSetter paramSetter = new ConfigurableParamSetter(keepNullParams, keepEmptyParams, urlEncodeNames, urlEncodeValues, dateParamPattern);
+
+		configurer.setParamSetter(paramSetter);
+
+		HttlSender sender = configurer.build();
+		//...send send send...
+		sender.close();
+```
+
 
 Caching
 -------------
@@ -187,45 +198,7 @@ Example of the automatic response refresh/update
 		cache.close();
 ```
 
-Configuration
--------------
 
-Hatatitla Sender is extensively configurable with reasonable default values.
-
-```java
-		HttpClient4Config config = new HttpClient4Config("http://httpbin.org");
-
-		//That pesky IIS is using Cyrillic? No problem!
-		config.setEncoding("Cp1251"); //default utf-8
-
-		//Life if boring without timeouts
-		config.setConnectTimeoutMillis(3 * 1000); //default is 5 seconds
-		config.setReadTimeoutMillis(10 * 1000); //default is 20 seconds
-
-		//Connection pooling for maximal throughput
-		config.setPoolMaximumSize(60); //default is 10
-		//Timeout for getting connection from pool
-		config.setPoolAcquireTimeoutMillis(5 * 1000); //default is 3 seconds
-		//TTL for connections in pool
-		config.setPoolReleaseTimeoutMillis(5 * 60 * 1000); //default is 65 seconds
-
-		//BASIC and DIGEST Autentication at your service! BASIC is preemptive by default.
-		config.setAuthentication(Authentication.BASIC("myusername", "mypassword"));
-
-		config.setFollowRedirects(true); //default is false
-		config.setGzipRequest(true); //default is false
-
-		//What to do with null or "" parameters?
-		config.setNullValueStrategy(ValueStrategy.SKIP); //default is KEEP
-		config.setEmptyValueStrategy(ValueStrategy.SKIP); //default is KEEP
-
-		//Tired of setting Accept Header to every request?
-		config.setDefaultAccept("application/json"); //default is none
-
-		HttpClient4Sender sender = config.buildSender();
-		//...send send send...
-		sender.close();
-```
 
 Sender Implementations
 -------------
@@ -234,15 +207,14 @@ Sender Implementations
 
 ```java
 		//No additional dependency - vanilla java
-		URLHttpConfig urlConfig = new URLHttpConfig("https://graph.facebook.com");
-		URLHttpSender urlSender = urlConfig.buildSender();
+		HttlSender urlSender = HttlSender.url("https://graph.facebook.com").build();
 ```
 
 ### HttpClient4Sender - Recommended choice
 
 ```java		
-		HttpClient4Config http4config = new HttpClient4Config("https://api.twitter.com");
-		HttpClient4Sender http4sender = http4config.buildSender();
+		HttpClient4Config http4config = HttlSender.url("https://api.twitter.com").httpClient4();
+		HttlSender http4sender = http4config.sender().build();
 ```
 Dependency - http://hc.apache.org/httpcomponents-client-ga/
 
@@ -254,13 +226,13 @@ Dependency - http://hc.apache.org/httpcomponents-client-ga/
 		</dependency>
 ```
 
-Missing dependency - java.lang.NoClassDefFoundError: org/apache/http/client/methods/HttpRequestBase
+Missing dependency - java.lang.IllegalStateException: HttClient 4 classes not found in classpath
 
 ### HttpClient3Sender - Legacy choice
 
 ```java
-		HttpClient3Config http3config = new HttpClient3Config("https://api.twitter.com");
-		HttpClient3Sender http3sender = http3config.buildSender();
+		HttpClient3Config http3config = HttlBuilder.httpClient3("https://api.twitter.com");
+		HttlSender http3sender = http3config.sender().build();
 ```
 Dependency - http://hc.apache.org/httpclient-3.x/
 
@@ -271,4 +243,4 @@ Dependency - http://hc.apache.org/httpclient-3.x/
 			<version>3.1</version>
 		</dependency>
 ```
-Missing dependency - java.lang.NoClassDefFoundError: org/apache/commons/httpclient/HttpMethodBase
+Missing dependency - java.lang.IllegalStateException: HttClient 3.1 classes not found in classpath
