@@ -52,9 +52,9 @@ public class ExamplesTest {
 		//Create sender with utf-8 encoding, default timeouts and connection pool
 		HttlSender sender = HttlSender.url("https://api.github.com").build();
 
-		ExtractedResponse<String> extracted1 = sender.GET("/users").param("since", 333).extract(String.class);
+		ExtractedResponse<String> extracted = sender.GET("/users").param("since", 333).extract(String.class);
 		//Just print unprocessed JSON String
-		System.out.println(extracted1.getBody());
+		System.out.println(extracted.getBody());
 
 		//Free connection pool
 		sender.close();

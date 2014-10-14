@@ -41,6 +41,9 @@ import org.slf4j.LoggerFactory;
 public class HttlSender implements SenderOperations, Closeable {
 
 	/**
+	 * Initiate HttlSender Builder...
+	 * 
+	 * @param url 
 	 * @return Ultimate builder/configurer
 	 */
 	public static TransportChooser url(String url) {
