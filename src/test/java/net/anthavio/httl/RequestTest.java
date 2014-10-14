@@ -3,17 +3,28 @@ package net.anthavio.httl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import net.anthavio.httl.Authentication.Scheme;
-import net.anthavio.httl.SenderRequest.Method;
+import net.anthavio.httl.HttlBody.Type;
+import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
+import net.anthavio.httl.HttlRequest.Method;
+import net.anthavio.httl.HttlRequestBuilder.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder.BodylessRequestBuilder;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.util.MockTransport;
 
 import org.assertj.core.api.Assertions;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * 
@@ -23,126 +34,394 @@ import org.testng.annotations.Test;
 public class RequestTest {
 
 	@Test
-	public void requestUrl() {
-		HttpURLSender sender = new HttpURLSender("www.somewhere.com/path");
-		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.somewhere.com"); //add http prefix and remove path suffix
-		//SimpleHttpSender sender = null;
+	public void urlPath() {
+		HttlRequest request;
 
-		GetRequest rGet = new GetRequest("/path");
-		String[] paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isNull();
+		request = HttlSender.url("www.example.com").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		rGet.addParameter("p0", (Object) null);
-		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path?p0");
-		assertThat(paq[1]).isEqualTo("p0");
+		request = HttlSender.url("www.example.com/").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/file");
 
-		rGet.addParameter("p1", "");
-		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path?p0&p1=");
-		assertThat(paq[1]).isEqualTo("p0&p1=");
+		request = HttlSender.url("www.example.com/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
-		rGet.addParameter("p2", 1);
-		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path?p0&p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+		//When too many /
+		request = HttlSender.url("www.example.com/path/").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
-		rGet.addMartixParam("m0", null);//null is skipped by default
-		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path;m0?p0&p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+		//When too little /
+		request = HttlSender.url("www.example.com/path").build().GET("file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
-		rGet.addMartixParam("m1", "");//blank is not skipped by default
-		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path;m0;m1=?p0&p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+		//When port
+		request = HttlSender.url("www.example.com:8080/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
-		rGet.addParameter(";m2", 2);
-		paq = sender.getPathAndQuery(rGet);
-		assertThat(paq[0]).isEqualTo("/path;m0;m1=;m2=2?p0&p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+		//When http
+		request = HttlSender.url("http://www.example.com/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path/file");
 
-		//now with POST request
+		//When https
+		request = HttlSender.url("https://www.example.com/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com/path/file");
 
-		PostRequest rPost = new PostRequest("/path");
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isNull();
+		//When http + port
+		request = HttlSender.url("http://www.example.com:8080/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com:8080/path/file");
 
-		rPost.addParameter("p0", (Object) null);
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isEqualTo("p0");
+		//When https + port
+		request = HttlSender.url("https://www.example.com:9696/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
-		rPost.addParameter("p1", "");
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isEqualTo("p0&p1=");
+		//When username:password in a URL - it is omitted
+		request = HttlSender.url("https://username:password@www.example.com:9696/path").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("https://www.example.com:9696/path/file");
 
-		rPost.addParameter("p2", 1);
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
+		//When query in URL - it is omitted
+		request = HttlSender.url("www.example.com/path;matrix=value?query=value").build().GET("/file").build();
+		assertThat(request.getUrl().toString()).isEqualTo("http://www.example.com/path;matrix=value/file");
 
-		rPost.addMartixParam("m0", null);
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m0");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
-
-		rPost.addMartixParam("m1", ""); //add matrix parameter
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m0;m1=");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
-
-		rPost.addParameter(";m2", 2); //add matrix parameter
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m0;m1=;m2=2");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
-
-		//setting request body moves query parameters from body to path 
-		rPost.setBody(new ByteArrayInputStream(new byte[0]), "application/json; charset=utf-8");
-		paq = sender.getPathAndQuery(rPost);
-		assertThat(paq[0]).isEqualTo("/path;m0;m1=;m2=2?p0&p1=&p2=1");
-		assertThat(paq[1]).isEqualTo("p0&p1=&p2=1");
 	}
 
 	@Test
-	public void requestParams() {
-		SenderRequest request = new GetRequest("/");
+	public void parameters() {
+		HttlSender sender = HttlSender.url("www.example.com").build();
+		assertThat(sender.getConfig().getUrl().toString()).isEqualTo("http://www.example.com"); //add http prefix and remove path suffix
+		//SimpleHttpSender sender = null;
+
+		BodylessRequestBuilder builder = sender.GET("/get");
+		//
+		HttlRequest req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get");
+
+		builder.param("p0", (Object) null);
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get");
+
+		builder.param("p1", "");
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get?p1=");
+
+		builder.param("p2", 2);
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get?p1=&p2=2");
+
+		builder.matrix("m0", null);//null is skipped by default
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get?p1=&p2=2");
+
+		builder.matrix("m1", "");//blank is not skipped by default
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get;m1=?p1=&p2=2");
+
+		builder.param(";m2", 2);
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/get;m1=;m2=2?p1=&p2=2");
+	}
+
+	@Test
+	public void requestBody() throws IOException {
+		//Given sender
+		HttlSender sender = HttlSender.url("www.example.com").build();
+
+		//When - only body
+		BodyfulRequestBuilder builder = sender.POST("/x").body("<x></x>", "application/xml");
+		HttlRequest request = builder.build();
+		//Then
+		assertThat(request.getBody().getPayload()).isEqualTo("<x></x>");
+		assertThat(request.getMediaType()).isEqualTo("application/xml");
+		assertThat(request.getCharset()).isEqualTo("utf-8");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/xml; charset=utf-8");
+
+		//When - only parameters 
+		builder = sender.POST("/x").param("p", "v");
+		request = builder.build();
+		//Then - parameters became POST body
+		assertThat(request.getPathAndQuery()).isEqualTo("/x");
+		assertThat(request.getBody().getPayload()).isEqualTo("p=v");
+		//And correct conten type is added
+		assertThat(request.getMediaType()).isEqualTo("application/x-www-form-urlencoded");
+		assertThat(request.getCharset()).isEqualTo("utf-8");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded; charset=utf-8");
+
+		//When - parameters and body
+		builder.body("[]", "application/json; charset=Cp1252");
+		request = builder.build();
+		//Then
+		assertThat(request.getPathAndQuery()).isEqualTo("/x?p=v");
+		assertThat(request.getBody().getPayload()).isEqualTo("[]");
+		assertThat(request.getMediaType()).isEqualTo("application/json");
+		assertThat(request.getCharset()).isEqualTo("Cp1252");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/json; charset=Cp1252");
+
+		//When - Request media type (defalut) is NOT configured
+
+		//Then - RequestException
+		try {
+			request = sender.POST("/x").body("brrrrrrrrrrr").build();
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
+		} catch (HttlRequestException rx) {
+			//this is expected
+		}
+
+		//When - Content-Type passed as separate header
+		request = sender.POST("/x").header("Content-Type", "text/plain").body("brrrrrrrrrrr").build();
+		//Then
+		assertThat(request.getBody().getPayload()).isEqualTo("brrrrrrrrrrr");
+		assertThat(request.getMediaType()).isEqualTo("text/plain");
+		assertThat(request.getCharset()).isEqualTo("utf-8");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=utf-8");
+
+		//When - configure Request media type (defalut)
+		SenderConfigurer config = HttlSender.url("www.example.com").httpUrl().setCharset("ISO-8859-2").sender()
+				.setRequestMediaType("text/plain");
+		sender = config.build();
+
+		//Then - ok now
+		request = sender.POST("/x").body("brrrrrrrrrrr").build();
+		assertThat(request.getBody().getPayload()).isEqualTo("brrrrrrrrrrr");
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("text/plain; charset=ISO-8859-2");
+		assertThat(request.getMediaType()).isEqualTo("text/plain");
+		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
+
+		//Given - charset skipping is setSkipCharset(true)
+		sender = HttlSender.url("www.example.com").httpUrl().setCharset("ISO-8859-2").sender().setSkipCharset(true)
+				.setRequestMediaType("text/plain").build();
+
+		//When - without explicit charset
+		request = sender.POST("/x").body("HELLO", "application/greeting").build();
+		//Then
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/greeting");
+		assertThat(request.getMediaType()).isEqualTo("application/greeting");
+		assertThat(request.getCharset()).isEqualTo("ISO-8859-2");
+
+		//When - without explicit charset
+		request = sender.POST("/x").body("HELLO", "application/greeting; charset=big5").build();
+		//Then
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/greeting");
+		assertThat(request.getMediaType()).isEqualTo("application/greeting");
+		assertThat(request.getCharset()).isEqualTo("big5");
+	}
+
+	@Test
+	public void postBodyBuffering() {
+		HttlSender sender = HttlBuilder.mock().sender().build();
+
+		ByteArrayInputStream stream = new ByteArrayInputStream("brrrrrrrrrrrrr".getBytes());
+		//When - default is non buffered
+		HttlRequest request = sender.POST("/whatever").body(stream, "text/plain").build();
+		//Then - original stream
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.STREAM);
+		Assertions.assertThat(request.getBody().getPayload()).isEqualTo(stream);
+
+		//When - caching parameter true
+		request = sender.POST("/whatever").body(stream, "text/plain", true).build();
+		//Then - cached to byte[]
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.BYTES);
+		Assertions.assertThat(request.getBody().getPayload()).isExactlyInstanceOf(byte[].class);
+
+		//Given Mashalled payload
+		TestBodyRequest bean = new TestBodyRequest("Something");
+		//When - default
+		request = sender.POST("/whatever").body(bean, "application/json").build();
+		//Then - original bean is there
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.MARSHALL);
+		Assertions.assertThat(request.getBody().getPayload()).isEqualTo(bean);
+
+		//When - cached parameter true
+		request = sender.POST("/whatever").body(bean, "application/json", true).build();
+		//Then - bean is marshalled into bytes
+		Assertions.assertThat(request.getBody().getType()).isEqualTo(Type.BYTES);
+		Assertions.assertThat(request.getBody().getPayload()).isExactlyInstanceOf(byte[].class);
+
+		//When - caching and wrong mime type to marshall
+		try {
+			sender.POST("/whatever").body(bean, "unsupported/type", true).build();
+			//Then - exception intantly
+			Assertions.fail("Expected " + HttlRequestException.class.getName());
+		} catch (HttlRequestException rx) {
+			Assertions.assertThat(rx.getMessage()).startsWith("Marshaller not found");
+		}
+	}
+
+	@Test
+	public void mapAsParameter() {
+		//Given - default settings
+		HttlSender sender = HttlSender.url("www.example.com").build();
+		HttlRequest request;
+
+		//When - null map
+		Map<String, Object> map = null;
+		request = sender.GET("/path").param("map", map).build();
+		//Then - nothing
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+		//When - empty
+		map = new HashMap<String, Object>();
+		request = sender.GET("/path").param("map", map).build();
+		//Then - nothing
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+		//When - single
+		map = new HashMap<String, Object>();
+		map.put("x", 1);
+		request = sender.GET("/path").param("map.", map).build();
+		//Then - single
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1");
+
+		map.clear();
+
+		//When - null value
+		map = new HashMap<String, Object>();
+		map.put("x", null);
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path");
+
+		//When - "" value
+		map = new HashMap<String, Object>();
+		map.put("x", "");
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=");
+
+		//When - array
+		map.put("x", new int[] { 1, 2, 3 });
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1&map.x=2&map.x=3");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1&x=2&x=3");
+
+		//When - list
+		ArrayList<Object> list = new ArrayList<Object>();
+		list.add(1);
+		list.add("2");
+		list.add(null);
+
+		map.put("x", list);
+		request = sender.GET("/path").param("map.", map).build();
+		//Then
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?map.x=1&map.x=2");
+		//And
+		request = sender.GET("/path").params(map).build();
+		Assertions.assertThat(request.getPathAndQuery()).isEqualTo("/path?x=1&x=2");
+
+	}
+
+	@Test
+	public void dateAsParameter() throws UnsupportedEncodingException {
+
+		//Given - default settings
+		HttlSender sender = HttlSender.url("www.example.com").build();
+
+		//When - Date as parameter
+		BodylessRequestBuilder builder = sender.OPTIONS("/options");
+		Date date = new Date();
+		builder.param("d", date, 32, "ZXZX");
+		HttlRequest request = builder.build();
+		//Then - default pattern is used
+		String sdate = new SimpleDateFormat(ConfigurableParamSetter.DEFAULT_DATE_PATTERN).format(date);
+		sdate = URLEncoder.encode(sdate, "UTF-8");
+		assertThat(request.getPathAndQuery()).isEqualTo("/options?d=" + sdate + "&d=32&d=ZXZX");
+
+		//Given - custom date format
+		String pattern = "yyyy-MM-dd";
+		String expected = new SimpleDateFormat(pattern).format(date);
+
+		//When - pattern set as parameter
+		request = sender.OPTIONS("/options").param("d", date, pattern).build();
+		//Then
+		assertThat(request.getPathAndQuery()).isEqualTo("/options?d=" + expected);
+
+		//When - pattern set into global ParamSetter
+		sender.getConfig().setParamSetter(new ConfigurableParamSetter(pattern));
+		request = sender.DELETE("/delete").param("d", date).build();
+		//Then
+		assertThat(request.getPathAndQuery()).isEqualTo("/delete?d=" + expected);
+	}
+
+	@Test
+	public void arraysAndCollections() {
+		HttlSender sender = HttlSender.url("www.example.com").build();
+
+		BodylessRequestBuilder builder = sender.DELETE("/delete");
+		builder.param(";m3", 31, 32, 33);
+		HttlRequest req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/delete;m3=31;m3=32;m3=33");
+
+		builder = sender.DELETE("/delete");
+		builder.param(";m3", "31", null, ""); //null and empty (vararg)
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/delete;m3=31;m3=");
+
+		builder = sender.DELETE("/delete");
+		builder.param(";m3", Arrays.asList("31", null, "")); //null and empty (collection)
+		req = builder.build();
+		assertThat(req.getMethod()).isEqualTo(Method.DELETE);
+		assertThat(req.getPathAndQuery()).isEqualTo("/delete;m3=31;m3=");
+
+		builder = sender.DELETE("/delete");
+		builder.param(";m3", new String[] { "31", null, "" }); //null and empty (array)
+		req = builder.build();
+		assertThat(req.getPathAndQuery()).isEqualTo("/delete;m3=31;m3=");
+	}
+
+	@Test
+	public void headersAndParams() {
+		HttlSender sender = new MockTransport().sender().build();
+
+		HttlRequest request = sender.GET("/").build();
 		assertThat(request.getMethod()).isEqualTo(Method.GET);
-		assertThat(request.getUrlPath()).isEqualTo("/");
+		assertThat(request.getPathAndQuery()).isEqualTo("/");
 		assertThat(request.getParameters()).isEmpty();
 		assertThat(request.getHeaders()).isEmpty();
 
-		request = new PostRequest("/");
+		request = sender.POST("/").build();
 		assertThat(request.getMethod()).isEqualTo(Method.POST);
-		assertThat(request.getUrlPath()).isEqualTo("/");
+		assertThat(request.getPathAndQuery()).isEqualTo("/");
 		assertThat(request.getParameters()).isEmpty();
 		assertThat(request.getHeaders()).isEmpty();
+		//assertThat(request.getFirstHeader(Constants.Accept_Charset)).isEqualTo("utf-8");
 
-		Map<String, List<String>> parameters = new HashMap<String, List<String>>();
-		parameters.put("p1", Arrays.asList("y"));
-		parameters.put("p2", Arrays.asList("a", "b", "c"));
-		parameters.put("p3", Collections.EMPTY_LIST);
-		parameters.put("p4", null);
-		parameters.put("p5", Arrays.asList(""));
+		String path = "/path/to/somewhere";
+		BodylessRequestBuilder builder = sender.HEAD(path);//.params(parameters).setHeaders(headers);
 
-		Map<String, List<String>> headers = new HashMap<String, List<String>>();
-		headers.put("h1", Arrays.asList("v1"));
-		headers.put("h2", Arrays.asList("v21", "v22", "v23"));
-		headers.put("h3", Collections.EMPTY_LIST);
-		headers.put("h4", null);
-		headers.put("h5", Arrays.asList(""));
+		builder.param("p1", Arrays.asList("y"));
+		builder.param("p2", Arrays.asList("a", "b", "c"));
+		builder.param("p3", Collections.EMPTY_LIST);
+		builder.param("p4", (String) null);
+		builder.param("p5", Arrays.asList(""));
 
-		String path = "/path/to/somewhere?pname=pvalue";
-		request = new PostRequest(path).setParameters(parameters).setHeaders(headers);
-		assertThat(request.getMethod()).isEqualTo(Method.POST);
-		assertThat(request.getUrlPath()).isEqualTo(path);
+		builder.header("h1", Arrays.asList("v1"));
+		builder.header("h2", Arrays.asList("v21", "v22", "v23"));
+		builder.header("h3", Collections.EMPTY_LIST);
+		builder.header("h4", (String) null);
+		builder.header("h5", Arrays.asList(""));
+
+		request = builder.build();
+		assertThat(request.getMethod()).isEqualTo(Method.HEAD);
 
 		//assertThat(request.getParameters()).isEqualTo(parameters);
-		assertThat(request.getParameters().size()).isEqualTo(5);
-		assertThat(request.getParameters().names().size()).isEqualTo(5);
+		assertThat(request.getParameters().size()).isEqualTo(4);
+		assertThat(request.getParameters().names().size()).isEqualTo(4);
 
 		assertThat(request.getParameters().get("p1")).hasSize(1);
 		assertThat(request.getParameters().getFirst("p1")).isEqualTo("y");
@@ -153,17 +432,15 @@ public class RequestTest {
 		assertThat(request.getParameters().get("p3")).hasSize(0);
 		assertThat(request.getParameters().getFirst("p3")).isNull();
 		assertThat(request.getParameters().getLast("p3")).isNull();
-		assertThat(request.getParameters().get("p4")).hasSize(1);
-		assertThat(request.getParameters().getFirst("p4")).isNull();
-		assertThat(request.getParameters().getLast("p4")).isNull();
+		assertThat(request.getParameters().get("p4")).isNull();
 
 		assertThat(request.getParameters().get("p5")).hasSize(1);
 		assertThat(request.getParameters().getFirst("p5")).isEqualTo("");
 		assertThat(request.getParameters().getLast("p5")).isEqualTo("");
 
 		//assertThat(request.getHeaders()).isEqualTo(headers);
-		assertThat(request.getHeaders().size()).isEqualTo(5);
-		assertThat(request.getHeaders().names().size()).isEqualTo(5);
+		assertThat(request.getHeaders()).hasSize(5);
+		assertThat(request.getHeaders().names()).hasSize(5);
 
 		assertThat(request.getHeaders().get("h1")).hasSize(1);
 		assertThat(request.getHeaders().getFirst("h1")).isEqualTo("v1");
@@ -186,72 +463,71 @@ public class RequestTest {
 		assertThat(request.getHeaders().getLast("h5")).isEqualTo("");
 
 		//parameteres allow duplicit names
-		request.addParameter("param", "something");
-		assertThat(request.getParameters().get("param")).hasSize(1);
-		request.addParameter("param", "something");
-		assertThat(request.getParameters().get("param")).hasSize(2);
+		builder.param("param", "something");
+		assertThat(builder.build().getParameters().get("param")).hasSize(1);
+		builder.param("param", "something");
+		assertThat(builder.build().getParameters().get("param")).hasSize(2);
 
-		//header do not allow duplicit names
-		request.setHeader("header", "something");
-		assertThat(request.getHeaders().get("header")).hasSize(1);
-		request.setHeader("header", "something");
-		assertThat(request.getHeaders().get("header")).hasSize(1);
+		//headers allow duplicit names
+		builder.header("header", "something");
+		assertThat(builder.build().getHeaders().get("header")).hasSize(1);
+		builder.header("header", "something");
+		assertThat(builder.build().getHeaders().get("header")).hasSize(2);
 	}
 
 	@Test
-	public void simpleDefauts() {
-		String url = "http://www.hostname.com:8080/path/to/somewhere";
-		HttpURLSender sender = new HttpURLSender(url);
-		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.hostname.com:8080");// file(path) URL part is thrown away
-		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
-		assertThat(sender.getConfig().getAuthentication()).isNull();
+	public void testConfigDefaults() {
+		//Given
+		String url = "http://www.example.com:8080";
+		HttlSender sender = HttlSender.url(url).build();
+		SenderConfigurer config = sender.getConfig();
+		//Then
+		assertThat(sender.getConfig().getCharset()).isEqualTo("utf-8");
+		assertThat(sender.getTransport().getConfig().getAuthentication()).isNull();
 
-		//default authentication is BASIC and preepmtive
-		Authentication authentication = new Authentication(Authentication.Scheme.BASIC, "user", "pass");
-		assertThat(authentication.getScheme()).isEqualTo(Authentication.Scheme.BASIC);
-		assertThat(authentication.getPreemptive()).isEqualTo(true);
+		//When - default authentication is BASIC and preepmtive
+		Authentication auth = new Authentication(Authentication.Scheme.BASIC, "user", "pass");
+		//Then
+		assertThat(auth.getScheme()).isEqualTo(Authentication.Scheme.BASIC);
+		assertThat(auth.getPreemptive()).isEqualTo(true);
+
+		//When
+		HttlRequest request = sender.POST("/x").body("b", "text/plain").build();
+		//Then
+		assertThat(request.getPathAndQuery()).isEqualTo("/x");
+		assertThat(request.getBody().getPayload()).isEqualTo("b");
+		assertThat(request.getMediaType()).isEqualTo("text/plain");
+		assertThat(request.getCharset()).isEqualTo("utf-8");
+
+		//When
+		sender.getTransport().getConfig().setCharset("utf-16");
+		config.setRequestMediaType("application/xml");
+		config.setResponseMediaType("application/json");
+
+		request = config.build().POST("/x").body("b").build();
+		//Then
+		assertThat(request.getMediaType()).isEqualTo("application/xml");
+		assertThat(request.getCharset()).isEqualTo("utf-16");
+
+		assertThat(request.getFirstHeader("Content-Type")).isEqualTo("application/xml; charset=utf-16");
+		assertThat(request.getFirstHeader(HttlConstants.Accept)).isEqualTo("application/json");
+
+		sender.close();
 	}
 
 	@Test
 	public void http4() {
-		String url = "http://www.hostname.com:8080/path/to/somewhere";
+		String url = "http://www.hostname.com:8080/somewhere";
 		HttpClient4Config config = new HttpClient4Config(url);
 		Authentication authentication = new Authentication(Scheme.DIGEST, "user", "pass", false);
 		config.setAuthentication(authentication);
-		HttpClient4Sender sender = new HttpClient4Sender(config);
+		HttlSender sender = config.sender().build();
 
-		assertThat(sender.getConfig().getHostUrl().toString()).isEqualTo("http://www.hostname.com:8080"); // file(path) URL part is thrown away
-		assertThat(sender.getConfig().getEncoding()).isEqualTo("utf-8");
-		assertThat(sender.getConfig().getAuthentication().getPreemptive()).isFalse();
-	}
+		assertThat(sender.getConfig().getUrl().toString()).isEqualTo("http://www.hostname.com:8080/somewhere"); // file(path) URL part is thrown away
+		assertThat(sender.getConfig().getCharset()).isEqualTo("utf-8");
+		assertThat(sender.getTransport().getConfig().getAuthentication().getPreemptive()).isFalse();
 
-	@Test
-	public void senderBadParameters() {
-		HttpURLSender sender;
-		try {
-			sender = new HttpURLSender((String) null);
-			Assertions.fail("Previous statemet must throw IllegalArgumentException");
-		} catch (IllegalArgumentException iax) {
-			//ok
-		}
-		try {
-			sender = new HttpURLSender((HttpURLConfig) null);
-			Assertions.fail("Previous statemet must throw IllegalArgumentException");
-		} catch (IllegalArgumentException iax) {
-			//ok
-		}
-		try {
-			sender = new HttpURLSender("");
-			Assertions.fail("Previous statemet must throw IllegalArgumentException");
-		} catch (IllegalArgumentException iax) {
-			//ok
-		}
-		try {
-			sender = new HttpURLSender("http:///");
-			Assertions.fail("Previous statemet must throw IllegalArgumentException");
-		} catch (IllegalArgumentException iax) {
-			//ok
-		}
+		sender.close();
 	}
 
 }

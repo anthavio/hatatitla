@@ -5,9 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpUrlConfig;
+import net.anthavio.httl.transport.JettyClientConfig;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * 
@@ -16,237 +21,295 @@ import org.testng.annotations.Test;
  */
 public class AuthenticationTest {
 
-	private JokerServer server = new JokerServer();
+	private static JokerServer server = new JokerServer();
 
 	@BeforeClass
-	public void setup() throws Exception {
-		this.server.start();
+	public static void setup() throws Exception {
+		server.start();
 	}
 
 	@AfterClass
-	public void destroy() throws Exception {
-		this.server.stop();
+	public static void destroy() throws Exception {
+		server.stop();
 	}
 
 	@Test
-	public void simple() throws IOException {
+	public void javaHttpUrlSender() throws IOException {
 
 		System.setProperty("http.keepAlive", "false");
 
-		String url = "http://localhost:" + this.server.getHttpPort();
-		HttpSender sender = new HttpURLSender(url);
+		//Given - sender without authentication
+		String url = "http://localhost:" + server.getPortHttp();
+		HttlSender sender = HttlSender.url(url).build();
 
-		SenderResponse response = sender.GET("/").param("x", "y").execute();
-		response.close();
-		//can access unprotected
+		//When 
+		HttlResponse response = sender.GET("/").param("x", "y").execute();
+		//Then - OK
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
 
+		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
-		response.close();
-		//can't access BASIC protected
+		//Then - 401
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+		response.close();
 
+		//When - DIGEST protected resource
 		response = sender.GET("/digest/").execute();
-		response.close();
-		//can't access DIGEST protected
+		//Then - 401
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+		response.close();
 
-		//NOW setup BASIC authentication
-		HttpURLConfig config = new HttpURLConfig(url);
-		//authentication.setPreemptive(false);
-		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
-		basic.setRealm("MyBasicRealm");
+		sender.close();
+
+		//Given - HttlSender with BASIC credentials
+
+		HttpUrlConfig config = new HttpUrlConfig(url);
+		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!")
+				.setRealm("MyBasicRealm");
 		config.setAuthentication(basic);
+		sender = config.sender().build();
 
-		sender = new HttpURLSender(config);
+		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
-		response.close();
-		//can access BASIC protected
+		//Then - allowed
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-
-		sender = new HttpURLSender(config);
-		response = sender.GET("/digest/").execute();
 		response.close();
-		//can't access DIGEST protected
+		sender.close();
+
+		sender = config.sender().build();
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED); //incorrect role for lajka
+		response.close();
 
-		//NOW setup DIGEST authentication
-		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
-		basic.setRealm("MyDigestRealm");
+		sender.close();
+
+		//Given - HttlSender with DIGEST credentials
+
+		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek")
+				.setRealm("MyDigestRealm");
 		config.setAuthentication(digest);
+		sender = config.sender().build();
 
-		sender = new HttpURLSender(config);
+		//When - BASIC protected resource
 		response = sender.GET("/basic/").execute();
-		response.close();
-		//can't access BASIC protected
+		//Then - 401
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
-
-		sender = new HttpURLSender(config);
-		response = sender.GET("/digest/").execute();
 		response.close();
-		//can access DIGEST protected
+
+		sender.close();
+		sender = config.sender().build();
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - allowed
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
+		sender.close();
 	}
 
 	@Test
-	public void http3() throws IOException {
-		SenderRequest request = new GetRequest("/");
-		request.addParameter("x", "y");
+	public void httpClient3() throws IOException {
 
-		String url = "http://localhost:" + this.server.getHttpPort();
-		SenderResponse response = new HttpClient3Sender(url).execute(request);
-		//can access unprotected
+		//Given - sender without authentication
+		String url = "http://localhost:" + server.getPortHttp();
+		HttlSender sender = new HttpClient3Config(url).sender().build();
+
+		//When - unprotected
+		HttlResponse response = sender.GET("/").param("x", "y").execute();
+		//Then - allow
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
 
-		request = new GetRequest("/basic/");
-		response = new HttpClient3Sender(url).execute(request);
-		//can't access BASIC protected
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - 401 can't access 
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+		response.close();
 
-		request = new GetRequest("/digest/");
-		response = new HttpClient3Sender(url).execute(request);
-		//can't access DIGEST protected
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401 can't access 
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+		response.close();
 
-		//setup BASIC authentication
+		sender.close();
+
+		//Given - setup BASIC authentication
 
 		HttpClient3Config config = new HttpClient3Config(url);
 		Authentication authentication = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
-		//XXX authentication.setPreemptive(false);
 		config.setAuthentication(authentication);
+		sender = config.sender().build();
 
-		request = new GetRequest("/basic/");
-		response = new HttpClient3Sender(config).execute(request);
-		//can access BASIC protected
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - allowed
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
 
-		request = new GetRequest("/digest/");
-		response = new HttpClient3Sender(config).execute(request);
-		//can't access DIGEST protected
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED); //incorrect role for lajka
+		response.close();
 
-		//setup DIGEST authentication
+		sender.close();
+
+		//Given - setup DIGEST authentication
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
+		sender = config.sender().build();
 
-		request = new GetRequest("/basic/");
-		response = new HttpClient3Sender(config).execute(request);
-		response.close();
-		//can't access BASIC protected
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - 401
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);//BASIC credentials does NOT work on DIGEST resource
-
-		request = new GetRequest("/digest/");
-		response = new HttpClient3Sender(config).execute(request);
 		response.close();
-		//can access DIGEST protected
+
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - OK
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
+
+		sender.close();
 	}
 
 	@Test
-	public void http4() throws IOException {
+	public void httpClient4() throws IOException {
 
-		String url = "http://localhost:" + this.server.getHttpPort();
+		//Given - sender without authentication
+		String url = "http://localhost:" + server.getPortHttp();
+		HttlSender sender = new HttpClient4Config(url).sender().build();
 
-		SenderResponse response = new HttpClient4Sender(url).GET("/").param("x", "y").execute();
-		response.close();
-		//can access unprotected
+		//When - unprotected
+		HttlResponse response = sender.GET("/").param("x", "y").execute();
+		//Then - allow
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-
-		response = new HttpClient4Sender(url).GET("/basic/").execute();
 		response.close();
-		//can't access BASIC protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		response = new HttpClient4Sender(url).GET("/digest/").execute();
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - 401 can't access 
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 		response.close();
-		//can't access DIGEST protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		//setup BASIC authentication
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401 can't access 
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+		response.close();
+
+		sender.close();
+
+		//Given - setup BASIC authentication
 
 		HttpClient4Config config = new HttpClient4Config(url);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
-		//XXX authentication.setPreemptive(false);
 		config.setAuthentication(basic);
+		sender = config.sender().build();
 
-		response = config.buildSender().GET("/basic/").execute();
-		response.close();
-		//can access BASIC protected
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - allowed
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-
-		response = config.buildSender().GET("/digest/").execute();
 		response.close();
-		//can't access DIGEST protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		//setup DIGEST authentication
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED); //incorrect role for lajka
+		response.close();
+
+		sender.close();
+
+		//Given - setup DIGEST authentication
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
+		sender = config.sender().build();
 
-		response = config.buildSender().GET("/basic/").execute();
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - 401
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);//BASIC credentials does NOT work on DIGEST resource
 		response.close();
-		//can't access BASIC protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		response = config.buildSender().GET("/digest/").execute();
-		response.close();
-		//can access DIGEST protected
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - OK
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
+
+		sender.close();
 	}
 
 	@Test
 	public void jetty() throws IOException {
 
-		String url = "http://localhost:" + this.server.getHttpPort();
+		//Given - sender without authentication
+		String url = "http://localhost:" + server.getPortHttp();
+		HttlSender sender = new JettyClientConfig(url).sender().build();
 
-		SenderResponse response = new JettySender(url).GET("/").param("x", "y").execute();
-		response.close();
-		//can access unprotected
+		//When - unprotected
+		HttlResponse response = sender.GET("/").param("x", "y").execute();
+		//Then - allow
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-
-		response = new JettySender(url).GET("/basic/").execute();
 		response.close();
-		//can't access BASIC protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		response = new JettySender(url).GET("/digest/").execute();
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - 401 can't access 
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 		response.close();
-		//can't access DIGEST protected
+
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401 can't access 
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+		response.close();
 
-		//setup BASIC authentication
+		//Given - setup BASIC authentication
 
-		JettySenderConfig config = new JettySenderConfig(url);
+		JettyClientConfig config = new JettyClientConfig(url);
 		Authentication basic = new Authentication(Authentication.Scheme.BASIC, "lajka", "haf!haf!");
-		//XXX authentication.setPreemptive(false);
 		config.setAuthentication(basic);
+		sender = config.sender().build();
 
-		response = config.buildSender().GET("/basic/").execute();
-		response.close();
-		//can access BASIC protected
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - allowed
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-
-		response = config.buildSender().GET("/digest/").execute();
 		response.close();
-		//can't access DIGEST protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		//setup DIGEST authentication
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - 401
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED); //incorrect role for lajka
+		response.close();
+
+		sender.close();
+
+		//Given - setup DIGEST authentication
 
 		Authentication digest = new Authentication(Authentication.Scheme.DIGEST, "zora", "stekystek");
 		config.setAuthentication(digest);
+		sender = config.sender().build();
 
-		response = config.buildSender().GET("/basic/").execute();
+		//When - BASIC protected resource
+		response = sender.GET("/basic/").execute();
+		//Then - 401
+		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);//BASIC credentials does NOT work on DIGEST resource
 		response.close();
-		//can't access BASIC protected
-		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
 
-		response = config.buildSender().GET("/digest/").execute();
-		response.close();
-		//can access DIGEST protected
+		//When - DIGEST protected resource
+		response = sender.GET("/digest/").execute();
+		//Then - OK
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+		response.close();
 	}
 
 }

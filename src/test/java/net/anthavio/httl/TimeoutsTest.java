@@ -7,12 +7,17 @@ import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import net.anthavio.httl.HttlRequestBuilder.BodylessRequestBuilder;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
+import net.anthavio.httl.transport.HttpClient3Config;
+import net.anthavio.httl.transport.HttpClient4Config;
+import net.anthavio.httl.transport.HttpUrlConfig;
+import net.anthavio.httl.transport.JettyClientConfig;
 
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * 
@@ -21,76 +26,75 @@ import org.testng.annotations.Test;
  */
 public class TimeoutsTest {
 
-	private JokerServer server = new JokerServer();
+	private static JokerServer server = new JokerServer();
 
-	private String urlSingle;
+	private static String urlSingle;
 
-	private String urlFrozen;
+	private static String urlFrozen;
 
-	private ExecutorService executor;
+	private static ExecutorService executor;
 
 	@BeforeClass
-	public void setup() throws Exception {
-		this.server.start();
-		this.urlSingle = "http://localhost:" + this.server.getHttpPort() + "/";
+	public static void setup() throws Exception {
+		server.start();
+		urlSingle = "http://localhost:" + server.getPortHttp() + "/";
 		//this.urlFrozen = "http://localhost:" + this.server.getFrozenPort() + "/";
 		//this.urlFrozen = "http://www.google.com:81/";
-		this.urlFrozen = "http://10.254.254.254/";
+		urlFrozen = "http://10.254.254.254/";
 
-		this.executor = new ExecutorServiceBuilder().build();
+		executor = new ExecutorServiceBuilder().build();
 	}
 
 	@AfterClass
-	public void destroy() throws Exception {
-		this.server.stop();
+	public static void destroy() throws Exception {
+		server.stop();
 	}
 
 	@Test
 	public void simple() throws IOException {
-		connectTimeout(newSimple(this.urlFrozen));
+		connectTimeout(newSimple(urlFrozen));
 
 		//pool timeout is not testable here
 		//poolTimeout(newSimple(this.urlSingle));
 
-		HttpSender sender = newSimple(this.urlSingle);
+		HttlSender sender = newSimple(urlSingle);
 		readTimeout(sender);
 	}
 
 	@Test
 	public void http3() throws IOException {
-		connectTimeout(newHttp3(this.urlFrozen));
+		connectTimeout(newHttp3(urlFrozen));
 
-		poolTimeout(newHttp3(this.urlSingle));
+		poolTimeout(newHttp3(urlSingle));
 
-		readTimeout(newHttp3(this.urlSingle));
+		readTimeout(newHttp3(urlSingle));
 	}
 
 	@Test
 	public void http4() throws IOException {
-		connectTimeout(newHttp4(this.urlFrozen));
+		connectTimeout(newHttp4(urlFrozen));
 
-		poolTimeout(newHttp4(this.urlSingle));
+		poolTimeout(newHttp4(urlSingle));
 
-		readTimeout(newHttp4(this.urlSingle));
+		readTimeout(newHttp4(urlSingle));
 	}
 
 	//@Test //Buggy as hell
 	public void jetty() throws IOException {
-		HttpSender sender = newJetty(this.urlFrozen);
+		HttlSender sender = newJetty(urlFrozen);
 		connectTimeout(sender);
 		sender.close();
 
 		//pool timeout is not testable here
 		//poolTimeout(newSimple(this.urlSingle));
 
-		sender = newJetty(this.urlSingle);
+		sender = newJetty(urlSingle);
 		readTimeout(sender);
 		sender.close();
 	}
 
-	private void poolTimeout(HttpSender sender) throws IOException {
-		GetRequest request = new GetRequest("/");
-		request.addParameter("sleep", "1");
+	private void poolTimeout(HttlSender sender) throws IOException {
+		HttlRequest request = sender.GET("/").param("sleep", "1").build();
 		//get only existing connection from pool
 		sender.start(request);
 		//sleep to be sure that conenction will be leased
@@ -99,7 +103,7 @@ public class TimeoutsTest {
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw ConnectException");
-		} catch (SenderException sex) {
+		} catch (HttlException sex) {
 			//cx.printStackTrace();
 			assertThat(sex.getMessage()).isEqualTo("java.net.ConnectException: Pool timeout 300 ms");
 		}
@@ -107,12 +111,12 @@ public class TimeoutsTest {
 		sender.close();
 	}
 
-	private void connectTimeout(HttpSender sender) throws IOException {
-		GetRequest request = new GetRequest("/");
+	private void connectTimeout(HttlSender sender) throws IOException {
+		HttlRequest request = sender.GET("/").build();
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw ConnectException");
-		} catch (SenderException sex) {
+		} catch (HttlException sex) {
 			//if (isMacOs()) {
 			assertThat(sex.getMessage()).isEqualTo("java.net.ConnectException: Connect timeout 1100 ms");
 			//} else {
@@ -126,30 +130,31 @@ public class TimeoutsTest {
 	//	return System.getProperty("os.name").toLowerCase().contains("mac");
 	//}
 
-	private void readTimeout(HttpSender sender) throws IOException {
-		SenderRequest request = new GetRequest("/");
+	private void readTimeout(HttlSender sender) throws IOException {
+		BodylessRequestBuilder builder = sender.GET("/");
 		//pass without sleep
 
-		SenderResponse response = sender.execute(request);
+		HttlResponse response = builder.execute();
 		assertThat(response.getHttpStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 		response.close(); //return to pool
 
 		//timeout with sleep
-		request.addParameter("sleep", "2");
+		builder.param("sleep", "2");
 		try {
-			sender.execute(request);
+			builder.execute();
 			Assert.fail("Previous statement must throw SocketTimeoutException");
-		} catch (SenderException sex) {
+		} catch (HttlException sex) {
 			//stx.printStackTrace();
 			assertThat(sex.getMessage()).isEqualTo("java.net.SocketTimeoutException: Read timeout 1300 ms");
 		}
 
 		//override configuration value
-		request.setReadTimeout(900, TimeUnit.MILLISECONDS);
+		builder.timeout(900, TimeUnit.MILLISECONDS);
+		HttlRequest request = builder.build();
 		try {
 			sender.execute(request);
 			Assert.fail("Previous statement must throw SocketTimeoutException");
-		} catch (SenderException sex) {
+		} catch (HttlException sex) {
 			//stx.printStackTrace();
 			assertThat(sex.getMessage()).isEqualTo("java.net.SocketTimeoutException: Read timeout 900 ms");
 		}
@@ -165,48 +170,48 @@ public class TimeoutsTest {
 		}
 	}
 
-	private HttpURLSender newSimple(String url) {
-		HttpURLConfig config = new HttpURLConfig(url);
+	private HttlSender newSimple(String url) {
+		HttpUrlConfig config = HttlBuilder.httpUrl(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		System.setProperty("http.keepAlive", "true");
 		System.setProperty("http.maxConnections", "1");
-		HttpURLSender sender = new HttpURLSender(config);
-		sender.setExecutor(executor);
-		return sender;
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
-	private HttpClient3Sender newHttp3(String url) {
-		HttpClient3Config config = new HttpClient3Config(url);
+	private HttlSender newHttp3(String url) {
+		HttpClient3Config config = HttlBuilder.httpClient3(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		config.setPoolMaximumSize(1);
 		config.setPoolAcquireTimeoutMillis(300);
-		HttpClient3Sender sender = new HttpClient3Sender(config);
-		sender.setExecutor(executor);
-		return sender;
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
-	private HttpClient4Sender newHttp4(String url) {
-		HttpClient4Config config = new HttpClient4Config(url);
+	private HttlSender newHttp4(String url) {
+		HttpClient4Config config = HttlBuilder.httpClient4(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		config.setPoolMaximumSize(1);
 		config.setPoolAcquireTimeoutMillis(300);
-		HttpClient4Sender sender = new HttpClient4Sender(config);
-		sender.setExecutor(executor);
-		return sender;
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
-	private JettySender newJetty(String url) {
-		JettySenderConfig config = new JettySenderConfig(url);
+	private HttlSender newJetty(String url) {
+		JettyClientConfig config = new JettyClientConfig(url);
 		config.setConnectTimeoutMillis(1100);
 		config.setReadTimeoutMillis(1300);
 		config.setPoolMaximumSize(1);
 		//config.setPoolAcquireTimeoutMillis(300);
-		JettySender sender = new JettySender(config);
-		sender.setExecutor(executor);
-		return sender;
+		SenderConfigurer configurer = config.sender();
+		configurer.setExecutorService(executor);
+		return configurer.build();
 	}
 
 }

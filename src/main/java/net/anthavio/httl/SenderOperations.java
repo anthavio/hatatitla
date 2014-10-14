@@ -8,7 +8,7 @@ package net.anthavio.httl;
  */
 public interface SenderOperations {
 
-	public SenderResponse execute(SenderRequest request) throws SenderException;
+	public HttlResponse execute(HttlRequest request) throws HttlException;
 
 	//public void execute(SenderRequest request, ResponseHandler handler) throws SenderException;
 

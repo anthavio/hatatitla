@@ -5,16 +5,16 @@
 	<parent>
 		<groupId>net.anthavio.maven</groupId>
 		<artifactId>anthavio-super-pom</artifactId>
-		<version>3-SNAPSHOT</version>
+		<version>3</version>
 	</parent>
 
 	<groupId>net.anthavio</groupId>
 	<artifactId>hatatitla</artifactId>
-	<version>1.1.0-SNAPSHOT</version>	
+	<version>1.5.0-SNAPSHOT</version>	
 	
 	<name>hatatitla</name>
-	<inceptionYear>2013</inceptionYear>
 	<description>Compact but tweakable REST client library you have been dreaming of</description>
+	<inceptionYear>2013</inceptionYear>
 	
 	<url>http://anthavio.github.com/hatatitla</url>
 	
@@ -34,13 +34,17 @@
 			</snapshots>
   	</repository>
   </repositories>
+  
+  <properties>
+		<project.build.java.target>1.6</project.build.java.target>
+  </properties>
 
 	<dependencies>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.5</version>
+			<version>1.7.7</version>
 		</dependency>
 		
 		<!-- commons-logging substitution -->
@@ -48,7 +52,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
-			<version>1.7.5</version>
+			<version>1.7.7</version>
 			<optional>true</optional>
 		</dependency>
 		
@@ -83,7 +87,7 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-client</artifactId>
-			<version>8.1.13.v20130916</version>
+			<version>8.1.15.v20140411</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -169,7 +173,14 @@
 			<version>2.6</version>
 			<optional>true</optional>
 		</dependency>
-
+<!--
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<optional>true</optional>
+		</dependency>
+-->
 <!--
 		Maven Central host only newer versions 
 		<dependency>
@@ -198,16 +209,16 @@
 		<!-- test -->
 		
 		<dependency>
-			<groupId>org.testng</groupId>
-			<artifactId>testng</artifactId>
-			<version>6.8.7</version>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
-			<version>1.6.0</version>
+			<version>1.6.1</version>
 			<scope>test</scope>
 		</dependency>
 		
@@ -221,7 +232,7 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-webapp</artifactId>
-			<version>8.1.13.v20130916</version>
+			<version>8.1.15.v20140411</version>
 			<scope>test</scope>
 		</dependency>
 		

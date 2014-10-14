@@ -1,12 +1,10 @@
 package net.anthavio.httl.api;
 
-import net.anthavio.httl.RequestInterceptor;
-import net.anthavio.httl.ResponseInterceptor;
-import net.anthavio.httl.inout.RequestBodyMarshaller;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.inout.ResponseErrorHandler;
-import net.anthavio.httl.inout.ResponseHandler;
-import net.anthavio.httl.util.MockSender;
+import net.anthavio.httl.HttlBodyMarshaller;
+import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.HttlResponseHandler;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.api.HttlCall.HttpMethod;
 
 /**
  * 
@@ -19,32 +17,29 @@ public class AdlTest {
 		// http://square.github.io/retrofit/
 		// https://github.com/Netflix/feign
 
-		MockSender sender = new MockSender();
-		GitHubApi api = ApiBuilder.build(GitHubApi.class, sender);
+		GitHubApi api = HttlSender.url("www.seznam.cz").mock().sender().api().build(GitHubApi.class);
 
-		RequestBodyMarshaller marshaller;
-		RequestInterceptor requestInterceptor;
-		ResponseInterceptor responseInterceptor;
-		ResponseHandler reponseHandler;
-		ResponseErrorHandler errorHandler;
-		ResponseBodyExtractor<String> extractor;
+		HttlBodyMarshaller marshaller;
+		HttlResponseHandler reponseHandler;
+		HttlResponseExtractor extractor;
 
 		String response = api.something("anthavio", "zxzx", new int[] { 999, 333 });
 		System.out.println(response);
 	}
 
-	@Headers("Content-type: application/json; charset=utf-8")
+	@HttlHeaders("Content-type: application/json; charset=utf-8")
 	public static interface GitHubApi {
 
-		@Operation(method = HttpMethod.GET, value = "/something/{awful}")
-		@Headers("Custom: {custom}")
-		public String something(@Param("awful") String awful, @Param("custom") String custom, @Param("number") int[] number);
+		@HttlCall(method = HttpMethod.GET, value = "/something/{awful}")
+		@HttlHeaders("Custom: {custom}")
+		public String something(@HttlVar("awful") String awful, @HttlVar("custom") String custom,
+				@HttlVar("number") int[] number);
 
-		@Operation("POST /entity/{id}")
-		public String post(@Param("id") String id, @Body String body/*, @Body Integer another*/);
+		@HttlCall("POST /entity/{id}")
+		public String post(@HttlVar("id") String id, @HttlBody String body/*, @Body Integer another*/);
 
-		@Operation("GET /repos/{owner}/{repo}/contributors")
-		public String contributors(@Param("owner") String owner, @Param("repo") String repo);
+		@HttlCall("GET /repos/{owner}/{repo}/contributors")
+		public String contributors(@HttlVar("owner") String owner, @HttlVar("repo") String repo);
 
 	}
 }

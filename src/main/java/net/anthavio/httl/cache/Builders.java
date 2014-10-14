@@ -6,10 +6,10 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.Builders.BaseCacheRequestBuilder;
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
 import net.anthavio.cache.ConfiguredCacheLoader.MissingFailedRecipe;
-import net.anthavio.httl.SenderRequest;
-import net.anthavio.httl.SenderResponse;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
+import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponse;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
 
 /**
  * Fluent builders for CachingSender Requests
@@ -27,9 +27,9 @@ public class Builders {
 	 */
 	public static abstract class BaseRequestBuilder<S extends BaseRequestBuilder<?>> extends BaseCacheRequestBuilder<S> {
 
-		protected final SenderRequest request;
+		protected final HttlRequest request;
 
-		public BaseRequestBuilder(SenderRequest request) {
+		public BaseRequestBuilder(HttlRequest request) {
 			if (request == null) {
 				throw new IllegalArgumentException("null request");
 			}
@@ -56,7 +56,7 @@ public class Builders {
 
 		private ExpiredFailedRecipe expiredFailedRecipe;
 
-		public CachingRequestBuilder(CachingSender csender, SenderRequest request) {
+		public CachingRequestBuilder(CachingSender csender, HttlRequest request) {
 			super(request);
 
 			if (csender == null) {
@@ -107,7 +107,7 @@ public class Builders {
 		 * Execute Request and return raw unprocessed Response.
 		 * Response is left open and caller is responsibe for closing.
 		 */
-		public SenderResponse execute() {
+		public HttlResponse execute() {
 			if (hardTtl != 0) {
 				return csender.execute(build()).getValue();
 			} else {
@@ -118,7 +118,7 @@ public class Builders {
 		/**
 		 * Execute Request and extract Response. Response is closed automaticaly.
 		 */
-		public <V> ExtractedBodyResponse<V> extract(Class<V> clazz) {
+		public <V> ExtractedResponse<V> extract(Class<V> clazz) {
 			if (hardTtl != 0) {
 				return csender.extract(build(), clazz);
 			} else {
@@ -129,7 +129,7 @@ public class Builders {
 		/**
 		 * Execute request and extract response. Response is closed automaticaly.
 		 */
-		public <V> ExtractedBodyResponse<V> extract(ResponseBodyExtractor<V> extractor) {
+		public <V> ExtractedResponse<V> extract(HttlResponseExtractor<V> extractor) {
 			if (hardTtl != 0) {
 				return csender.extract(build(), extractor);
 			} else {
@@ -162,7 +162,7 @@ public class Builders {
 
 		private ExpiredFailedRecipe expiredFailedRecipe;
 
-		public ExtractingRequestBuilder(CachingExtractor cextractor, SenderRequest request) {
+		public ExtractingRequestBuilder(CachingExtractor cextractor, HttlRequest request) {
 			super(request);
 			if (cextractor == null) {
 				throw new IllegalArgumentException("CachingExtractor is null");
@@ -197,7 +197,7 @@ public class Builders {
 		/**
 		 * Finish fluent builder flow and return CachingExtractorRequest
 		 */
-		public <T extends Serializable> CachingExtractorRequest<T> build(ResponseBodyExtractor<T> extractor) {
+		public <T extends Serializable> CachingExtractorRequest<T> build(HttlResponseExtractor<T> extractor) {
 			if (extractor == null) {
 				throw new IllegalArgumentException("response extractor is null");
 			}

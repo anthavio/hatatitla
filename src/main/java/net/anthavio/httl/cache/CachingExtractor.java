@@ -11,10 +11,10 @@ import net.anthavio.cache.CachingSettings;
 import net.anthavio.cache.ConfiguredCacheLoader;
 import net.anthavio.cache.ConfiguredCacheLoader.SimpleLoader;
 import net.anthavio.cache.LoadingSettings;
-import net.anthavio.httl.HttpSender;
-import net.anthavio.httl.SenderRequest;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
+import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.cache.Builders.ExtractingRequestBuilder;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +34,11 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private final HttpSender sender;
+	private final HttlSender sender;
 
-	private final CacheBase<Serializable> cache;
+	private final CacheBase<HttlRequest, Serializable> cache;
 
-	public CachingExtractor(HttpSender sender, CacheBase<Serializable> cache) {
+	public CachingExtractor(HttlSender sender, CacheBase<HttlRequest, Serializable> cache) {
 		if (sender == null) {
 			throw new IllegalArgumentException("sender is null");
 		}
@@ -54,14 +54,14 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	/**
 	 * @return underlying sender
 	 */
-	public HttpSender getSender() {
+	public HttlSender getSender() {
 		return sender;
 	}
 
 	/**
 	 * @return underlying cache
 	 */
-	public CacheBase<Serializable> getCache() {
+	public CacheBase<HttlRequest, Serializable> getCache() {
 		return cache;
 	}
 
@@ -69,29 +69,29 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	 * FIXME - this is silly method name
 	 * Start fluent builder
 	 */
-	public ExtractingRequestBuilder from(SenderRequest request) {
+	public ExtractingRequestBuilder from(HttlRequest request) {
 		return new ExtractingRequestBuilder(this, request);
 	}
 
 	/**
 	 * Custom cache key from request (if exist) takes precedence
 	 * Otherwise key derived from request URL is used
-	 */
+	 
 	protected String getCacheKey(CachingSenderRequest request) {
 		String cacheKey = request.getUserKey();
 		if (cacheKey == null) {
-			cacheKey = sender.getCacheKey(request.getSenderRequest());
+			cacheKey = keyProvider.provideKey(request.getSenderRequest());
 		}
 		return cacheKey;
 	}
-
+	*/
 	public static class SimpleHttpSenderExtractor<T extends Serializable> implements SimpleLoader<T> {
 
-		private final HttpSender sender;
+		private final HttlSender sender;
 
 		private final CachingExtractorRequest<T> request;
 
-		public SimpleHttpSenderExtractor(HttpSender sender, CachingExtractorRequest<T> request) {
+		public SimpleHttpSenderExtractor(HttlSender sender, CachingExtractorRequest<T> request) {
 			if (sender == null) {
 				throw new IllegalArgumentException("Null sender");
 			}
@@ -106,7 +106,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 
 		@Override
 		public T load() throws Exception {
-			ExtractedBodyResponse<T> bodyResponse;
+			ExtractedResponse<T> bodyResponse;
 			if (request.getExtractor() != null) {
 				bodyResponse = sender.extract(request.getSenderRequest(), request.getExtractor());
 			} else {
@@ -120,17 +120,17 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	/**
 	 * Turns Sender Request into Cache Request
 	 */
-	public <T extends Serializable> CacheLoadRequest<T> convert(CachingExtractorRequest<T> request) {
-		String cacheKey = getCacheKey(request);
-		CachingSettings caching = new CachingSettings(cacheKey, request.getEvictTtl(), request.getExpiryTtl(),
-				TimeUnit.SECONDS);
+	public <V extends Serializable> CacheLoadRequest<HttlRequest, V> convert(CachingExtractorRequest<V> request) {
+		//String cacheKey = getCacheKey(request);
+		CachingSettings caching = new CachingSettings(request.getSenderRequest(), request.getEvictTtl(),
+				request.getExpiryTtl(), TimeUnit.SECONDS);
 
-		SimpleHttpSenderExtractor<T> simple = new SimpleHttpSenderExtractor<T>(sender, request);
-		CacheEntryLoader<T> loader = new ConfiguredCacheLoader<T>(simple, request.getMissingRecipe(),
-				request.getExpiredRecipe());
-		LoadingSettings<T> loading = new LoadingSettings<T>(loader, request.isMissingLoadAsync(),
+		SimpleHttpSenderExtractor<V> simple = new SimpleHttpSenderExtractor<V>(sender, request);
+		CacheEntryLoader<HttlRequest, V> loader = new ConfiguredCacheLoader<HttlRequest, V>(simple,
+				request.getMissingRecipe(), request.getExpiredRecipe());
+		LoadingSettings<HttlRequest, V> loading = new LoadingSettings<HttlRequest, V>(loader, request.isMissingLoadAsync(),
 				request.isExpiredLoadAsync());
-		return new CacheLoadRequest<T>(caching, loading);
+		return new CacheLoadRequest<HttlRequest, V>(caching, loading);
 	}
 
 	/**
@@ -141,21 +141,21 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	 * causes two cache queries for expired and missing entries 
 	 */
 	public <T extends Serializable> CacheEntry<T> extract(CachingExtractorRequest<T> request) {
-		String cacheKey = getCacheKey(request);
-		CacheEntry<T> entry = (CacheEntry<T>) cache.get(cacheKey);
+		//String cacheKey = getCacheKey(request);
+		CacheEntry<T> entry = (CacheEntry<T>) cache.get(request.getSenderRequest());
 		if (entry != null) {
 			//entry.getValue().setRequest(request.getSenderRequest());
-			if (!entry.isExpired()) {
+			if (!entry.isStale()) {
 				return (CacheEntry<T>) entry; //fresh hit
 			} else {
-				CacheLoadRequest<T> cacheRequest = convert(request);
-				return (CacheEntry<T>) cache.load((CacheLoadRequest<Serializable>) cacheRequest,
+				CacheLoadRequest<HttlRequest, T> cacheRequest = convert(request);
+				return (CacheEntry<T>) cache.load((CacheLoadRequest<HttlRequest, Serializable>) cacheRequest,
 						(CacheEntry<Serializable>) entry);
 				//return (CacheEntry<T>) cache.get(lrequest);
 			}
 		} else { //cache miss - we have nothing
-			CacheLoadRequest<T> cacheRequest = convert(request);
-			return (CacheEntry<T>) cache.load((CacheLoadRequest<Serializable>) cacheRequest, null);
+			CacheLoadRequest<HttlRequest, T> cacheRequest = convert(request);
+			return (CacheEntry<T>) cache.load((CacheLoadRequest<HttlRequest, Serializable>) cacheRequest, null);
 		}
 	}
 
@@ -286,7 +286,7 @@ public class CachingExtractor /*implements SenderOperations, ExtractionOperation
 	*/
 	@Override
 	public String toString() {
-		return "CachingSender [url=" + sender.getConfig().getHostUrl() + "]";
+		return "CachingSender [url=" + sender.getConfig().getUrl() + "]";
 	}
 
 }

@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.ConfiguredCacheLoader.ExpiredFailedRecipe;
 import net.anthavio.cache.ConfiguredCacheLoader.MissingFailedRecipe;
-import net.anthavio.httl.SenderRequest;
+import net.anthavio.httl.HttlRequest;
 
 /**
  * @author martin.vanek
@@ -12,7 +12,7 @@ import net.anthavio.httl.SenderRequest;
  */
 public class CachingSenderRequest {
 
-	private final SenderRequest senderRequest;
+	private final HttlRequest senderRequest;
 
 	private final boolean missingLoadAsync;
 
@@ -31,7 +31,7 @@ public class CachingSenderRequest {
 	/**
 	 * Synchronous loading with single TTL
 	 */
-	public CachingSenderRequest(SenderRequest senderRequest, int evictTtl, TimeUnit unit) {
+	public CachingSenderRequest(HttlRequest senderRequest, int evictTtl, TimeUnit unit) {
 		this(senderRequest, false, MissingFailedRecipe.SYNC_STRICT, false, ExpiredFailedRecipe.SYNC_RETURN, evictTtl,
 				evictTtl, unit, null);
 	}
@@ -39,7 +39,7 @@ public class CachingSenderRequest {
 	/**
 	 * Synchronous loading with both TTLs
 	 */
-	public CachingSenderRequest(SenderRequest senderRequest, int evictTtl, int expiryTtl, TimeUnit unit) {
+	public CachingSenderRequest(HttlRequest senderRequest, int evictTtl, int expiryTtl, TimeUnit unit) {
 		this(senderRequest, false, MissingFailedRecipe.SYNC_STRICT, false, ExpiredFailedRecipe.SYNC_RETURN, evictTtl,
 				expiryTtl, unit, null);
 	}
@@ -57,7 +57,7 @@ public class CachingSenderRequest {
 	 * @param unit - time unit of ttl
 	 * @param userKey - custom cache key to be used instead of standard key derived from request url
 	 */
-	public CachingSenderRequest(SenderRequest senderRequest, boolean missingLoadAsync,
+	public CachingSenderRequest(HttlRequest senderRequest, boolean missingLoadAsync,
 			MissingFailedRecipe missingFailRecipe, boolean expiredLoadAsync, ExpiredFailedRecipe expiredFailRecipe,
 			long evictTtl, long expiryTtl, TimeUnit unit, String userKey) {
 
@@ -92,7 +92,7 @@ public class CachingSenderRequest {
 		this.userKey = userKey;
 	}
 
-	public SenderRequest getSenderRequest() {
+	public HttlRequest getSenderRequest() {
 		return senderRequest;
 	}
 

@@ -10,24 +10,24 @@ import java.util.concurrent.TimeUnit;
 import net.anthavio.cache.CacheBase;
 import net.anthavio.cache.CacheEntry;
 import net.anthavio.cache.CacheLoadRequest;
-import net.anthavio.cache.HeapMapCache;
 import net.anthavio.cache.Scheduler;
-import net.anthavio.httl.GetRequest;
-import net.anthavio.httl.HttpClient4Sender;
-import net.anthavio.httl.HttpSender;
+import net.anthavio.cache.impl.HeapMapCache;
+import net.anthavio.httl.HttlCacheKeyProvider;
+import net.anthavio.httl.HttlException;
+import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestBuilder;
+import net.anthavio.httl.HttlResponseExtractor;
+import net.anthavio.httl.HttlSender;
+import net.anthavio.httl.HttlStatusException;
 import net.anthavio.httl.JokerServer;
-import net.anthavio.httl.SenderException;
-import net.anthavio.httl.SenderHttpStatusException;
-import net.anthavio.httl.SenderRequest;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
-import net.anthavio.httl.inout.ResponseBodyExtractor;
-import net.anthavio.httl.inout.ResponseBodyExtractor.ExtractedBodyResponse;
-import net.anthavio.httl.inout.ResponseBodyExtractors;
+import net.anthavio.httl.marshall.HttlStringExtractor;
+import net.anthavio.httl.transport.HttpClient4Config;
 
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * FIXME fix tests
@@ -40,14 +40,14 @@ public abstract class CachingExtractorTest {
 	private JokerServer server;
 	private ThreadPoolExecutor executor;
 
-	@BeforeMethod
+	@Before
 	public void setup() throws Exception {
 		this.server = new JokerServer().start();
 		this.executor = (ThreadPoolExecutor) new ExecutorServiceBuilder().setCorePoolSize(0).setMaximumPoolSize(1)
 				.setMaximumQueueSize(0).build();
 	}
 
-	@AfterMethod
+	@After
 	public void destroy() throws Exception {
 		this.executor.shutdown();
 		this.server.stop();
@@ -55,10 +55,10 @@ public abstract class CachingExtractorTest {
 
 	@Test
 	public void syncRefreshExtraction() throws Exception {
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
 
-		SenderRequest request = new GetRequest("/");
-		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
+		HttlRequest request = cextractor.getSender().GET("/").build();
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		//soft 1s, hard 2s, synchronous refresh
 		CachingExtractorRequest<String> cerequest = new CachingExtractorRequest<String>(extractor, request, 2, 1,
 				TimeUnit.SECONDS);
@@ -94,7 +94,7 @@ public abstract class CachingExtractorTest {
 			//CacheEntry<String> extract4 = cextractor.extract(cerequest); //sync refresh will fail
 			//assertThat(server.getRequestCount()).isEqualTo(initialCount + 3); //new
 			//assertThat(extract4).isEqualTo(extract3); //same expired from cache
-		} catch (SenderHttpStatusException srx) {
+		} catch (HttlStatusException srx) {
 			//this is what we expect
 		}
 
@@ -102,7 +102,7 @@ public abstract class CachingExtractorTest {
 		try {
 			cextractor.extract(cerequest);
 			Assert.fail("Preceding line must throw SenderHttpException");
-		} catch (SenderHttpStatusException srx) {
+		} catch (HttlStatusException srx) {
 			//this is what we expect
 		}
 		//error returned but request was made 
@@ -122,7 +122,7 @@ public abstract class CachingExtractorTest {
 		try {
 			cextractor.extract(cerequest);
 			Assert.fail("Preceding line must throw ConnectException");
-		} catch (SenderException sex) {
+		} catch (HttlException sex) {
 			//this is what we expect
 			assertThat(sex.getMessage()).contains("Connection refused"); //same
 		}
@@ -135,7 +135,7 @@ public abstract class CachingExtractorTest {
 		try {
 			cextractor.extract(cerequest);
 			Assert.fail("Preceding line must throw ConnectException");
-		} catch (SenderException sex) {
+		} catch (HttlException sex) {
 			//this is what we expect
 			assertThat(sex.getMessage()).contains("Connection refused"); //same
 		}
@@ -145,18 +145,17 @@ public abstract class CachingExtractorTest {
 
 	@Test
 	public void backgroundRefreshExtraction() throws Exception {
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
 
-		SenderRequest request = new GetRequest("/").addParameter("sleep", 1);
-		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
+		HttlRequest request = cextractor.getSender().GET("/").param("sleep", 1).build();
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor);
 
-		CacheLoadRequest<String> cacheRequest = cextractor.convert(cerequest);
-		CacheBase<Serializable> cache = cextractor.getCache();
-		cache.schedule(cacheRequest);
-		//.schedule(cacheRequest);
+		CacheLoadRequest<HttlRequest, ?> cacheRequest = cextractor.convert(cerequest);
+		CacheBase<HttlRequest, Serializable> cache = cextractor.getCache();
+		cache.schedule((CacheLoadRequest<HttlRequest, Serializable>) cacheRequest);
 
 		final int initialCount = server.getRequestCount();
 		assertThat(cextractor.extract(cerequest)).isNull(); //scheduled is null returer
@@ -164,7 +163,7 @@ public abstract class CachingExtractorTest {
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		CacheEntry<String> extract1 = cextractor.extract(cerequest);
-		assertThat(extract1.isExpired() == false);
+		assertThat(extract1.isStale() == false);
 
 		Thread.sleep(2000 + 1010); //after soft expiry + server sleep
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 2); //background refresh server hit
@@ -173,7 +172,7 @@ public abstract class CachingExtractorTest {
 
 		long m1 = System.currentTimeMillis();
 		CacheEntry<String> extract2 = cextractor.extract(cerequest);
-		assertThat(extract2.isExpired() == false);
+		assertThat(extract2.isStale() == false);
 		assertThat(System.currentTimeMillis() - m1).isLessThan(10);//from cache - must be quick!
 		assertThat(extract2.getValue()).isNotEqualTo(extract1.getValue()); //different
 
@@ -185,17 +184,12 @@ public abstract class CachingExtractorTest {
 		Thread.sleep(1010); //let the potential server sleep request complete
 	}
 
-	private void schedule(CacheLoadRequest<ExtractedBodyResponse<String>> cacheRequest) {
-		// TODO Auto-generated method stub
-
-	}
-
 	@Test
 	public void asyncRefreshExtraction() throws Exception {
 
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
-		SenderRequest request = new GetRequest("/");
-		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
+		HttlRequest request = cextractor.getSender().GET("/").build();
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
 		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!
 
@@ -204,7 +198,7 @@ public abstract class CachingExtractorTest {
 		assertThat(cextractor.extract(cerequest)).isNull(); //async is null returer
 		Thread.sleep(200); //async http refresh
 		CacheEntry<String> extract1 = cextractor.extract(cerequest); //cached now
-		assertThat(extract1.isExpired() == false);
+		assertThat(extract1.isStale() == false);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		Thread.sleep(1001); //after soft expiration
@@ -212,7 +206,7 @@ public abstract class CachingExtractorTest {
 		//taken from cache
 		CacheEntry<String> extract2 = cextractor.extract(cerequest);
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1); //same
-		assertThat(extract2.isExpired());
+		assertThat(extract2.isStale());
 		assertThat(extract2.getValue()).isEqualTo(extract1.getValue()); //same
 
 		Thread.sleep(100); //wait for async thread to update from server
@@ -270,14 +264,15 @@ public abstract class CachingExtractorTest {
 	@Test
 	public void asyncNonDuplicateRefreshOnSameResourceExtraction() throws Exception {
 
-		CachingExtractor cextractor = newExtractorSender(server.getHttpPort());
-		SenderRequest request = new GetRequest("/");
-		ResponseBodyExtractor<String> extractor = ResponseBodyExtractors.STRING;
-		CachingExtractorRequest<String> cerequest = cextractor.from(request).cache(2, 1, TimeUnit.SECONDS)
+		CachingExtractor cextractor = newExtractorSender(server.getPortHttp());
+		HttlRequestBuilder<?> builder = cextractor.getSender().GET("/");
+		HttlResponseExtractor<String> extractor = HttlStringExtractor.STANDARD;
+		CachingExtractorRequest<String> cerequest = cextractor.from(builder.build()).cache(2, 1, TimeUnit.SECONDS)
 				.async(true, true).build(extractor); //asynchronous updates!
 
 		//request must spent some time in server
-		cerequest.getSenderRequest().addParameter("sleep", 1);
+		builder.param("sleep", 1);
+		cerequest = cextractor.from(builder.build()).cache(2, 1, TimeUnit.SECONDS).async(true, true).build(extractor);
 
 		final int initialCount = server.getRequestCount();
 
@@ -286,7 +281,7 @@ public abstract class CachingExtractorTest {
 		assertThat(server.getRequestCount()).isEqualTo(initialCount + 1);
 
 		CacheEntry<String> extract1 = cextractor.extract(cerequest);
-		assertThat(extract1.isExpired() == false);
+		assertThat(extract1.isStale() == false);
 
 		Thread.sleep(1001); //after soft expiry
 
@@ -324,9 +319,10 @@ public abstract class CachingExtractorTest {
 	private CachingExtractor newExtractorSender(int port) {
 		String url = "http://localhost:" + port;
 		//HttpSender sender = new JavaHttpSender(url);
-		HttpSender sender = new HttpClient4Sender(url);
-		HeapMapCache<Serializable> cache = new HeapMapCache<Serializable>();
-		Scheduler<Serializable> scheduler = new Scheduler<Serializable>(cache, executor);
+		HttlSender sender = new HttpClient4Config(url).sender().build();
+		HeapMapCache<HttlRequest, Serializable> cache = new HeapMapCache<HttlRequest, Serializable>(
+				new HttlCacheKeyProvider("x"));
+		Scheduler<HttlRequest, Serializable> scheduler = new Scheduler<HttlRequest, Serializable>(cache, executor);
 		cache.setScheduler(scheduler);
 		CachingExtractor csender = new CachingExtractor(sender, cache);
 

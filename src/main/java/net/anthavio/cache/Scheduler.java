@@ -16,25 +16,25 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class Scheduler<V> {
+public class Scheduler<K, V> {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private ReentrantLock reloadLock = new ReentrantLock(true); //Lock for the refreshing Map
 
-	private Map<String, CacheLoadRequest<V>> reloading = new HashMap<String, CacheLoadRequest<V>>();
+	private Map<K, CacheLoadRequest<K, V>> reloading = new HashMap<K, CacheLoadRequest<K, V>>();
 
 	private ExecutorService executor;
 
-	private Map<String, ScheduledRequest<V>> scheduled = new HashMap<String, ScheduledRequest<V>>();
+	private Map<K, ScheduledRequest<K, V>> scheduled = new HashMap<K, ScheduledRequest<K, V>>();
 
 	private long schedulerInterval = 1; //SECONDS
 
 	private SchedulerThread scheduler;
 
-	private CacheBase<V> cache;
+	private CacheBase<K, V> cache;
 
-	public Scheduler(CacheBase<V> cache, ExecutorService executor) {
+	public Scheduler(CacheBase<K, V> cache, ExecutorService executor) {
 		if (cache == null) {
 			throw new IllegalArgumentException("Null cache");
 		}
@@ -78,33 +78,33 @@ public class Scheduler<V> {
 	/**
 	 * @return requests scheduled to be refreshed automaticaly
 	 */
-	public Map<String, ScheduledRequest<V>> getScheduled() {
+	public Map<K, ScheduledRequest<K, V>> getScheduled() {
 		return scheduled;
 	}
 
 	/**
 	 * @return 
 	 */
-	public CacheLoadRequest<V> getScheduled(String userKey) {
+	public CacheLoadRequest<K, V> getScheduled(String userKey) {
 		return scheduled.get(userKey);
 	}
 
 	/**
 	 * Register new CacheLoadRequest (or replace existing)
 	 */
-	public void schedule(CacheLoadRequest<V> request) {
+	public void schedule(CacheLoadRequest<K, V> request) {
 		if (this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous loading is not configured");
 		}
-		String userKey = request.getUserKey();
+		K userKey = request.getUserKey();
 		synchronized (scheduled) {
 			if (scheduled.get(userKey) != null) {
-				scheduled.put(userKey, new ScheduledRequest<V>(request.getCaching(), request.getLoading()));
+				scheduled.put(userKey, new ScheduledRequest<K, V>(request.getCaching(), request.getLoading()));
 				if (logger.isDebugEnabled()) {
 					logger.debug("ScheduledRequest replaced: " + request);
 				}
 			} else {
-				scheduled.put(userKey, new ScheduledRequest<V>(request.getCaching(), request.getLoading()));
+				scheduled.put(userKey, new ScheduledRequest<K, V>(request.getCaching(), request.getLoading()));
 				if (logger.isDebugEnabled()) {
 					logger.debug("ScheduledRequest created: " + request);
 				}
@@ -120,11 +120,11 @@ public class Scheduler<V> {
 		}
 	}
 
-	public void startReload(CacheLoadRequest<V> request, CacheEntry<V> expiredEntry) {
+	public void startReload(CacheLoadRequest<K, V> request, CacheEntry<V> expiredEntry) {
 		if (this.executor == null) {
 			throw new IllegalStateException("Executor for asynchronous loading is not configured");
 		}
-		String userKey = request.getUserKey();
+		K userKey = request.getUserKey();
 		reloadLock.lock();
 		try {
 			if (reloading.containsKey(userKey)) {
@@ -153,11 +153,11 @@ public class Scheduler<V> {
 	 */
 	private class ReloaderRunnable implements Runnable {
 
-		private final CacheLoadRequest<V> request;
+		private final CacheLoadRequest<K, V> request;
 
 		private final CacheEntry<V> softExpiredEntry;
 
-		public ReloaderRunnable(CacheLoadRequest<V> request, CacheEntry<V> softExpiredEntry) {
+		public ReloaderRunnable(CacheLoadRequest<K, V> request, CacheEntry<V> softExpiredEntry) {
 			if (request == null) {
 				throw new IllegalArgumentException("request is null");
 			}
@@ -221,9 +221,9 @@ public class Scheduler<V> {
 			if (logger.isTraceEnabled()) {
 				logger.trace(getName() + " check");
 			}
-			for (Entry<String, ScheduledRequest<V>> entry : scheduled.entrySet()) {
+			for (Entry<K, ScheduledRequest<K, V>> entry : scheduled.entrySet()) {
 				try {
-					ScheduledRequest<V> request = entry.getValue();
+					ScheduledRequest<K, V> request = entry.getValue();
 					if (request.getSoftExpire() <= now) {
 						startReload(request, null);
 					}

@@ -4,32 +4,31 @@ import java.util.concurrent.TimeUnit;
 
 import net.anthavio.cache.Builders.CacheRequestLoaderBuilder;
 
-
 /**
  * 
  * @author martin.vanek
  *
  */
-public class CacheLoadRequest<V> {
+public class CacheLoadRequest<K, V> {
 
-	public static <V> CacheRequestLoaderBuilder<V> With(CacheEntryLoader<V> loader) {
-		return new CacheRequestLoaderBuilder<V>(loader);
+	public static <K, V> CacheRequestLoaderBuilder<K, V> With(CacheEntryLoader<K, V> loader) {
+		return new CacheRequestLoaderBuilder<K, V>(loader);
 	}
 
-	protected final CachingSettings caching;
+	protected final CachingSettings<K> caching;
 
-	protected final LoadingSettings<V> loading;
+	protected final LoadingSettings<K, V> loading;
 
 	/**
 	 * All field constructor
 	 */
-	public CacheLoadRequest(String userKey, long hardTtl, long softTtl, TimeUnit unit, CacheEntryLoader<V> loader,
+	public CacheLoadRequest(K userKey, long hardTtl, long softTtl, TimeUnit unit, CacheEntryLoader<K, V> loader,
 			boolean missingAsyncLoad, boolean expiredAsyncLoad) {
-		this.caching = new CachingSettings(userKey, hardTtl, softTtl, unit);
-		this.loading = new LoadingSettings<V>(loader, missingAsyncLoad, expiredAsyncLoad);
+		this.caching = new CachingSettings<K>(userKey, hardTtl, softTtl, unit);
+		this.loading = new LoadingSettings<K, V>(loader, missingAsyncLoad, expiredAsyncLoad);
 	}
 
-	public CacheLoadRequest(CachingSettings caching, LoadingSettings<V> loading) {
+	public CacheLoadRequest(CachingSettings<K> caching, LoadingSettings<K, V> loading) {
 		if (caching == null) {
 			throw new IllegalArgumentException("Null caching settings");
 		}
@@ -41,15 +40,15 @@ public class CacheLoadRequest<V> {
 		this.loading = loading;
 	}
 
-	public CachingSettings getCaching() {
+	public CachingSettings<K> getCaching() {
 		return caching;
 	}
 
-	public LoadingSettings<V> getLoading() {
+	public LoadingSettings<K, V> getLoading() {
 		return loading;
 	}
 
-	public String getUserKey() {
+	public K getUserKey() {
 		return caching.getUserKey();
 	}
 
@@ -61,7 +60,7 @@ public class CacheLoadRequest<V> {
 		return caching.getSoftTtl();
 	}
 
-	public CacheEntryLoader<V> getLoader() {
+	public CacheEntryLoader<K, V> getLoader() {
 		return loading.getLoader();
 	}
 
