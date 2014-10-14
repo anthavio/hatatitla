@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.api.HttlApiBuilder.ApiVarMeta;
 

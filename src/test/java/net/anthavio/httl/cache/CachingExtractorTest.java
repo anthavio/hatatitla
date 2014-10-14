@@ -15,7 +15,7 @@ import net.anthavio.cache.impl.HeapMapCache;
 import net.anthavio.httl.HttlCacheKeyProvider;
 import net.anthavio.httl.HttlException;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.HttlStatusException;

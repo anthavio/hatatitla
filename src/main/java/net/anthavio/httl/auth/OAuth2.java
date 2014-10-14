@@ -4,7 +4,7 @@ import java.util.List;
 
 import net.anthavio.httl.HttlBuilderVisitor;
 import net.anthavio.httl.HttlRequest.Method;
-import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.util.HttlUtil;

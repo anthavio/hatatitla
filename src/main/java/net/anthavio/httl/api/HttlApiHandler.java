@@ -15,8 +15,8 @@ import net.anthavio.httl.HttlConstants;
 import net.anthavio.httl.HttlExecutionChain;
 import net.anthavio.httl.HttlExecutionFilter;
 import net.anthavio.httl.HttlRequest;
-import net.anthavio.httl.HttlRequestBuilders;
-import net.anthavio.httl.HttlRequestBuilders.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder.BodyfulRequestBuilder;
 import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlResponseExtractor;
@@ -171,7 +171,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 		}
 
 		if (body != null) {
-			String[] contentType = HttlRequestBuilders.digContentType(builder.getHeaders(), sender.getConfig());
+			String[] contentType = HttlRequestBuilder.digContentType(builder.getHeaders(), sender.getConfig());
 			if (contentType[0] == null) {
 				throw new HttlRequestException("Content-Type header not specified");
 			}

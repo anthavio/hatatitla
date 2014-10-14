@@ -18,8 +18,8 @@ import net.anthavio.httl.Authentication.Scheme;
 import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlRequest.Method;
-import net.anthavio.httl.HttlRequestBuilders.BodyfulRequestBuilder;
-import net.anthavio.httl.HttlRequestBuilders.BodylessRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder.BodylessRequestBuilder;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.util.MockTransport;
 

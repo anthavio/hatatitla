@@ -1,7 +1,7 @@
 package net.anthavio.httl.auth;
 
 import net.anthavio.httl.HttlBuilderVisitor;
-import net.anthavio.httl.HttlRequestBuilders.HttlRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.auth.OAuth2.FinalBuildStep;
 import net.anthavio.httl.auth.OAuth2.SelectTypeBuildStep;

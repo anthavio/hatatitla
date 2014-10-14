@@ -7,7 +7,7 @@ import java.net.HttpURLConnection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import net.anthavio.httl.HttlRequestBuilders.BodylessRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder.BodylessRequestBuilder;
 import net.anthavio.httl.async.ExecutorServiceBuilder;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
