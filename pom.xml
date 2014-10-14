@@ -10,7 +10,7 @@
 
 	<groupId>net.anthavio</groupId>
 	<artifactId>hatatitla</artifactId>
-	<version>1.5.0</version>	
+	<version>1.5.1-SNAPSHOT</version>	
 	
 	<name>hatatitla</name>
 	<description>Compact but tweakable REST client library you have been dreaming of</description>
@@ -22,7 +22,7 @@
 		<url>https://github.com/anthavio/hatatitla</url>
 		<connection>scm:git:git://github.com/anthavio/hatatitla.git</connection>
 		<developerConnection>scm:git:git@github.com:anthavio/hatatitla.git</developerConnection>
-    <tag>v1.5.0</tag>
+    <tag>HEAD</tag>
   </scm>
   
   <repositories>
