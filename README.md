@@ -1,4 +1,4 @@
-Hatatitla [![Build Status](https://vanek.ci.cloudbees.com/buildStatus/icon?job=hatatitla-snapshot)](https://vanek.ci.cloudbees.com/job/hatatitla-snapshot/)
+Hatatitla [![Build Status](https://vanek.ci.cloudbees.com/buildStatus/icon?job=hatatitla-snapshot)](https://vanek.ci.cloudbees.com/job/hatatitla-snapshot/) [![Coverage Status](https://coveralls.io/repos/anthavio/hatatitla/badge.png?branch=master)](https://coveralls.io/r/anthavio/hatatitla?branch=master)
 ==========
  ![Cloudbees DEV@cloud](http://www.cloudbees.com/sites/default/files/Button-Powered-by-CB.png)
 
