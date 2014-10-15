@@ -5,7 +5,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.X509TrustManager;
 
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
@@ -81,8 +81,8 @@ public class SslTest {
 			sender.GET("/").execute();
 			Assertions.fail("HttlRequestException expected");
 		} catch (HttlRequestException hrx) {
-			//Then
-			Assertions.assertThat(hrx.getCause()).isInstanceOf(SSLHandshakeException.class);
+			//Then SSLHandshakeException or javax.net.ssl.SSLPeerUnverifiedException (Httpclient 4.2+)
+			Assertions.assertThat(hrx.getCause()).isInstanceOf(SSLException.class);
 		}
 		sender.close();
 
@@ -106,8 +106,8 @@ public class SslTest {
 			sender.GET("/").execute();
 			Assertions.fail("HttlRequestException expected");
 		} catch (HttlRequestException hrx) {
-			//Then
-			Assertions.assertThat(hrx.getCause()).isInstanceOf(SSLHandshakeException.class);
+			//Then SSLHandshakeException or javax.net.ssl.SSLPeerUnverifiedException (Httpclient 4.2+)
+			Assertions.assertThat(hrx.getCause()).isInstanceOf(SSLException.class);
 		}
 		sender.close();
 

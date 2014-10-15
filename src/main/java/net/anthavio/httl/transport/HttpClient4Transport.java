@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody;
@@ -25,7 +26,6 @@ import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpOptions;
-import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -264,4 +264,34 @@ public class HttpClient4Transport implements HttlTransport {
 
 	}
 
+	/**
+	 * HttpPatch is @since 4.2
+	 * 
+	 * @author martin.vanek
+	 *
+	 */
+	static class HttpPatch extends HttpEntityEnclosingRequestBase {
+
+		public final static String METHOD_NAME = "PATCH";
+
+		public HttpPatch() {
+			super();
+		}
+
+		public HttpPatch(final URI uri) {
+			super();
+			setURI(uri);
+		}
+
+		public HttpPatch(final String uri) {
+			super();
+			setURI(URI.create(uri));
+		}
+
+		@Override
+		public String getMethod() {
+			return METHOD_NAME;
+		}
+
+	}
 }
