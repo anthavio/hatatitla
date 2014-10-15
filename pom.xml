@@ -83,14 +83,14 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		
+<!--
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-client</artifactId>
 			<version>8.1.15.v20140411</version>
 			<optional>true</optional>
 		</dependency>
-
+-->
 		<dependency>
 			<groupId>javax.ws.rs</groupId>
 			<artifactId>javax.ws.rs-api</artifactId>
@@ -98,25 +98,29 @@
 			<optional>true</optional>
 		</dependency>
 		
-		<!-- future netty sender implementations -->
+		<!-- Async API clients -->
 		
+		<!-- https://github.com/AsyncHttpClient/async-http-client -->
 		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty</artifactId>
-			<version>3.6.3.Final</version>
+			<groupId>com.ning</groupId>
+			<artifactId>async-http-client</artifactId>
+			<version>1.8.14</version>
 			<optional>true</optional>
 		</dependency>
 		
-		<!-- future grizzly sender implementations 
-		
 		<dependency>
-			<groupId>org.glassfish.grizzly</groupId>
-			<artifactId>grizzly-http-client</artifactId>
-			<version>1.3</version>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpasyncclient</artifactId>
+			<version>4.0.2</version>
 			<optional>true</optional>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-		
-		-->
+
 		
 		<!-- JSON request/response body support -->
 		

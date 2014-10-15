@@ -4,10 +4,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.net.ssl.SSLException;
 
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
@@ -83,9 +88,40 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 	}
 
 	@Override
+	public void call(HttlRequest request, HttlTransportCallback callback) {
+		HttlResponse response = null;
+		try {
+
+			try {
+				response = call(request); //blocking execution 
+			} catch (HttlRequestException hrx) {
+				callback.onRequestFailure(request, hrx);
+
+			} catch (ConnectException cx) {
+				callback.onRequestFailure(request, cx);
+
+			} catch (SSLException sslx) {
+				callback.onRequestFailure(request, sslx);
+
+			} catch (SocketTimeoutException stx) {
+				callback.onResponseFailure(request, stx);
+
+			} catch (Exception x) {
+				//For others blame response
+				callback.onResponseFailure(request, x);
+			}
+
+			callback.onResponse(response);
+
+		} finally {
+			Cutils.close(response);
+		}
+	}
+
+	@Override
 	public HttlResponse call(HttlRequest request) throws IOException {
 		if (closed) {
-			throw new IllegalStateException("Sender is closed");
+			throw new HttlRequestException("Sender is closed");
 		}
 		this.lastRequest = request;
 		executions.incrementAndGet();

@@ -12,7 +12,6 @@ import net.anthavio.httl.async.ExecutorServiceBuilder;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpUrlConfig;
-import net.anthavio.httl.transport.JettyClientConfig;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -79,20 +78,21 @@ public class TimeoutsTest {
 		readTimeout(newHttp4(urlSingle));
 	}
 
-	//@Test //Buggy as hell
-	public void jetty() throws IOException {
-		HttlSender sender = newJetty(urlFrozen);
-		connectTimeout(sender);
-		sender.close();
+	/*
+		//@Test //Buggy as hell
+		public void jetty() throws IOException {
+			HttlSender sender = newJetty(urlFrozen);
+			connectTimeout(sender);
+			sender.close();
 
-		//pool timeout is not testable here
-		//poolTimeout(newSimple(this.urlSingle));
+			//pool timeout is not testable here
+			//poolTimeout(newSimple(this.urlSingle));
 
-		sender = newJetty(urlSingle);
-		readTimeout(sender);
-		sender.close();
-	}
-
+			sender = newJetty(urlSingle);
+			readTimeout(sender);
+			sender.close();
+		}
+	*/
 	private void poolTimeout(HttlSender sender) throws IOException {
 		HttlRequest request = sender.GET("/").param("sleep", "1").build();
 		//get only existing connection from pool
@@ -202,16 +202,16 @@ public class TimeoutsTest {
 		configurer.setExecutorService(executor);
 		return configurer.build();
 	}
-
-	private HttlSender newJetty(String url) {
-		JettyClientConfig config = new JettyClientConfig(url);
-		config.setConnectTimeoutMillis(1100);
-		config.setReadTimeoutMillis(1300);
-		config.setPoolMaximumSize(1);
-		//config.setPoolAcquireTimeoutMillis(300);
-		SenderConfigurer configurer = config.sender();
-		configurer.setExecutorService(executor);
-		return configurer.build();
-	}
-
+	/*
+		private HttlSender newJetty(String url) {
+			JettyClientConfig config = new JettyClientConfig(url);
+			config.setConnectTimeoutMillis(1100);
+			config.setReadTimeoutMillis(1300);
+			config.setPoolMaximumSize(1);
+			//config.setPoolAcquireTimeoutMillis(300);
+			SenderConfigurer configurer = config.sender();
+			configurer.setExecutorService(executor);
+			return configurer.build();
+		}
+	*/
 }

@@ -13,7 +13,6 @@ import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlSender.Multival;
-import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.util.ReaderInputStream;
 
 import org.apache.http.Header;
@@ -46,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class HttpClient4Transport implements HttlTransport {
+public class HttpClient4Transport extends FakeAsyncTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
