@@ -10,6 +10,8 @@ import net.anthavio.httl.HttlSender;
 import net.anthavio.httl.util.HttlUtil;
 
 /**
+ * http://tools.ietf.org/html/rfc6749
+ * 
  * Google:
  * https://developers.google.com/accounts/docs/OAuth2Login
  * https://developers.google.com/accounts/docs/OAuth2WebServer
@@ -112,6 +114,7 @@ public class OAuth2 {
 	 * Trade code for access_token
 	 * 
 	 * Standard OAuth for Web Server Applications
+	 * http://tools.ietf.org/html/rfc6749#section-4.1
 	 * 
 	 */
 	public FinalBuildStep access(String code) {
@@ -122,6 +125,7 @@ public class OAuth2 {
 	 * Trade refresh_token for access_token
 	 * 
 	 * So called Offline access
+	 * http://tools.ietf.org/html/rfc6749#section-6
 	 * 
 	 */
 	public FinalBuildStep refresh(String refresh_token) {
@@ -132,6 +136,7 @@ public class OAuth2 {
 	 * Trade username & password for access_token
 	 * 
 	 * Usualy only for privileged applications
+	 * http://tools.ietf.org/html/rfc6749#section-4.3
 	 */
 	public FinalBuildStep password(String username, String password) {
 		return new TokenRequestBuilder(this).password(username, password);
