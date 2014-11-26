@@ -11,6 +11,7 @@ import java.util.List;
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -206,7 +207,7 @@ public class HttpClient3Transport extends FakeAsyncTransport {
 			} else if (x instanceof IOException) {
 				throw (IOException) x;//just rethrow IO
 			} else {
-				throw new IOException(x.getMessage(), x);//wrap others
+				throw new HttlRequestException(x);//wrap others
 			}
 		}
 	}

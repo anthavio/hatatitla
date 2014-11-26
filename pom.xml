@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>net.anthavio.maven</groupId>
 		<artifactId>anthavio-super-pom</artifactId>
-		<version>3.1</version>
+		<version>4</version>
 	</parent>
 
 	<groupId>net.anthavio</groupId>
@@ -24,6 +24,32 @@
 		<developerConnection>scm:git:git@github.com:anthavio/hatatitla.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
+  
+	<distributionManagement>
+		<downloadUrl>https://oss.sonatype.org/content/groups/public/net/anthavio/hatatitla</downloadUrl>
+		<site>
+			<id>github-project-site</id>
+			<url>gitsite:git@github.com/anthavio/hatatitla.git</url>
+		</site>
+	</distributionManagement>
+	
+	<issueManagement>
+		<system>GitHub</system>
+		<url>https://github.com/anthavio/hatatitla/issues</url>
+	</issueManagement>
+	
+	<developers>
+		
+		<developer>
+			<id>anthavio</id>
+			<name>Martin Vaněk</name>
+			<email>anthavio@post.cz</email>
+			<roles>
+				<role>Java Developer</role>
+			</roles>
+		</developer>
+
+	</developers>
   
   <repositories>
   	<repository>
@@ -61,7 +87,7 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.2.6</version> <!-- 4.0.3, 4.1.3, 4.2.6, 4.3.5 -->
+			<version>4.3.5</version> <!-- 4.0.3, 4.1.3, 4.2.6, 4.3.5 -->
 			<optional>true</optional>
 			<exclusions>
 				<exclusion>
@@ -272,7 +298,15 @@
 	
 	<build>
 		<plugins>
-
+			
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<configuration>
+					<header>com/mycila/maven/plugin/license/templates/LGPL-3.txt</header><!-- APACHE-2 -->
+				</configuration>
+			</plugin>
+			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>

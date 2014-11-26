@@ -438,7 +438,7 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 			setContentType(mediaType);
 			if (buffer) {
 				try {
-					byte[] bytes = HttlUtil.readAsBytes(stream, HttlUtil.KILO16);
+					byte[] bytes = HttlUtil.readAsBytes(stream, HttlUtil.KILO4);
 					this.body = new HttlBody(bytes);
 				} catch (IOException iox) {
 					throw new HttlRequestException(iox);
@@ -459,7 +459,7 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 			setContentType(mediaType);
 			if (buffer) {
 				try {
-					String string = HttlUtil.readAsString(reader, HttlUtil.KILO16);
+					String string = HttlUtil.readAsString(reader, HttlUtil.KILO4);
 					this.body = new HttlBody(string);
 				} catch (IOException iox) {
 					throw new HttlRequestException(iox);

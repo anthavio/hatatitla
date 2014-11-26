@@ -12,6 +12,7 @@ import java.util.List;
 import net.anthavio.httl.HttlBody;
 import net.anthavio.httl.HttlBodyMarshaller;
 import net.anthavio.httl.HttlRequest;
+import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.util.ReaderInputStream;
 
@@ -92,6 +93,27 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 	@Override
 	public HttpClient4Response call(HttlRequest request) throws IOException {
 
+		HttpRequestBase httpRequest = convert(request);
+
+		HttpResponse httpResponse = call(httpRequest);
+
+		Header[] responseHeaders = httpResponse.getAllHeaders();
+		Multival<String> httlHeaders = new Multival<String>();
+		for (Header header : responseHeaders) {
+			httlHeaders.add(header.getName(), header.getValue());
+		}
+
+		StatusLine statusLine = httpResponse.getStatusLine();
+
+		HttpEntity entity = httpResponse.getEntity();
+		//Entity is null for http 300 redirects
+		InputStream responseStream = entity != null ? entity.getContent() : null;
+		HttpClient4Response response = new HttpClient4Response(request, statusLine.getStatusCode(),
+				statusLine.getReasonPhrase(), httlHeaders, responseStream, httpResponse);
+		return response;
+	}
+
+	public static HttpRequestBase convert(HttlRequest request) throws IOException {
 		String urlFile = request.getPathAndQuery();
 		HttpRequestBase httpRequest;
 		switch (request.getMethod()) {
@@ -142,26 +164,10 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 		if (request.getReadTimeoutMillis() != null) {
 			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeoutMillis());
 		}
-
-		HttpResponse httpResponse = call(httpRequest);
-
-		Header[] responseHeaders = httpResponse.getAllHeaders();
-		Multival<String> outHeaders = new Multival<String>();
-		for (Header header : responseHeaders) {
-			outHeaders.add(header.getName(), header.getValue());
-		}
-
-		StatusLine statusLine = httpResponse.getStatusLine();
-
-		HttpEntity entity = httpResponse.getEntity();
-		//Entity is null for http 300 redirects
-		InputStream responseStream = entity != null ? entity.getContent() : null;
-		HttpClient4Response response = new HttpClient4Response(request, statusLine.getStatusCode(),
-				statusLine.getReasonPhrase(), outHeaders, responseStream, httpResponse);
-		return response;
+		return httpRequest;
 	}
 
-	protected void setEntity(HttlRequest request, HttpEntityEnclosingRequestBase into) throws IOException {
+	public static void setEntity(HttlRequest request, HttpEntityEnclosingRequestBase into) throws IOException {
 		HttlBody body = request.getBody();
 		if (body != null) {
 			HttpEntity entity;
@@ -221,7 +227,7 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 			} else if (x instanceof IOException) {
 				throw (IOException) x;//just rethrow IO
 			} else {
-				throw new IOException(x);//wrap others
+				throw new HttlRequestException(x);//wrap others
 			}
 		}
 	}
@@ -248,6 +254,7 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 
 		@Override
 		public InputStream getContent() throws IOException, IllegalStateException {
+			//called from async client
 			throw new IllegalStateException("Only writeTo supported");
 		}
 

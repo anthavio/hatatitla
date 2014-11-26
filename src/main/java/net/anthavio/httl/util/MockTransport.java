@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLException;
@@ -17,6 +18,7 @@ import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
 import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.transport.FakeAsyncTransport.FakeFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class MockTransport extends BaseTransBuilder<MockTransport> implements HttlTransport {
+public class MockTransport extends BaseTransBuilder<MockTransport> implements HttlTransport<HttlResponse> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -88,7 +90,7 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 	}
 
 	@Override
-	public void call(HttlRequest request, HttlTransportCallback callback) {
+	public Future<HttlResponse> call(HttlRequest request, HttlTransportCallback<HttlResponse> callback) {
 		HttlResponse response = null;
 		try {
 
@@ -111,11 +113,12 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 				callback.onResponseFailure(request, x);
 			}
 
-			callback.onResponse(response);
+			callback.onResponsePayload(response, response);
 
 		} finally {
 			Cutils.close(response);
 		}
+		return new FakeFuture<HttlResponse>(response);
 	}
 
 	@Override

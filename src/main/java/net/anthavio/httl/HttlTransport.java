@@ -2,6 +2,7 @@ package net.anthavio.httl;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.Future;
 
 import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
 
@@ -10,7 +11,7 @@ import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
  * @author martin.vanek
  *
  */
-public interface HttlTransport extends Closeable {
+public interface HttlTransport<AF> extends Closeable {
 
 	/**
 	 * Synchronous blocking execution
@@ -20,7 +21,7 @@ public interface HttlTransport extends Closeable {
 	/**
 	 * Asynchronous nio execution
 	 */
-	public void call(HttlRequest request, HttlTransportCallback callback);
+	public Future<AF> call(HttlRequest request, HttlTransportCallback<AF> callback);
 
 	/**
 	 * Redeclare Closeable to surpress IOException
@@ -32,22 +33,42 @@ public interface HttlTransport extends Closeable {
 	/**
 	 *  Callback for Asynchronous nio execution
 	 */
-	static interface HttlTransportCallback {
+	public static interface HttlTransportCallback<AF> {
 
 		/**
-		 * Most probably connect timeouts, SSL handshake errors
+		 * Request is written successfully
+		 */
+		public void onRequestCompleted(HttlRequest request);
+
+		/**
+		 * Connect timeouts, SSL handshake errors
 		 */
 		public void onRequestFailure(HttlRequest request, Exception exception);
 
 		/**
-		 * Request was sent successfully but nothing comes back (headers or status code)
+		 * Request was written successfully but nothing comes back (headers or status code)
 		 */
 		public void onResponseFailure(HttlRequest request, Exception exception);
 
 		/**
-		 * Happy happy happy!
+		 * HTTP Response status line recieved
 		 */
-		public void onResponse(HttlResponse response);
+		public void onResponseStatus(HttlRequest request, int statusCode, String statusMessage);
+
+		/**
+		 * HTTP Response headers recieved
+		 */
+		public void onResponseHeaders(HttlResponse response);
+
+		/**
+		 * HTTP Response payload read/processing
+		 */
+		public void onResponsePayloadFailure(HttlResponse response, Exception exception);
+
+		/**
+		 * HTTP Response body recieved
+		 */
+		public void onResponsePayload(HttlResponse response, AF internal);
 
 	}
 }

@@ -272,23 +272,23 @@ public class HttlUtil {
 		return output.toByteArray();
 	}
 
+	public static final int KILO4 = 4 * 1024;
+
 	public static final int KILO16 = 16 * 1024;
 
-	public static final int KILO64 = 64 * 1024;
-
 	private static int getBufferLength(HttlResponse response) {
-		int blength = KILO16;
+		int blength = KILO4;
 		String sclength = response.getFirstHeader("Content-Length");
 		if (sclength != null) {
 			int clength = Integer.parseInt(sclength);
-			if (clength < KILO16) {
+			if (clength < KILO4) {
 				blength = clength;
 			} else {
 				blength = clength / 100;
-				if (blength < KILO16) {
+				if (blength < KILO4) {
+					blength = KILO4;
+				} else if (blength > KILO16) {
 					blength = KILO16;
-				} else if (blength > KILO64) {
-					blength = KILO64;
 				}
 			}
 		}

@@ -244,14 +244,16 @@ public class JokerServer {
 
 			int httpc = httpCode; //save before sleep
 
+			/*
 			//request.setCharacterEncoding("utf-8");
 			String hsleep = request.getHeader("sleep");
 			if (hsleep != null) {
 				sleep(hsleep, request);
 			}
+			*/
 
-			String psleep = request.getParameter("sleep");
-			if (psleep != null) {
+			int psleep = getIntParameter(request, "sleep", 0);
+			if (psleep > 0) {
 				sleep(psleep, request);
 			}
 
@@ -331,13 +333,7 @@ public class JokerServer {
 					}
 				}
 			}
-			/*
-			if (trequest != null) {
-				System.out.println(trequest.getMessage());
-			} else if (request.getParameter("xxx") != null) {
-				System.out.println(request.getParameter("xxx"));
-			}
-			*/
+
 			String message = text + " at " + sdf.format(now);
 
 			TestResponse.Request toutrequest = new TestResponse.Request();
@@ -385,6 +381,9 @@ public class JokerServer {
 			String acceptMimeType = request.getHeader("Accept");
 			acceptMimeType = acceptMimeType == null ? "text/html" : acceptMimeType;
 
+			Integer repeat = getIntParameter(request, "repeat", 1);
+			Integer rsleep = getIntParameter(request, "rsleep", 0);
+
 			if (acceptMimeType.startsWith("application/json")) {
 
 				response.setContentType("application/json");
@@ -405,17 +404,24 @@ public class JokerServer {
 					jx.printStackTrace();
 				}
 			} else {
+
 				//default output type is html
+
 				response.setContentType("text/html");
-				output.println("<h1> " + message + "</h1>");
+				for (int i = 0; i < repeat; ++i) {
+					output.println("<p> " + message + "</p>\n");
+					response.flushBuffer();
+					if (rsleep > 0) {
+						sleep(rsleep, request);
+					}
+				}
 				//TODO html output of parameters and headers...
 			}
 			((Request) request).setHandled(true);
 		}
 
-		private void sleep(String value, HttpServletRequest request) {
-			int seconds = Integer.parseInt(value);
-			if (seconds != 0) {
+		private void sleep(int seconds, HttpServletRequest request) {
+			if (seconds <= 0) {
 				logger.info("server sleep for " + seconds + " seconds");
 				try {
 					Thread.sleep(seconds * 1000);
@@ -426,6 +432,15 @@ public class JokerServer {
 			}
 		}
 
+	}
+
+	static Integer getIntParameter(HttpServletRequest request, String name, int defaultValue) {
+		String value = request.getParameter(name);
+		if (value != null) {
+			return Integer.parseInt(value);
+		} else {
+			return defaultValue;
+		}
 	}
 
 	private SecurityHandler getBasicSecurityHandler(LoginService realm, String role) {
