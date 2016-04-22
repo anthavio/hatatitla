@@ -19,6 +19,7 @@ import net.anthavio.httl.HttlBody.Type;
 import net.anthavio.httl.HttlParameterSetter.ConfigurableParamSetter;
 import net.anthavio.httl.HttlRequest.Method;
 import net.anthavio.httl.HttlRequestBuilder.BodyfulRequestBuilder;
+import net.anthavio.httl.HttlRequestBuilder.BodylessExecutableBuilder;
 import net.anthavio.httl.HttlRequestBuilder.BodylessRequestBuilder;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.util.MockTransport;
@@ -333,7 +334,7 @@ public class RequestTest {
 		HttlSender sender = HttlSender.url("www.example.com").build();
 
 		//When - Date as parameter
-		BodylessRequestBuilder builder = sender.OPTIONS("/options");
+		BodylessExecutableBuilder builder = sender.OPTIONS("/options");
 		Date date = new Date();
 		builder.param("d", date, 32, "ZXZX");
 		HttlRequest request = builder.build();
@@ -362,7 +363,7 @@ public class RequestTest {
 	public void arraysAndCollections() {
 		HttlSender sender = HttlSender.url("www.example.com").build();
 
-		BodylessRequestBuilder builder = sender.DELETE("/delete");
+		BodylessExecutableBuilder builder = sender.DELETE("/delete");
 		builder.param(";m3", 31, 32, 33);
 		HttlRequest req = builder.build();
 		assertThat(req.getPathAndQuery()).isEqualTo("/delete;m3=31;m3=32;m3=33");
@@ -402,7 +403,7 @@ public class RequestTest {
 		//assertThat(request.getFirstHeader(Constants.Accept_Charset)).isEqualTo("utf-8");
 
 		String path = "/path/to/somewhere";
-		BodylessRequestBuilder builder = sender.HEAD(path);//.params(parameters).setHeaders(headers);
+		BodylessExecutableBuilder builder = sender.HEAD(path);//.params(parameters).setHeaders(headers);
 
 		builder.param("p1", Arrays.asList("y"));
 		builder.param("p2", Arrays.asList("a", "b", "c"));

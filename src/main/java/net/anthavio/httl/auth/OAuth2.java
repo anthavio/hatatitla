@@ -38,6 +38,14 @@ public class OAuth2 {
 		this.config = config;
 	}
 
+	protected HttlSender getSender() {
+		return sender;
+	}
+
+	protected OAuth2Builder getConfig() {
+		return config;
+	}
+
 	/**
 	 * @return Builder for OAuth2
 	 */

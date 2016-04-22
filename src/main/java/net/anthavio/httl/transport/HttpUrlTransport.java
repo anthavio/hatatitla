@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class HttpUrlTransport extends FakeAsyncTransport {
+public class HttpUrlTransport extends SyncAsyncTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -77,7 +77,7 @@ public class HttpUrlTransport extends FakeAsyncTransport {
 		//System.setProperty("http.keepAlive", "true");
 		//System.setProperty("http.maxConnections", String.valueOf(config.getPoolMaximumSize()));
 
-		if (config.getSslContext() != null && config.getUrl().getProtocol().equals("https")) {
+		if (config.getSslContext() != null) {
 			this.sslSocketFactory = config.getSslContext().getSocketFactory();
 		} else {
 			this.sslSocketFactory = null; //because final
@@ -103,8 +103,8 @@ public class HttpUrlTransport extends FakeAsyncTransport {
 
 	@Override
 	public HttlResponse call(HttlRequest request) throws IOException {
-		String protocol = config.getUrl().getProtocol();
-		URL url = new URL(protocol, config.getUrl().getHost(), config.getUrl().getPort(), request.getPathAndQuery());
+		URL hostUrl = config.getTarget().getUrl();
+		URL url = new URL(hostUrl.getProtocol(), hostUrl.getHost(), hostUrl.getPort(), request.getPathAndQuery());
 
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		if (sslSocketFactory != null) {
@@ -173,7 +173,7 @@ public class HttpUrlTransport extends FakeAsyncTransport {
 					break;
 				case MARSHALL:
 					request
-							.getSender()
+							.getSenderConfig()
 							.getMarshaller()
 							.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(),
 									connection.getOutputStream());
@@ -197,6 +197,7 @@ public class HttpUrlTransport extends FakeAsyncTransport {
 		try {
 			responseCode = connection.getResponseCode();
 		} catch (Exception x) {
+			config.getTarget().failed(hostUrl);
 			throw translateException(connection, x);
 		}
 
@@ -282,7 +283,7 @@ public class HttpUrlTransport extends FakeAsyncTransport {
 			}
 		} else if (exception instanceof ConnectException) {
 			//enhance message with url
-			ConnectException ctx = new ConnectException("Connection refused " + config.getUrl());
+			ConnectException ctx = new ConnectException("Connection refused " + connection.getURL());
 			ctx.setStackTrace(exception.getStackTrace());
 			throw ctx;
 		} else if (exception instanceof IOException) {
@@ -307,6 +308,6 @@ public class HttpUrlTransport extends FakeAsyncTransport {
 
 	@Override
 	public String toString() {
-		return "JavaUrlSender [" + config.getUrl() + "]";
+		return "HttpUrlTransport {" + config.getTarget() + "}";
 	}
 }

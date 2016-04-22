@@ -136,6 +136,13 @@ public abstract class HttlResponse implements Closeable, Serializable {
 		return mediaType;
 	}
 
+	/**
+	 * @param mediaType not null!
+	 */
+	public boolean isMediaType(String mediaType) {
+		return mediaType.equals(this.mediaType);
+	}
+
 	@Override
 	public void close() {
 		if (stream != null && !stream.isClosed()) {
@@ -183,42 +190,52 @@ public abstract class HttlResponse implements Closeable, Serializable {
 			return stream.read();
 		}
 
+		@Override
 		public int read(byte[] b, int off, int len) throws IOException {
 			return stream.read(b, off, len);
 		}
 
+		@Override
 		public int read(byte[] b) throws IOException {
 			return stream.read(b);
 		}
 
+		@Override
 		public int available() throws IOException {
 			return stream.available();
 		}
 
+		@Override
 		public boolean equals(Object obj) {
 			return stream.equals(obj);
 		}
 
+		@Override
 		public int hashCode() {
 			return stream.hashCode();
 		}
 
+		@Override
 		public void mark(int readlimit) {
 			stream.mark(readlimit);
 		}
 
+		@Override
 		public boolean markSupported() {
 			return stream.markSupported();
 		}
 
+		@Override
 		public void reset() throws IOException {
 			stream.reset();
 		}
 
+		@Override
 		public long skip(long n) throws IOException {
 			return stream.skip(n);
 		}
 
+		@Override
 		public String toString() {
 			return stream.toString();
 		}

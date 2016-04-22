@@ -2,13 +2,14 @@ package net.anthavio.httl.transport;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 
 import net.anthavio.httl.Authentication;
-import net.anthavio.httl.HttlTransport;
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
@@ -39,7 +40,6 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParamBean;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParamBean;
-import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 
@@ -48,13 +48,25 @@ import org.apache.http.protocol.HttpContext;
  * @author martin.vanek
  * 
  */
-public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
+public class HttpClient4Config extends BaseTransportBuilder<HttpClient4Config> {
 
 	private int poolReleaseTimeoutMillis = 15 * 1000; //apache 2.0 and NGINX
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
 
-	private HttpContext authContext;
+	private final Map<URL, HttpHost> hostMap = new HashMap<URL, HttpHost>();
+
+	private AuthCache authCache; //preemptive BASIC
+
+	/**
+	 * Copy constructor
+	 */
+	public HttpClient4Config(HttpClient4Config from) {
+		super(from);
+		this.poolReleaseTimeoutMillis = from.getPoolReleaseTimeoutMillis();
+		this.poolAcquireTimeoutMillis = from.getPoolAcquireTimeoutMillis();
+		this.authCache = from.getAuthCache(); //not a deep copy :(
+	}
 
 	public HttpClient4Config(String url) {
 		super(url);
@@ -64,9 +76,13 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 		super(url);
 	}
 
+	public HttpClient4Config(HttlTarget target) {
+		super(target);
+	}
+
 	@Override
-	public HttlTransport build() {
-		return new HttpClient4Transport(this);
+	public HttpClient4Transport build() {
+		return new HttpClient4Transport(new HttpClient4Config(this));
 	}
 
 	@Override
@@ -74,27 +90,46 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 		return this;
 	}
 
-	public HttpContext getAuthContext() {
-		return this.authContext;
+	/**
+	 * Can return null
+	 */
+	public AuthCache getAuthCache() {
+		return authCache;
 	}
 
 	public HttpClient newHttpClient() {
 		HttpParams httpParams = new BasicHttpParams();
-		buildClientParams(httpParams, getUrl());
+
+		URL[] urls = super.getTarget().getUrls();
+		for (URL url : urls) {
+			hostMap.put(url, new HttpHost(url.getHost(), url.getPort(), url.getProtocol()));
+		}
+
+		buildClientParams(httpParams);
 		buildConnectionParams(httpParams);
 		buildProtocolParams(httpParams);
-		ClientConnectionManager connectionManager = buildConnectionManager();
+		ClientConnectionManager connectionManager = buildConnectionManager(urls);
 
 		DefaultHttpClient httpClient = new DefaultHttpClient(connectionManager, httpParams);
 
+		buildAuthentication(httpClient);
+
+		return httpClient;
+	}
+
+	private void buildAuthentication(DefaultHttpClient httpClient) {
 		if (getAuthentication() != null) {
 			Authentication authentication = getAuthentication();
 			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(authentication.getUsername(),
 					authentication.getPassword());
 			CredentialsProvider provider = httpClient.getCredentialsProvider();
-			AuthScope scope = new AuthScope(getUrl().getHost(), getUrl().getPort(), authentication.getRealm()/*, authentication
-																																																								.getScheme().toString()*/);
-			provider.setCredentials(scope, credentials);
+
+			URL[] urls = super.getTarget().getUrls();
+
+			for (URL url : urls) {
+				AuthScope scope = new AuthScope(url.getHost(), url.getPort());
+				provider.setCredentials(scope, credentials);
+			}
 
 			if (authentication.getPreemptive()) {
 				AuthScheme scheme;
@@ -108,26 +143,29 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 					digest.overrideParamter("nonce", authentication.getNonce());
 					scheme = digest;
 				}
-				HttpHost host = new HttpHost(getUrl().getHost(), getUrl().getPort(), getUrl().getProtocol());
-				AuthCache authCache = new BasicAuthCache();
-				authCache.put(host, scheme);
 
-				this.authContext = new BasicHttpContext(); //Prepare execution context
-				this.authContext.setAttribute(ClientContext.AUTH_CACHE, authCache);
-				//authContext.setAttribute(ClientContext.CREDS_PROVIDER, provider);
+				authCache = new BasicAuthCache();
+				for (URL url : urls) {
+					HttpHost host = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
+					authCache.put(host, scheme);
+				}
 			}
-
 		}
-
-		return httpClient;
 	}
 
-	protected ClientParamBean buildClientParams(HttpParams httpParams, URL url) {
+	protected HttpHost getHttpHost() {
+		URL url = getTarget().getUrl();
+		return hostMap.get(url);
+	}
+
+	protected ClientParamBean buildClientParams(HttpParams httpParams) {
 		ClientParamBean clientBean = new ClientParamBean(httpParams);
 		clientBean.setConnectionManagerTimeout(this.poolAcquireTimeoutMillis);//httpParams.setParameter(ClientPNames.CONN_MANAGER_TIMEOUT, 5000L);
-		HttpHost httpHost = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
-		clientBean.setDefaultHost(httpHost); //ClientPNames.DEFAULT_HOST
 		clientBean.setHandleRedirects(getFollowRedirects());//ClientPNames.HANDLE_REDIRECTS
+
+		//HttpHost httpHost = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
+		//clientBean.setDefaultHost(httpHost); //ClientPNames.DEFAULT_HOST
+
 		return clientBean;
 	}
 
@@ -148,7 +186,7 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 		return protocolBean;
 	}
 
-	protected PoolingClientConnectionManager buildConnectionManager() {
+	protected PoolingClientConnectionManager buildConnectionManager(URL[] urls) {
 		SchemeRegistry schemeRegistry = new SchemeRegistry();
 		schemeRegistry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
 
@@ -163,7 +201,7 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 		//we access only one host
 		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager(schemeRegistry,
 				this.poolReleaseTimeoutMillis, TimeUnit.MILLISECONDS);
-		connectionManager.setMaxTotal(getPoolMaximumSize());
+		connectionManager.setMaxTotal(getPoolMaximumSize() * urls.length);
 		connectionManager.setDefaultMaxPerRoute(getPoolMaximumSize());
 		return connectionManager;
 	}
@@ -188,6 +226,7 @@ public class HttpClient4Config extends BaseTransBuilder<HttpClient4Config> {
 
 class PreemptiveAuthInterceptor implements HttpRequestInterceptor {
 
+	@Override
 	public void process(final HttpRequest request, final HttpContext context) throws HttpException, IOException {
 		AuthState authState = (AuthState) context.getAttribute(ClientContext.TARGET_AUTH_STATE);
 

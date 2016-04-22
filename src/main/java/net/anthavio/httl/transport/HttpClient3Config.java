@@ -10,7 +10,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import net.anthavio.httl.Authentication;
 import net.anthavio.httl.Authentication.Scheme;
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 
 import org.apache.commons.httpclient.ConnectTimeoutException;
 import org.apache.commons.httpclient.HostConfiguration;
@@ -24,6 +24,7 @@ import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.commons.httpclient.params.HttpConnectionParams;
 import org.apache.commons.httpclient.protocol.ControllerThreadSocketFactory;
 import org.apache.commons.httpclient.protocol.Protocol;
+import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
 
 /**
@@ -32,11 +33,20 @@ import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
  * @author martin.vanek
  *
  */
-public class HttpClient3Config extends BaseTransBuilder<HttpClient3Config> {
+public class HttpClient3Config extends BaseTransportBuilder<HttpClient3Config> {
 
 	private int poolReleaseTimeoutMillis = 15 * 1000;
 
 	private int poolAcquireTimeoutMillis = 3 * 1000;
+
+	/**
+	 * Copy constructor
+	 */
+	public HttpClient3Config(HttpClient3Config from) {
+		super(from);
+		this.poolReleaseTimeoutMillis = from.getPoolReleaseTimeoutMillis();
+		this.poolAcquireTimeoutMillis = from.getPoolAcquireTimeoutMillis();
+	}
 
 	public HttpClient3Config(String url) {
 		super(url);
@@ -46,9 +56,13 @@ public class HttpClient3Config extends BaseTransBuilder<HttpClient3Config> {
 		super(url);
 	}
 
+	public HttpClient3Config(HttlTarget target) {
+		super(target);
+	}
+
 	@Override
 	public HttpClient3Transport build() {
-		return new HttpClient3Transport(this);
+		return new HttpClient3Transport(new HttpClient3Config(this));
 	}
 
 	@Override
@@ -87,31 +101,33 @@ public class HttpClient3Config extends BaseTransBuilder<HttpClient3Config> {
 
 		MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
 		HttpConnectionManagerParams managerParams = new HttpConnectionManagerParams();
-		HostConfiguration hostConfig = new HostConfiguration();
 
-		if (getSslContext() != null) {
-			Protocol https = new Protocol("https", new Hc3SecureSocketFactory(getSslContext().getSocketFactory()), 443);
-			hostConfig.setHost(getUrl().getHost(), getUrl().getPort(), https);
-		} else {
-			hostConfig.setHost(getUrl().getHost(), getUrl().getPort(), getUrl().getProtocol());
+		URL[] urls = getTarget().getUrls();
+		for (URL url : urls) {
+			HostConfiguration hostConfig = new HostConfiguration();
+			if (getSslContext() != null) {
+				Protocol https = new Protocol("https", new Hc3SecureSocketFactory(getSslContext().getSocketFactory()), 443);
+				hostConfig.setHost(url.getHost(), url.getPort(), https);
+			} else {
+				hostConfig.setHost(url.getHost(), url.getPort(), url.getProtocol());
+			}
+			managerParams.setMaxConnectionsPerHost(hostConfig, getPoolMaximumSize());
 		}
-		managerParams.setMaxConnectionsPerHost(hostConfig, getPoolMaximumSize());
-		managerParams.setMaxTotalConnections(getPoolMaximumSize());
+
+		managerParams.setMaxTotalConnections(getPoolMaximumSize() * urls.length);
 		managerParams.setConnectionTimeout(getConnectTimeoutMillis());//http.connection.timeout
 		connectionManager.setParams(managerParams);
 
 		HttpClient httpClient = new HttpClient(clientParams, connectionManager);
-		httpClient.setHostConfiguration(hostConfig);
-
 		//http://hc.apache.org/httpclient-3.x/authentication.html
-		if (getAuthentication() != null) {
-			Authentication authentication = getAuthentication();
-
+		Authentication authentication = getAuthentication();
+		if (authentication != null) {
 			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(authentication.getUsername(),
 					authentication.getPassword());
-			AuthScope scope = new AuthScope(getUrl().getHost(), getUrl().getPort(), authentication.getRealm()/*, authentication
-																																																								.getScheme().toString()*/);
-			httpClient.getState().setCredentials(scope, credentials);
+			for (URL url : urls) {
+				AuthScope scope = new AuthScope(url.getHost(), url.getPort());
+				httpClient.getState().setCredentials(scope, credentials);
+			}
 
 			if (authentication.getPreemptive() && authentication.getScheme() == Scheme.BASIC) {
 				//Only BASIC can be preemtive
@@ -128,7 +144,7 @@ public class HttpClient3Config extends BaseTransBuilder<HttpClient3Config> {
 	 * @author martin.vanek
 	 *
 	 */
-	static class Hc3SecureSocketFactory implements SecureProtocolSocketFactory {
+	static class Hc3SecureSocketFactory implements SecureProtocolSocketFactory, ProtocolSocketFactory {
 
 		private final SSLSocketFactory socketFactory;
 

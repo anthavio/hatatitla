@@ -47,7 +47,9 @@ public class HttlRequest implements Serializable {
 
 	protected static final String DEFAULT_URI = "/";
 
-	protected transient HttlSender sender;
+	//protected transient HttlSender sender;
+
+	private final SenderConfigurer senderConfig;
 
 	private final Method method;
 
@@ -65,18 +67,32 @@ public class HttlRequest implements Serializable {
 
 	private final Integer readTimeoutMillis; //millis - override config value
 
-	protected HttlRequest(HttlSender sender, Method method, String urlPath) {
-		this(sender, method, urlPath, null, null, null, null);
+	/**
+	 * Copy constructor
+	 */
+	public HttlRequest(HttlRequest from, SenderConfigurer config) {
+		this.method = from.getMethod();
+		this.urlPath = from.getUrlPath();
+		this.pathAndQuery = from.getPathAndQuery();
+		this.headers = from.getHeaders();
+		this.contentType = from.getContentType();
+		this.parameters = from.getParameters();
+		this.body = from.getBody();
+		this.readTimeoutMillis = from.getReadTimeoutMillis();
+		this.senderConfig = config;
 	}
 
-	public HttlRequest(HttlSender sender, Method method, String urlPath, Multival<String> parameters,
+	protected HttlRequest(SenderConfigurer senderConfig, Method method, String urlPath) {
+		this(senderConfig, method, urlPath, null, null, null, null);
+	}
+
+	public HttlRequest(SenderConfigurer senderConfig, Method method, String urlPath, Multival<String> parameters,
 			Multival<String> headers, HttlBody body, Integer readTimeoutMillis) {
 
-		if (sender == null) {
-			throw new IllegalArgumentException("Null sender");
+		if (senderConfig == null) {
+			throw new IllegalArgumentException("Null SenderConfigurer");
 		}
-		this.sender = sender;
-		SenderConfigurer config = sender.getConfig();
+		this.senderConfig = senderConfig;
 
 		if (method == null) {
 			throw new IllegalArgumentException("Null method");
@@ -94,7 +110,7 @@ public class HttlRequest implements Serializable {
 			this.parameters = new Multival<String>();
 		}
 
-		Multival<String> defaultParams = config.getDefaultParameters();
+		Multival<String> defaultParams = senderConfig.getDefaultParameters();
 		for (String name : defaultParams) {
 			if (this.parameters.get(name) == null) {
 				this.parameters.set(name, defaultParams.get(name));
@@ -107,7 +123,7 @@ public class HttlRequest implements Serializable {
 			this.headers = new Multival<String>();
 		}
 
-		Multival<String> defaultHeaders = config.getDefaultHeaders();
+		Multival<String> defaultHeaders = senderConfig.getDefaultHeaders();
 		for (String name : defaultHeaders) {
 			if (this.headers.get(name) == null) {
 				this.headers.set(name, defaultHeaders.get(name));
@@ -115,11 +131,11 @@ public class HttlRequest implements Serializable {
 		}
 
 		String[] pathAndQuery = buildUrlPathAndQuery(urlPath, this.parameters);
-		final String path = HttlUtil.joinUrlParts(config.getUrl().getPath(), pathAndQuery[0]);
+		final String path = HttlUtil.joinUrlParts(senderConfig.getUrl().getPath(), pathAndQuery[0]);
 		final String query = pathAndQuery[1];
 
 		String reqConTyp = this.headers.getFirst(HttlConstants.Content_Type);
-		this.contentType = HttlUtil.splitContentType(reqConTyp, sender.getConfig().getCharset());
+		this.contentType = HttlUtil.splitContentType(reqConTyp, senderConfig.getCharset());
 
 		//TODO multipart/form-data
 
@@ -153,7 +169,7 @@ public class HttlRequest implements Serializable {
 				this.pathAndQuery = path;
 			}
 
-			if (sender.getConfig().isSkipCharset() && contentType[0] != null) {
+			if (senderConfig.isSkipCharset() && contentType[0] != null) {
 				//Some wierdos dislike charset in Content-Type header
 				headers.set(HttlConstants.Content_Type, this.contentType[0]);
 			}
@@ -173,8 +189,8 @@ public class HttlRequest implements Serializable {
 		this.readTimeoutMillis = readTimeoutMillis;
 	}
 
-	public HttlSender getSender() {
-		return sender;
+	public SenderConfigurer getSenderConfig() {
+		return senderConfig;
 	}
 
 	public Method getMethod() {
@@ -183,6 +199,13 @@ public class HttlRequest implements Serializable {
 
 	public String getUrlPath() {
 		return urlPath;
+	}
+
+	/**
+	 * For copy constructor
+	 */
+	protected final String[] getContentType() {
+		return contentType;
 	}
 
 	/**
@@ -196,7 +219,7 @@ public class HttlRequest implements Serializable {
 	 * @return complete url
 	 */
 	public URL getUrl() {
-		URL baseurl = sender.getConfig().getUrl();
+		URL baseurl = senderConfig.getUrl();
 		try {
 			return new URL(baseurl.getProtocol(), baseurl.getHost(), baseurl.getPort(), this.pathAndQuery);
 		} catch (MalformedURLException mux) {

@@ -1,6 +1,7 @@
 package net.anthavio.httl.auth;
 
 import net.anthavio.httl.HttlBuilderVisitor;
+import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlRequestBuilder;
 import net.anthavio.httl.HttlResponseExtractor;
 import net.anthavio.httl.auth.OAuth2.FinalBuildStep;
@@ -29,6 +30,7 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		this.oauth = oauth;
 	}
 
+	@Override
 	public FinalBuildStep access(String code) {
 		if (code == null || code.isEmpty()) {
 			throw new IllegalArgumentException("Empty code");
@@ -38,6 +40,7 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		return this;
 	}
 
+	@Override
 	public FinalBuildStep refresh(String refresh_token) {
 		if (refresh_token == null || refresh_token.isEmpty()) {
 			throw new IllegalArgumentException("Empty refresh_token");
@@ -47,6 +50,7 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		return this;
 	}
 
+	@Override
 	public FinalBuildStep password(String username, String password) {
 		if (username == null || username.isEmpty()) {
 			throw new IllegalArgumentException("Empty username");
@@ -73,20 +77,20 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 
 	@Override
 	public OAuthTokenResponse get() {
-		return getRequestBuilder().extract(OAuthTokenResponse.class).getBody();
+		return oauth.getSender().extract(getRequest(), OAuthTokenResponse.class).getBody();
 	}
 
 	@Override
 	public <T> T get(Class<T> tokenClass) {
-		return getRequestBuilder().extract(tokenClass).getBody();
+		return oauth.getSender().extract(getRequest(), tokenClass).getBody();
 	}
 
 	@Override
 	public <T> T get(HttlResponseExtractor<T> extractor) {
-		return getRequestBuilder().extract(extractor).getBody();
+		return oauth.getSender().extract(getRequest(), extractor).getBody();
 	}
 
-	private HttlRequestBuilder<?> getRequestBuilder() {
+	private HttlRequest getRequest() {
 		HttlRequestBuilder<?> builder;
 		if (code != null) {
 			builder = oauth.buildCodeTokenRequest(code);
@@ -100,6 +104,6 @@ public class TokenRequestBuilder implements SelectTypeBuildStep, FinalBuildStep 
 		if (visitor != null) {
 			visitor.visit(builder);
 		}
-		return builder;
+		return builder.build();
 	}
 }

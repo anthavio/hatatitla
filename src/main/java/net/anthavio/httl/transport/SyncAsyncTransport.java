@@ -16,7 +16,7 @@ import net.anthavio.httl.util.Cutils;
  * @author martin.vanek
  *
  */
-public abstract class FakeAsyncTransport implements HttlTransport {
+public abstract class SyncAsyncTransport implements HttlTransport {
 
 	@Override
 	public void call(HttlRequest request, HttlTransportCallback callback) {

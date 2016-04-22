@@ -1,5 +1,7 @@
 package net.anthavio.httl;
 
+import java.io.Serializable;
+
 import net.anthavio.httl.util.Cutils;
 
 /**
@@ -7,7 +9,9 @@ import net.anthavio.httl.util.Cutils;
  * @author martin.vanek
  *
  */
-public class Authentication {
+public class Authentication implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public static enum Scheme {
 		BASIC, DIGEST;

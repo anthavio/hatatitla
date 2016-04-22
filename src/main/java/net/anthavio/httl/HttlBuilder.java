@@ -1,6 +1,12 @@
 package net.anthavio.httl;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 import net.anthavio.httl.api.HttlApiBuilder;
+import net.anthavio.httl.transport.HttlTarget;
+import net.anthavio.httl.transport.HttlTarget.SingleHttlTarget;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpUrlConfig;
@@ -25,6 +31,10 @@ public class HttlBuilder {
 	 */
 	public static TransportChooser transport(String url) {
 		return new TransportChooser(url);
+	}
+
+	public static TransportChooser transport(HttlTarget target) {
+		return new TransportChooser(target);
 	}
 
 	/**
@@ -101,10 +111,19 @@ public class HttlBuilder {
 
 	public static class TransportChooser {
 
-		private String url;
+		private HttlTarget target;
 
-		private TransportChooser(String url) {
-			this.url = url;
+		private TransportChooser(String urlString) {
+			try {
+				URL url = new URL(urlString);
+				this.target = new SingleHttlTarget(BaseTransportBuilder.trimUrl(url));
+			} catch (MalformedURLException mux) {
+				throw new IllegalArgumentException("URL is invalid " + urlString, mux);
+			}
+		}
+
+		public TransportChooser(HttlTarget target) {
+			this.target = target;
 		}
 
 		/**
@@ -113,7 +132,7 @@ public class HttlBuilder {
 		 * @return Java HttpURLConnection backed Sender Configurer
 		 */
 		public SenderConfigurer config() {
-			HttpUrlConfig config = new HttpUrlConfig(url);
+			HttpUrlConfig config = new HttpUrlConfig(target);
 			HttpUrlTransport transport = config.build();
 			return new SenderConfigurer(transport);
 		}
@@ -131,7 +150,7 @@ public class HttlBuilder {
 		 * @return Java HttpURLConnection based Transport Configurer
 		 */
 		public HttpUrlConfig httpUrl() {
-			return new HttpUrlConfig(url);
+			return new HttpUrlConfig(target);
 		}
 
 		/**
@@ -139,7 +158,7 @@ public class HttlBuilder {
 		 */
 		public HttpClient3Config httpClient3() {
 			if (OptionalLibs.isHttpClient3) {
-				return new HttpClient3Config(url);
+				return new HttpClient3Config(target);
 			} else {
 				throw new IllegalStateException("HttClient 3.1 classes not found in classpath");
 			}
@@ -150,7 +169,7 @@ public class HttlBuilder {
 		 */
 		public HttpClient4Config httpClient4() {
 			if (OptionalLibs.isHttpClient4) {
-				return new HttpClient4Config(url);
+				return new HttpClient4Config(target);
 			} else {
 				throw new IllegalStateException("HttClient 4 classes not found in classpath");
 			}
@@ -160,7 +179,7 @@ public class HttlBuilder {
 		 * @return Mocking Transport Configurer
 		 */
 		public MockTransport mock() {
-			return new MockTransport(url);
+			return new MockTransport(target);
 		}
 	}
 

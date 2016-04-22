@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class HttpClient3Transport extends FakeAsyncTransport {
+public class HttpClient3Transport extends SyncAsyncTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -83,7 +84,9 @@ public class HttpClient3Transport extends FakeAsyncTransport {
 	@Override
 	public HttpClient3Response call(HttlRequest request) throws IOException {
 
-		String urlFile = request.getPathAndQuery();
+		URL urlHost = config.getTarget().getUrl();
+		String urlFile = new URL(urlHost.getProtocol(), urlHost.getHost(), urlHost.getPort(), request.getPathAndQuery())
+				.toString();
 		HttpMethodBase httpMethod;
 		switch (request.getMethod()) {
 		case GET:
@@ -133,7 +136,7 @@ public class HttpClient3Transport extends FakeAsyncTransport {
 		//cannot be set globally in configuration
 		httpMethod.setFollowRedirects(config.getFollowRedirects());
 
-		int statusCode = call(httpMethod);
+		int statusCode = call(httpMethod, urlHost);
 
 		Header[] responseHeaders = httpMethod.getResponseHeaders();
 
@@ -156,7 +159,7 @@ public class HttpClient3Transport extends FakeAsyncTransport {
 			RequestEntity entity;
 			switch (body.getType()) {
 			case MARSHALL:
-				entity = new MarshallableEntity(request, request.getSender().getMarshaller());
+				entity = new MarshallableEntity(request, request.getSenderConfig().getMarshaller());
 				break;
 			case STRING:
 				entity = new StringRequestEntity((String) body.getPayload(), null, request.getCharset());
@@ -177,12 +180,13 @@ public class HttpClient3Transport extends FakeAsyncTransport {
 		}
 	}
 
-	protected int call(HttpMethodBase httpRequest) throws IOException {
+	protected int call(HttpMethodBase httpRequest, URL urlHost) throws IOException {
 		try {
 			return this.httpClient.executeMethod(httpRequest);
 		} catch (Exception x) {
 			//connection might be already open so release request
 			httpRequest.releaseConnection();
+			config.getTarget().failed(urlHost);
 			//now try to 
 			if (x instanceof ConnectionPoolTimeoutException) {
 				ConnectException cx = new ConnectException("Pool timeout " + config.getPoolAcquireTimeoutMillis() + " ms");
@@ -256,6 +260,7 @@ class PatchMethod extends EntityEnclosingMethod {
 		super(uri);
 	}
 
+	@Override
 	public String getName() {
 		return "PATCH";
 	}

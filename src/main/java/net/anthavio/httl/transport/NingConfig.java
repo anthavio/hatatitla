@@ -2,20 +2,20 @@ package net.anthavio.httl.transport;
 
 import java.net.URL;
 
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 
 /**
- * -Dhttp.keepAlive=true
- * -Dhttp.maxConnections=200
- * -Dsun.net.http.errorstream.enableBuffering=true
  * 
  * @author martin.vanek
  *
  */
-public class NingConfig extends BaseTransBuilder<NingConfig> {
+public class NingConfig extends BaseTransportBuilder<NingConfig> {
 
-	public NingConfig(String url) {
-		super(url);
+	/**
+	 * Copy constructor
+	 */
+	public NingConfig(NingConfig from) {
+		super(from);
 	}
 
 	public NingConfig(URL url) {
@@ -24,7 +24,7 @@ public class NingConfig extends BaseTransBuilder<NingConfig> {
 
 	@Override
 	public NingTransport build() {
-		return new NingTransport(this);
+		return new NingTransport(new NingConfig(this));
 	}
 
 	@Override

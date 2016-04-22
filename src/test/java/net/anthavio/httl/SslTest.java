@@ -9,7 +9,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.X509TrustManager;
 
 import net.anthavio.httl.HttlResponseExtractor.ExtractedResponse;
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 import net.anthavio.httl.transport.HttpClient3Config;
 import net.anthavio.httl.transport.HttpClient4Config;
 import net.anthavio.httl.transport.HttpUrlConfig;
@@ -74,7 +74,7 @@ public class SslTest {
 		testMutualCert(transport);
 	}
 
-	private void testMutualCert(BaseTransBuilder<?> transport) {
+	private void testMutualCert(BaseTransportBuilder<?> transport) {
 		HttlSender sender = transport.setUrl("https://localhost:" + server.getPortHttpsMutual()).sender().build();
 		try {
 			//When
@@ -98,7 +98,7 @@ public class SslTest {
 		sender.close();
 	}
 
-	private void testServerCert(BaseTransBuilder<?> transport) {
+	private void testServerCert(BaseTransportBuilder<?> transport) {
 		//Given - self signed server cert
 		HttlSender sender = transport.setUrl("https://localhost:" + server.getPortHttps()).sender().build();
 		try {

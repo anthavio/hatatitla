@@ -1,8 +1,13 @@
 package net.anthavio.httl.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -101,5 +106,23 @@ public class Cutils {
 			out[j++] = HEX_DIGITS[0x0F & data[i]];
 		}
 		return out;
+	}
+
+	/**
+	 * Pseudocloning using serialization
+	 */
+	public static <T extends Serializable> T clone(T serializable) {
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(serializable);
+			oos.close();
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+			Object clone = ois.readObject();
+			ois.close();
+			return (T) clone;
+		} catch (Exception x) {
+			throw new IllegalStateException("This should never happen", x);
+		}
 	}
 }

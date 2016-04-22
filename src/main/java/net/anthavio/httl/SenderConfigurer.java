@@ -59,7 +59,7 @@ public class SenderConfigurer {
 		}
 		this.transport = transport;
 		//copy commonly used values
-		this.url = transport.getConfig().getUrl();
+		this.url = transport.getConfig().getTarget().getUrl();
 		this.charset = transport.getConfig().getCharset();
 	}
 

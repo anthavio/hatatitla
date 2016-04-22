@@ -27,9 +27,9 @@ import net.anthavio.httl.util.HttpDateUtil;
  * @author martin.vanek
  *
  */
-public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
+public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<X>> {
 
-	protected final HttlSender sender;
+	protected final SenderConfigurer senderConfig;
 
 	protected final Method method;
 
@@ -43,11 +43,11 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 
 	protected Integer readTimeoutMillis;
 
-	public HttlRequestBuilder(HttlSender sender, Method method, String urlPath) {
-		if (sender == null) {
-			throw new IllegalArgumentException("sender is null");
+	public HttlRequestBuilder(SenderConfigurer senderConfig, Method method, String urlPath) {
+		if (senderConfig == null) {
+			throw new IllegalArgumentException("SenderConfigurer is null");
 		}
-		this.sender = sender;
+		this.senderConfig = senderConfig;
 
 		this.headers = new Multival<String>();
 		this.parameters = new Multival<String>();
@@ -62,11 +62,7 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 		}
 		this.urlPath = urlPath;
 
-		this.paramSetter = sender.getConfig().getParamSetter();
-	}
-
-	public HttlSender getSender() {
-		return sender;
+		this.paramSetter = senderConfig.getParamSetter();
 	}
 
 	public Method getMethod() {
@@ -295,70 +291,9 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 
 	public abstract HttlRequest build();
 
-	/**
-	 * Buid and execute Request and then return raw unprocessed Response.
-	 * Response is open and caller is responsibe for closing.
-	 */
-	public HttlResponse execute() {
-		HttlRequest request = build();
-		return sender.execute(request);
-	}
-
-	/**
-	 * Buid and execute Request and then let ResponseHandler parameter to process Response.
-	 */
-	public void execute(HttlResponseHandler handler) {
-		HttlRequest request = build();
-		sender.execute(request, handler);
-	}
-
-	/**
-	 * Buid and execute Request and then extract response.
-	 */
-	public <T> ExtractedResponse<T> extract(Class<T> clazz) {
-		HttlRequest request = build();
-		return sender.extract(request, clazz);
-	}
-
-	/**
-	 * Buid and execute Request and then extract response.
-	 */
-	public <T> ExtractedResponse<T> extract(GenericType<T> typeReference) {
-		HttlRequest request = build();
-		return sender.extract(request, typeReference);
-	}
-
-	/**
-	 * Buid and execute Request and then extract response.
-	 */
-	public <T> ExtractedResponse<T> extract(HttlResponseExtractor<T> extractor) {
-		HttlRequest request = build();
-		return sender.extract(request, extractor);
-	}
-
-	public Future<HttlResponse> start() {
-		HttlRequest request = build();
-		return sender.start(request);
-	}
-
-	public <T> Future<ExtractedResponse<T>> start(HttlResponseExtractor<T> extractor) {
-		HttlRequest request = build();
-		return sender.start(request, extractor);
-	}
-
-	public <T> Future<ExtractedResponse<T>> start(Class<T> resultType) {
-		HttlRequest request = build();
-		return sender.start(request, resultType);
-	}
-
-	public void start(HttlResponseHandler handler) {
-		HttlRequest request = build();
-		sender.start(request, handler);
-	}
-
 	@Override
 	public String toString() {
-		return "HttlRequestBuilder [sender=" + sender + ", method=" + method + ", urlPath=" + urlPath + ", headers="
+		return "HttlRequestBuilder [config=" + senderConfig + ", method=" + method + ", urlPath=" + urlPath + ", headers="
 				+ headers + ", parameters=" + parameters + "]";
 	}
 
@@ -370,24 +305,26 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 	 * @author martin.vanek
 	 *
 	 */
-	public static class BodylessRequestBuilder extends HttlRequestBuilder<BodylessRequestBuilder> {
+	public static class BodylessRequestBuilder<X extends BodylessRequestBuilder<X>> extends HttlRequestBuilder<X> {
 
-		public BodylessRequestBuilder(HttlSender httpSender, Method method, String urlPath) {
-			super(httpSender, method, urlPath);
+		public BodylessRequestBuilder(SenderConfigurer senderConfig, Method method, String urlPath) {
+			super(senderConfig, method, urlPath);
 		}
 
 		@Override
-		protected BodylessRequestBuilder getX() {
-			return this;
-		}
-
 		public HttlRequest build() {
-			List<HttlBuilderVisitor> interceptors = sender.getConfig().getBuilderVisitors();
+			List<HttlBuilderVisitor> interceptors = senderConfig.getBuilderVisitors();
 			for (HttlBuilderVisitor interceptor : interceptors) {
 				interceptor.visit(this);
 			}
-			return new HttlRequest(sender, method, urlPath, parameters, headers, null, readTimeoutMillis);
+			return new HttlRequest(senderConfig, method, urlPath, parameters, headers, null, readTimeoutMillis);
 		}
+
+		@Override
+		protected X getX() {
+			return (X) this;
+		}
+
 	}
 
 	/**
@@ -396,10 +333,10 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 	 * @author martin.vanek
 	 *
 	 */
-	public static class BodyfulRequestBuilder extends HttlRequestBuilder<BodyfulRequestBuilder> {
+	public static class BodyfulRequestBuilder<X extends BodyfulRequestBuilder<X>> extends HttlRequestBuilder<X> {
 
-		public BodyfulRequestBuilder(HttlSender httpSender, Method method, String path) {
-			super(httpSender, method, path);
+		public BodyfulRequestBuilder(SenderConfigurer senderConfig, Method method, String path) {
+			super(senderConfig, method, path);
 		}
 
 		protected HttlBody body;
@@ -407,31 +344,31 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 		/**
 		 * Set body as String
 		 */
-		public BodyfulRequestBuilder body(String payload, String mediaType) {
+		public X body(String payload, String mediaType) {
 			if (payload == null) {
 				throw new HttlRequestException("Payload string is null");
 			}
 			setContentType(mediaType);
 			this.body = new HttlBody(payload);
-			return this;
+			return getX();
 		}
 
 		/**
 		 * Set request body as byte array
 		 */
-		public BodyfulRequestBuilder body(byte[] payload, String mediaType) {
+		public X body(byte[] payload, String mediaType) {
 			if (payload == null) {
 				throw new HttlRequestException("Payload byte[] is null");
 			}
 			setContentType(mediaType);
 			this.body = new HttlBody(payload);
-			return this;
+			return getX();
 		}
 
 		/**
 		 * Set body as InputStream
 		 */
-		public BodyfulRequestBuilder body(InputStream stream, String mediaType, boolean buffer) {
+		public X body(InputStream stream, String mediaType, boolean buffer) {
 			if (stream == null) {
 				throw new HttlRequestException("Payload stream is null");
 			}
@@ -446,13 +383,13 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 			} else {
 				this.body = new HttlBody(stream);
 			}
-			return this;
+			return getX();
 		}
 
 		/**
 		 * Set body as Reader
 		 */
-		public BodyfulRequestBuilder body(Reader reader, String mediaType, boolean buffer) {
+		public X body(Reader reader, String mediaType, boolean buffer) {
 			if (reader == null) {
 				throw new HttlRequestException("Payload reader is null");
 			}
@@ -468,13 +405,13 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 				this.body = new HttlBody(reader);
 			}
 
-			return this;
+			return getX();
 		}
 
 		/**
 		 * Set body as non buffered
 		 */
-		public BodyfulRequestBuilder body(Object body, String mediaType) {
+		public X body(Object body, String mediaType) {
 			return body(body, mediaType, false);
 		}
 
@@ -483,7 +420,7 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 		 * 
 		 * Content-Type header must be specified before
 		 */
-		public BodyfulRequestBuilder body(Object body) {
+		public X body(Object body) {
 			return body(body, null);
 		}
 
@@ -491,13 +428,13 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 			if (mediaType == null) {
 				mediaType = headers.getFirst(HttlConstants.Content_Type);
 				if (mediaType == null) {
-					mediaType = sender.getConfig().getDefaultHeaders().getFirst(HttlConstants.Content_Type);
+					mediaType = senderConfig.getDefaultHeaders().getFirst(HttlConstants.Content_Type);
 					if (mediaType == null) {
 						throw new HttlRequestException("Content-Type not found. Cannot set request body");
 					}
 				}
 			}
-			String[] mimeTypeAndCharset = HttlUtil.splitContentType(mediaType, sender.getConfig().getCharset());
+			String[] mimeTypeAndCharset = HttlUtil.splitContentType(mediaType, senderConfig.getCharset());
 			headers.set(HttlConstants.Content_Type, mimeTypeAndCharset[0] + "; charset=" + mimeTypeAndCharset[1]);
 			return mimeTypeAndCharset;
 		}
@@ -505,7 +442,7 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 		/**
 		 * payload can be byte[], String, InputStream, Reader or anything else that can be marshalled
 		 */
-		public BodyfulRequestBuilder body(Object payload, String mediaType, boolean buffer) {
+		public X body(Object payload, String mediaType, boolean buffer) {
 			if (payload == null) {
 				throw new HttlRequestException("Payload is null");
 			}
@@ -523,7 +460,7 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 				if (buffer) {
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					try {
-						sender.getMarshaller().marshall(payload, contentType[0], contentType[1], baos);
+						senderConfig.getMarshaller().marshall(payload, contentType[0], contentType[1], baos);
 					} catch (IOException iox) {
 						throw new HttlRequestException(iox);
 					}
@@ -537,16 +474,16 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 
 		@Override
 		public HttlRequest build() {
-			List<HttlBuilderVisitor> visitors = sender.getConfig().getBuilderVisitors();
+			List<HttlBuilderVisitor> visitors = senderConfig.getBuilderVisitors();
 			for (HttlBuilderVisitor visitor : visitors) {
 				visitor.visit(this);
 			}
-			return new HttlRequest(sender, method, urlPath, parameters, headers, body, readTimeoutMillis);
+			return new HttlRequest(senderConfig, method, urlPath, parameters, headers, body, readTimeoutMillis);
 		}
 
 		@Override
-		protected BodyfulRequestBuilder getX() {
-			return this;
+		protected X getX() {
+			return (X) this;
 		}
 
 	}
@@ -599,6 +536,216 @@ public abstract class HttlRequestBuilder<X extends HttlRequestBuilder<?>> {
 		}
 
 		return new String[] { mediaType, charset };
+	}
+
+	public static interface ExecutableHttpBuilder {
+
+		/**
+		 * Buid and execute Request and then return raw unprocessed Response.
+		 * Response is open and caller is responsibe for closing.
+		 */
+		public HttlResponse execute();
+
+		/**
+		 * Buid and execute Request and then let ResponseHandler parameter to process Response.
+		 */
+		public void execute(HttlResponseHandler handler);
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		public <T> ExtractedResponse<T> extract(Class<T> clazz);
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		public <T> ExtractedResponse<T> extract(GenericType<T> typeReference);
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		public <T> ExtractedResponse<T> extract(HttlResponseExtractor<T> extractor);
+
+		public Future<HttlResponse> start();
+
+		public <T> Future<ExtractedResponse<T>> start(HttlResponseExtractor<T> extractor);
+
+		public <T> Future<ExtractedResponse<T>> start(Class<T> resultType);
+
+		public void start(HttlResponseHandler handler);
+	}
+
+	public static class BodylessExecutableBuilder extends BodylessRequestBuilder<BodylessExecutableBuilder> implements
+			ExecutableHttpBuilder {
+
+		private HttlSender sender;
+
+		public BodylessExecutableBuilder(HttlSender sender, Method method, String path) {
+			super(sender.getConfig(), method, path);
+			this.sender = sender;
+		}
+
+		@Override
+		protected BodylessExecutableBuilder getX() {
+			return this;
+		}
+
+		/**
+		 * Buid and execute Request and then return raw unprocessed Response.
+		 * Response is open and caller is responsibe for closing.
+		 */
+		@Override
+		public HttlResponse execute() {
+			HttlRequest request = build();
+			return sender.execute(request);
+		}
+
+		/**
+		 * Buid and execute Request and then let ResponseHandler parameter to process Response.
+		 */
+		@Override
+		public void execute(HttlResponseHandler handler) {
+			HttlRequest request = build();
+			sender.execute(request, handler);
+		}
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		@Override
+		public <T> ExtractedResponse<T> extract(Class<T> clazz) {
+			HttlRequest request = build();
+			return sender.extract(request, clazz);
+		}
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		@Override
+		public <T> ExtractedResponse<T> extract(GenericType<T> typeReference) {
+			HttlRequest request = build();
+			return sender.extract(request, typeReference);
+		}
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		@Override
+		public <T> ExtractedResponse<T> extract(HttlResponseExtractor<T> extractor) {
+			HttlRequest request = build();
+			return sender.extract(request, extractor);
+		}
+
+		@Override
+		public Future<HttlResponse> start() {
+			HttlRequest request = build();
+			return sender.start(request);
+		}
+
+		@Override
+		public <T> Future<ExtractedResponse<T>> start(HttlResponseExtractor<T> extractor) {
+			HttlRequest request = build();
+			return sender.start(request, extractor);
+		}
+
+		@Override
+		public <T> Future<ExtractedResponse<T>> start(Class<T> resultType) {
+			HttlRequest request = build();
+			return sender.start(request, resultType);
+		}
+
+		@Override
+		public void start(HttlResponseHandler handler) {
+			HttlRequest request = build();
+			sender.start(request, handler);
+		}
+
+	}
+
+	public static class BodyfulExecutableBuilder extends BodyfulRequestBuilder<BodyfulExecutableBuilder> implements
+			ExecutableHttpBuilder {
+
+		private HttlSender sender;
+
+		public BodyfulExecutableBuilder(HttlSender sender, Method method, String path) {
+			super(sender.getConfig(), method, path);
+			this.sender = sender;
+		}
+
+		@Override
+		protected BodyfulExecutableBuilder getX() {
+			return this;
+		}
+
+		/**
+		 * Buid and execute Request and then return raw unprocessed Response.
+		 * Response is open and caller is responsibe for closing.
+		 */
+		@Override
+		public HttlResponse execute() {
+			HttlRequest request = build();
+			return sender.execute(request);
+		}
+
+		/**
+		 * Buid and execute Request and then let ResponseHandler parameter to process Response.
+		 */
+		@Override
+		public void execute(HttlResponseHandler handler) {
+			HttlRequest request = build();
+			sender.execute(request, handler);
+		}
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		@Override
+		public <T> ExtractedResponse<T> extract(Class<T> clazz) {
+			HttlRequest request = build();
+			return sender.extract(request, clazz);
+		}
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		@Override
+		public <T> ExtractedResponse<T> extract(GenericType<T> typeReference) {
+			HttlRequest request = build();
+			return sender.extract(request, typeReference);
+		}
+
+		/**
+		 * Buid and execute Request and then extract response.
+		 */
+		@Override
+		public <T> ExtractedResponse<T> extract(HttlResponseExtractor<T> extractor) {
+			HttlRequest request = build();
+			return sender.extract(request, extractor);
+		}
+
+		@Override
+		public Future<HttlResponse> start() {
+			HttlRequest request = build();
+			return sender.start(request);
+		}
+
+		@Override
+		public <T> Future<ExtractedResponse<T>> start(HttlResponseExtractor<T> extractor) {
+			HttlRequest request = build();
+			return sender.start(request, extractor);
+		}
+
+		@Override
+		public <T> Future<ExtractedResponse<T>> start(Class<T> resultType) {
+			HttlRequest request = build();
+			return sender.start(request, resultType);
+		}
+
+		@Override
+		public void start(HttlResponseHandler handler) {
+			HttlRequest request = build();
+			sender.start(request, handler);
+		}
 	}
 
 }

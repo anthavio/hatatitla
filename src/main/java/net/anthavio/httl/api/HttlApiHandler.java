@@ -76,7 +76,7 @@ public class HttlApiHandler<T> implements InvocationHandler {
 			throw new IllegalStateException("Metadata not found for " + method);
 		}
 
-		BodyfulRequestBuilder builder = new BodyfulRequestBuilder(sender, metaMethod.httpMethod.getMethod(),
+		BodyfulRequestBuilder builder = new BodyfulRequestBuilder(sender.getConfig(), metaMethod.httpMethod.getMethod(),
 				metaMethod.urlPath);
 
 		//Class declared headers

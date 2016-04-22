@@ -7,6 +7,8 @@ import java.io.Reader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 
 import net.anthavio.httl.HttlBody;
@@ -17,8 +19,10 @@ import net.anthavio.httl.util.ReaderInputStream;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.AuthCache;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -29,6 +33,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpTrace;
+import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
@@ -37,6 +42,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.protocol.BasicHttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class HttpClient4Transport extends FakeAsyncTransport {
+public class HttpClient4Transport extends SyncAsyncTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -92,36 +98,43 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 	@Override
 	public HttpClient4Response call(HttlRequest request) throws IOException {
 
-		String urlFile = request.getPathAndQuery();
+		URL urlHost = config.getTarget().getUrl();
+		URI uri;
+		try {
+			uri = new URL(urlHost.getProtocol(), urlHost.getHost(), urlHost.getPort(), request.getPathAndQuery()).toURI();
+		} catch (URISyntaxException usx) {
+			throw new IllegalArgumentException("Cant create URI from " + urlHost);
+		}
+
 		HttpRequestBase httpRequest;
 		switch (request.getMethod()) {
 		case GET:
-			httpRequest = new HttpGet(urlFile);
+			httpRequest = new HttpGet(uri);
 			break;
 		case HEAD:
-			httpRequest = new HttpHead(urlFile);
+			httpRequest = new HttpHead(uri);
 			break;
 		case OPTIONS:
-			httpRequest = new HttpOptions(urlFile);
+			httpRequest = new HttpOptions(uri);
 			break;
 		case TRACE:
-			httpRequest = new HttpTrace(urlFile);
+			httpRequest = new HttpTrace(uri);
 			break;
 		case DELETE:
-			httpRequest = new HttpDelete(urlFile);
+			httpRequest = new HttpDelete(uri);
 			break;
 		case POST:
-			HttpPost post = new HttpPost(urlFile);
+			HttpPost post = new HttpPost(uri);
 			setEntity(request, post);
 			httpRequest = post;
 			break;
 		case PUT:
-			HttpPut put = new HttpPut(urlFile);
+			HttpPut put = new HttpPut(uri);
 			setEntity(request, put);
 			httpRequest = put;
 			break;
 		case PATCH:
-			HttpPatch patch = new HttpPatch(urlFile);
+			HttpPatch patch = new HttpPatch(uri);
 			setEntity(request, patch);
 			httpRequest = patch;
 			break;
@@ -143,7 +156,7 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 			httpRequest.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, request.getReadTimeoutMillis());
 		}
 
-		HttpResponse httpResponse = call(httpRequest);
+		HttpResponse httpResponse = call(httpRequest, urlHost);
 
 		Header[] responseHeaders = httpResponse.getAllHeaders();
 		Multival<String> outHeaders = new Multival<String>();
@@ -167,7 +180,7 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 			HttpEntity entity;
 			switch (body.getType()) {
 			case MARSHALL:
-				entity = new MarshallableHttpEntity(request, request.getSender().getMarshaller());
+				entity = new MarshallableHttpEntity(request, request.getSenderConfig().getMarshaller());
 				break;
 			case STRING:
 				entity = new StringEntity((String) body.getPayload(), request.getCharset());
@@ -188,12 +201,16 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 		}
 	}
 
-	protected HttpResponse call(HttpRequestBase httpRequest) throws IOException {
+	protected HttpResponse call(HttpRequestBase httpRequest, URL urlHost) throws IOException {
+		HttpHost httpHost = config.getHttpHost();
 		try {
-			if (config.getAuthContext() != null) {
-				return this.httpClient.execute(httpRequest, config.getAuthContext());
+			AuthCache authCache = config.getAuthCache();
+			if (authCache != null) {
+				BasicHttpContext httpContext = new BasicHttpContext();
+				httpContext.setAttribute(ClientContext.AUTH_CACHE, authCache);
+				return this.httpClient.execute(httpHost, httpRequest, httpContext);
 			} else {
-				return this.httpClient.execute(httpRequest);
+				return this.httpClient.execute(httpHost, httpRequest);
 			}
 		} catch (Exception x) {
 			//connection might be already open so release it
@@ -208,7 +225,7 @@ public class HttpClient4Transport extends FakeAsyncTransport {
 				throw ctx;
 			} else if (x instanceof HttpHostConnectException) {
 				//connection refused
-				ConnectException ctx = new ConnectException("Connection refused " + config.getUrl());
+				ConnectException ctx = new ConnectException("Connection refused " + httpHost);
 				ctx.setStackTrace(x.getStackTrace());
 				throw ctx;
 			} else if (x instanceof SocketTimeoutException) {

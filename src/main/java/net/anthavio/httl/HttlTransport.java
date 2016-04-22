@@ -3,7 +3,7 @@ package net.anthavio.httl;
 import java.io.Closeable;
 import java.io.IOException;
 
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 
 /**
  * 
@@ -27,7 +27,7 @@ public interface HttlTransport extends Closeable {
 	 */
 	public void close();
 
-	public BaseTransBuilder<?> getConfig();
+	public BaseTransportBuilder<?> getConfig();
 
 	/**
 	 *  Callback for Asynchronous nio execution

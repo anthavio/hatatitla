@@ -55,6 +55,7 @@ public interface HttlBodyUnmarshaller {
 
 		public abstract Object doUnmarshall(HttlResponse response, Type returnType) throws IOException;
 
+		@Override
 		public Object unmarshall(HttlResponse response, Type returnType) throws IOException {
 			int status = response.getHttpStatusCode();
 			if (status > maxHttpCode || status < minHttpCode) {
@@ -62,7 +63,7 @@ public interface HttlBodyUnmarshaller {
 						+ "," + maxHttpCode + ">");
 			}
 			if (!mediaType.equals(response.getMediaType()) && !mediaType.equals(ANY_MEDIA_TYPE)) {
-				throw new HttlResponseException(response, "Mime type: " + response.getMediaType() + " does not match: "
+				throw new HttlResponseException(response, "Http mime type: " + response.getMediaType() + " does not match: "
 						+ mediaType);
 			}
 			return doUnmarshall(response, returnType);

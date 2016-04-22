@@ -5,7 +5,7 @@ import java.io.IOException;
 import net.anthavio.httl.HttlRequest;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlTransport;
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
 
 import com.ning.http.client.AsyncHttpClient;
 
@@ -42,7 +42,7 @@ public class NingTransport implements HttlTransport {
 	}
 
 	@Override
-	public BaseTransBuilder<?> getConfig() {
+	public BaseTransportBuilder<?> getConfig() {
 		// TODO Auto-generated method stub
 		return null;
 	}

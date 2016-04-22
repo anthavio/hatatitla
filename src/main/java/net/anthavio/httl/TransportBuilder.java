@@ -6,6 +6,8 @@ import java.nio.charset.Charset;
 
 import javax.net.ssl.SSLContext;
 
+import net.anthavio.httl.transport.HttlTarget;
+import net.anthavio.httl.transport.HttlTarget.SingleHttlTarget;
 import net.anthavio.httl.util.Cutils;
 import net.anthavio.httl.util.SSLContextBuilder;
 
@@ -32,9 +34,9 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 	 *
 	 * @param <S>
 	 */
-	public static abstract class BaseTransBuilder<S extends BaseTransBuilder<?>> implements TransportBuilder<S> {
+	public static abstract class BaseTransportBuilder<S extends BaseTransportBuilder<?>> implements TransportBuilder<S> {
 
-		private URL url;
+		private HttlTarget target;
 
 		private SSLContext sslContext;
 
@@ -52,12 +54,37 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 
 		private Charset javaCharset = Charset.forName(this.charset);
 
-		public BaseTransBuilder(URL url) {
-			this.url = trimUrl(url);
+		/**
+		 * Copy constructor
+		 */
+		public BaseTransportBuilder(BaseTransportBuilder<?> from) {
+			//this.url = from.url;
+			this.target = from.target;
+			this.sslContext = from.sslContext;
+			this.authentication = from.authentication;
+			this.poolMaximumSize = from.poolMaximumSize;
+			this.connectTimeoutMillis = from.connectTimeoutMillis;
+			this.readTimeoutMillis = from.readTimeoutMillis;
+			this.followRedirects = from.followRedirects;
+			this.charset = from.charset;
+			this.javaCharset = from.javaCharset;
 		}
 
-		public BaseTransBuilder(String urlString) {
+		public BaseTransportBuilder(URL url) {
+			this(new SingleHttlTarget(trimUrl(url)));
+		}
+
+		public BaseTransportBuilder(String urlString) {
 			setUrl(urlString);
+		}
+
+		public BaseTransportBuilder(HttlTarget target) {
+			this.target = target;
+			setUrl(target.getUrl().toString());
+		}
+
+		public HttlTarget getTarget() {
+			return target;
 		}
 
 		public S setUrl(String urlString) {
@@ -77,7 +104,7 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 			if (Cutils.isBlank(url.getHost())) {
 				throw new IllegalArgumentException("URL has no host " + urlString);
 			}
-			this.url = trimUrl(url);
+			this.target = new SingleHttlTarget(trimUrl(url));
 			return getSelf();
 		}
 
@@ -92,7 +119,7 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 		/**
 		 * Cut-off query from url
 		 */
-		private URL trimUrl(URL url) {
+		protected static URL trimUrl(URL url) {
 			try {
 				url = new URL(url.getProtocol(), url.getHost(), url.getPort(), url.getPath());
 			} catch (MalformedURLException mux) {
@@ -101,10 +128,11 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 			return url;
 		}
 
-		public URL getUrl() {
-			return this.url;
-		}
-
+		/*
+				public URL getUrl() {
+					return this.target.getUrl();
+				}
+		*/
 		public Authentication getAuthentication() {
 			return this.authentication;
 		}
@@ -198,6 +226,7 @@ public interface TransportBuilder<S extends TransportBuilder<?>> {
 		public SSLContext getSslContext() {
 			return sslContext;
 		}
+
 	}
 
 }

@@ -16,7 +16,8 @@ import net.anthavio.httl.HttlRequestException;
 import net.anthavio.httl.HttlResponse;
 import net.anthavio.httl.HttlSender.Multival;
 import net.anthavio.httl.HttlTransport;
-import net.anthavio.httl.TransportBuilder.BaseTransBuilder;
+import net.anthavio.httl.TransportBuilder.BaseTransportBuilder;
+import net.anthavio.httl.transport.HttlTarget;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * @author martin.vanek
  *
  */
-public class MockTransport extends BaseTransBuilder<MockTransport> implements HttlTransport {
+public class MockTransport extends BaseTransportBuilder<MockTransport> implements HttlTransport {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -58,6 +59,10 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 	public MockTransport(int responseCode, String contentType, String responseBody) {
 		super("http://mock.mock.mock:6363");
 		setStaticResponse(responseCode, contentType, responseBody);
+	}
+
+	public MockTransport(HttlTarget target) {
+		super(target);
 	}
 
 	@Override
@@ -141,7 +146,7 @@ public class MockTransport extends BaseTransBuilder<MockTransport> implements Ht
 				switch (body.getType()) {
 				case MARSHALL:
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					request.getSender().getMarshaller()
+					request.getSenderConfig().getMarshaller()
 							.marshall(request.getBody().getPayload(), request.getMediaType(), request.getCharset(), baos);
 					response = new MockResponse(request, 200, "OK", request.getHeaders(), baos.toByteArray());
 					break;
